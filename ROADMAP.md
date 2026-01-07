@@ -46,13 +46,11 @@ We will structure the project using **Swift Package Manager (SPM)** to modulariz
 - [x] **Goal**: Verify OCR connectivity in isolation.
 
 #### Step 3: macOS UI (SwiftUI)
-Build the visual application that consumes `ReceiptSorterCore`.
-- **Setup**: standard macOS App structure (`.xcodeproj`).
-- **Features**:
-    - **Drop Zone**: Native drag-and-drop target in the window.
-    - **Live Preview**: PDF/Image viewer using `PDFKit` and SwiftUI.
-    - **Menu Bar**: Optional "Menu Bar App" mode for quick access.
-    - **Native Notifications**: Notify when processing completes.
+- [x] **Setup**: Added `ReceiptSorterApp` executable target with `Info.plist`.
+- [x] **Drop Zone**: Implemented Native drag-and-drop target in `ContentView`.
+- [ ] **Live Preview**: PDF/Image viewer using `PDFKit` and SwiftUI.
+- [ ] **Menu Bar**: Optional "Menu Bar App" mode for quick access.
+- [ ] **Native Notifications**: Notify when processing completes.
 
 ### 📦 Phase 3: Distribution
 - **Signing**: Code sign with Apple Developer ID.

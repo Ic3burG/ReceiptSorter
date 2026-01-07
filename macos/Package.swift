@@ -8,32 +8,46 @@ let package = Package(
     platforms: [
         .macOS(.v12) // Ensure we target macOS Monterey or later for Vision/Async features
     ],
-    products: [
-        // The library containing core logic
-        .library(
-            name: "ReceiptSorterCore",
-            targets: ["ReceiptSorterCore"]
-        ),
-        // The CLI tool to run the logic
-        .executable(
-            name: "receipt-cli",
-            targets: ["ReceiptCLI"]
-        )
-    ],
-    targets: [
-        // Core Logic
-        .target(
-            name: "ReceiptSorterCore"
-        ),
-        // CLI Tool
-        .executableTarget(
-            name: "ReceiptCLI",
-            dependencies: ["ReceiptSorterCore"]
-        ),
-        // Tests
-        .testTarget(
-            name: "ReceiptSorterCoreTests",
-            dependencies: ["ReceiptSorterCore"]
-        ),
-    ]
-)
+        products: [
+            // The library containing core logic
+            .library(
+                name: "ReceiptSorterCore",
+                targets: ["ReceiptSorterCore"]
+            ),
+            // The CLI tool to run the logic
+            .executable(
+                name: "receipt-cli",
+                targets: ["ReceiptCLI"]
+            ),
+            // The macOS GUI App
+            .executable(
+                name: "ReceiptSorterApp",
+                targets: ["ReceiptSorterApp"]
+            )
+        ],
+        targets: [
+            // Core Logic
+            .target(
+                name: "ReceiptSorterCore"
+            ),
+            // CLI Tool
+            .executableTarget(
+                name: "ReceiptCLI",
+                dependencies: ["ReceiptSorterCore"]
+            ),
+            // macOS GUI App
+            .executableTarget(
+                name: "ReceiptSorterApp",
+                dependencies: ["ReceiptSorterCore"],
+                linkerSettings: [
+                    .unsafeFlags(["-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist", "-Xlinker", "Sources/ReceiptSorterApp/Info.plist"])
+                ]
+            ),
+            // Tests
+            .testTarget(
+                name: "ReceiptSorterCoreTests",
+                dependencies: ["ReceiptSorterCore"]
+            ),
+        ]
+    )
+    
