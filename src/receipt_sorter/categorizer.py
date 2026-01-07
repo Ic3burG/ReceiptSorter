@@ -1,9 +1,9 @@
 """
 Categorizer Module
-Uses Claude API to classify receipts into Canadian tax categories
+Uses Google Gemini API to classify receipts into Canadian tax categories
 """
 
-import anthropic
+import google.generativeai as genai
 import json
 import logging
 import re
@@ -21,16 +21,16 @@ logger = logging.getLogger(__name__)
 
 
 class Categorizer:
-    """Classify receipts into tax categories using Claude API"""
+    """Classify receipts into tax categories using Google Gemini API"""
 
     def __init__(self):
-        """Initialize with Anthropic API client"""
-        api_key = os.getenv("ANTHROPIC_API_KEY")
+        """Initialize with Google Gemini API client"""
+        api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
-            raise ValueError("ANTHROPIC_API_KEY not found in environment variables")
+            raise ValueError("GEMINI_API_KEY not found in environment variables")
 
-        self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = "claude-3-5-sonnet-20241022"
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
         self.categories = config.TAX_CATEGORIES
 
     def categorize_receipt(self, receipt_data: Dict) -> Dict[str, any]:
@@ -47,17 +47,11 @@ class Categorizer:
             # Create categorization prompt
             prompt = self._create_categorization_prompt(receipt_data)
 
-            # Call Claude API
-            message = self.client.messages.create(
-                model=self.model,
-                max_tokens=512,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
-            )
-
+            # Call Gemini API
+            response = self.model.generate_content(prompt)
+            
             # Parse response
-            response_text = message.content[0].text
+            response_text = response.text
             result = self._parse_categorization_response(response_text)
 
             if result:
@@ -73,7 +67,7 @@ class Categorizer:
 
     def _create_categorization_prompt(self, receipt_data: Dict) -> str:
         """
-        Create prompt for Claude to categorize receipt
+        Create prompt for Gemini to categorize receipt
 
         Args:
             receipt_data: Receipt information
@@ -117,24 +111,27 @@ Instructions:
 6. For online services like AWS, hosting, use "Office Expenses"
 
 Return ONLY a valid JSON object with these exact keys: category, confidence
-Example: {{"category": "Office Expenses", "confidence": 95}}
+Example: {{'category': 'Office Expenses', 'confidence': 95}}
 Do not include any explanation, just the raw JSON."""
 
         return prompt
 
     def _parse_categorization_response(self, response_text: str) -> Optional[Dict]:
         """
-        Parse JSON response from Claude
+        Parse JSON response from Gemini
 
         Args:
-            response_text: Raw response from Claude
+            response_text: Raw response from Gemini
 
         Returns:
             Dictionary with category and confidence, or None
         """
         try:
+            # Clean markdown code blocks if present
+            clean_text = response_text.replace("```json", "").replace("```", "").strip()
+
             # Try to extract JSON from response
-            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            json_match = re.search(r'\{.*\}', clean_text, re.DOTALL)
             if json_match:
                 json_str = json_match.group(0)
                 data = json.loads(json_str)

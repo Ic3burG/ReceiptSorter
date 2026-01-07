@@ -5,6 +5,9 @@ Defines paths, supported currencies, tax categories, and spreadsheet structure
 
 import os
 
+# Gemini API Key
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
 # Folder paths
 SOURCE_FOLDER = os.path.join(os.path.expanduser("~"), "receipts", "source")
 OUTPUT_BASE_FOLDER = os.path.join(os.path.expanduser("~"), "receipts", "sorted")

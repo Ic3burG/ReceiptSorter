@@ -4,8 +4,9 @@ Automatically process PDF receipts, extract financial data, categorize expenses 
 
 ## Features
 
+- 🌐 **Local Web Interface**: Modern, easy-to-use web dashboard for uploading and viewing results
 - 📄 **Document Processing**: Extracts text from native PDFs and images (JPG, PNG, etc.) using OCR
-- 🤖 **AI-Powered Extraction**: Uses Claude AI to intelligently extract receipt data (amount, date, vendor, currency)
+- 🤖 **AI-Powered Extraction**: Uses Google Gemini AI to intelligently extract receipt data (amount, date, vendor, currency)
 - 🏷️ **Smart Categorization**: Automatically categorizes receipts into Canadian tax deduction categories
 - 💰 **Multi-Currency Support**: Handles CAD, USD, EUR, GBP, JPY, AUD, CHF
 - 📁 **Automatic Organization**: Sorts receipts into currency-specific folders with standardized naming
@@ -70,7 +71,7 @@ TESSERACT_CMD = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 ### Step 4: Set Up API Key and Google Sheets
 
-1. Get your Anthropic API key from https://console.anthropic.com/
+1. Get your Google Gemini API key from https://aistudio.google.com/
 2. **(Optional)** Set up Google Sheets:
    - Create a Google Cloud Project and enable Google Sheets and Google Drive APIs.
    - Create a Service Account, download the JSON key, and rename it to `service_account.json` in the project root.
@@ -82,7 +83,7 @@ TESSERACT_CMD = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
    ```
 4. Edit `.env` and add your keys:
    ```
-   ANTHROPIC_API_KEY=your-actual-api-key-here
+   GEMINI_API_KEY=your-actual-api-key-here
    GOOGLE_SHEET_ID=your-spreadsheet-id
    ```
 
@@ -97,12 +98,21 @@ Edit `config.py` to customize:
 
 ## Usage
 
-### Basic Usage
+### Web Application (Recommended)
 
-1. Place your PDF receipts in the source folder (default: `~/receipts/source`)
+1. Start the web server:
+   ```bash
+   python run_web.py
+   ```
+2. Open your browser to `http://127.0.0.1:8000`
+3. Drag and drop your receipts to process them!
+
+### CLI Usage
+
+1. Place your PDF/Image receipts in the source folder (default: `~/receipts/source`)
 2. Run the application:
    ```bash
-   python main.py
+   python run.py
    ```
 
 ### Custom Folders

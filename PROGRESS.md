@@ -5,6 +5,8 @@
 ## Session: January 6, 2026
 
 ### 🚀 Major Features Added
+- **Web Application**: Launched a local web interface using **FastAPI** and **Tailwind CSS**. Users can now drag-and-drop receipts for processing via `run_web.py`.
+- **Gemini Integration**: Completely migrated the AI engine from Anthropic Claude to **Google Gemini**. Refactored `DataExtractor` and `Categorizer` to use `google-generativeai`.
 - **Google Sheets Integration**: Implemented `GoogleSheetsManager` to sync receipt data to Google Sheets. Added `gspread` and `google-auth` dependencies.
 - **Image Processing Support**: Enhanced `DocumentProcessor` (formerly `PDFProcessor`) to handle image files (JPG, PNG, etc.) using OCR, in addition to PDFs.
 - **Project Restructuring**: Refactored the entire codebase into a standard Python package structure:
@@ -12,17 +14,18 @@
     - Moved tests to `tests/`.
     - Moved documentation to `docs/`.
     - Added `pyproject.toml` for modern packaging.
-    - Added `run.py` entry point.
+    - Added `run.py` (CLI) and `run_web.py` (Web) entry points.
 
 ### 🛠️ Improvements & Fixes
-- **Configuration**: Updated `config.py` and added `.env.example` to support Google Sheets credentials.
+- **Configuration**: Updated `config.py` and `.env.example` to support Gemini API keys and Google Sheets credentials.
 - **File Organization**: Improved `FileOrganizer` to preserve original file extensions.
-- **Testing**: Added `test_google_sheets.py` to verify cloud connectivity and updated `tests/test_setup.py` to work with the new package structure.
-- **Documentation**: Updated `README.md` to reflect new features, installation steps, and project structure. Added `LICENSE` (MIT).
+- **Testing**: Added `test_google_sheets.py` to verify cloud connectivity.
+- **Documentation**: Updated `README.md` to reflect new features (Gemini, Web App), installation steps, and project structure. Added `LICENSE` (MIT).
 
 ### 📦 Dependencies
+- Added `google-generativeai`, `fastapi`, `uvicorn`, `python-multipart`, `jinja2`.
 - Added `gspread` and `google-auth`.
-- Removed strict version pinning for `Pillow` to resolve build issues on Python 3.14.
+- Removed `anthropic`.
 - Configured project as an editable package (`pip install -e .`).
 
 ---

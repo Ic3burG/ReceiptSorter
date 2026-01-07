@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processing Results - Receipt Sorter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Processing Results</h1>
+            <a href="/" class="text-blue-600 hover:text-blue-800 font-semibold flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Upload
+            </a>
+        </div>
+
+        <div class="grid gap-6">
+            {% for result in results %}
+            <div class="bg-white rounded-lg shadow-md overflow-hidden border-l-4 {% if result.status == 'success' %}border-green-500{% else %}border-red-500{% endif %}">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">{{ result.filename }}</h3>
+                            <span class="text-sm {% if result.status == 'success' %}text-green-600{% else %}text-red-600{% endif %} font-medium uppercase tracking-wide">
+                                {{ result.status }}
+                            </span>
+                        </div>
+                        {% if result.status == 'success' and result.needs_review %}
+                        <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-3 py-1 rounded-full border border-yellow-200">
+                            <i class="fas fa-exclamation-triangle mr-1"></i> Needs Review
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if result.status == 'success' %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Extracted Data -->
+                        <div class="bg-gray-50 p-4 rounded-md">
+                            <h4 class="text-sm font-bold text-gray-500 uppercase mb-2">Extracted Data</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between"><span class="text-gray-600">Vendor:</span> <span class="font-medium">{{ result.data.vendor }}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600">Date:</span> <span class="font-medium">{{ result.data.date }}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600">Amount:</span> <span class="font-medium">{{ result.data.total_amount }} {{ result.data.currency }}</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Categorization -->
+                        <div class="bg-gray-50 p-4 rounded-md">
+                            <h4 class="text-sm font-bold text-gray-500 uppercase mb-2">Categorization</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between"><span class="text-gray-600">Category:</span> <span class="font-medium">{{ result.category }}</span></div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600">Confidence:</span>
+                                    <div class="w-24 bg-gray-200 rounded-full h-2.5">
+                                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ result.confidence }}%"></div>
+                                    </div>
+                                    <span class="text-xs ml-2">{{ result.confidence }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="bg-red-50 p-4 rounded-md text-red-700 text-sm">
+                        <p class="font-bold">Error Details:</p>
+                        <p>{{ result.message }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="mt-8 text-center">
+             <a href="/" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full transition-colors shadow-md inline-flex items-center">
+                <i class="fas fa-plus mr-2"></i> Process More
+            </a>
+        </div>
+    </div>
+</body>
+</html>
