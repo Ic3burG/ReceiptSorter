@@ -41,12 +41,27 @@ public actor GeminiService {
         Return ONLY a valid JSON object. Do not include markdown formatting or explanations.
         """
         
-        let response = try await model.generateContent(prompt)
-        guard let responseText = response.text else {
-            throw GeminiError.noResponse
+        do {
+            let response = try await model.generateContent(prompt)
+            guard let responseText = response.text else {
+                throw GeminiError.noResponse
+            }
+            return try parseResponse(responseText)
+        } catch let error as GenerateContentError {
+            // Unwrap specific Gemini errors
+            switch error {
+            case .internalError(let underlying):
+                throw GeminiError.apiError("Internal Error: \(underlying.localizedDescription)")
+            case .promptBlocked(let response):
+                throw GeminiError.apiError("Prompt Blocked: \(response.text ?? "Unknown reason")")
+            case .responseStoppedEarly(let reason, _):
+                throw GeminiError.apiError("Response Stopped: \(reason)")
+            default:
+                throw GeminiError.apiError("Gemini Error: \(error.localizedDescription)")
+            }
+        } catch {
+            throw GeminiError.apiError(error.localizedDescription)
         }
-        
-        return try parseResponse(responseText)
     }
     
     private func parseResponse(_ text: String) throws -> ReceiptData {
@@ -64,6 +79,11 @@ public actor GeminiService {
 }
 
 public enum GeminiError: Error {
+
     case noResponse
+
     case invalidData
+
+    case apiError(String)
+
 }

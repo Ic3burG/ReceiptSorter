@@ -68,7 +68,13 @@ cp "$BUILD_PATH/$EXECUTABLE_NAME" "$BUNDLE_NAME/Contents/MacOS/$EXECUTABLE_NAME"
 
 # 6. Ad-hoc Code Signing
 echo "✍️  Signing Application..."
-codesign --force --deep --sign - "$BUNDLE_NAME"
+if [ -f "$SOURCES_DIR/ReceiptSorterApp.entitlements" ]; then
+    echo "   Using entitlements..."
+    codesign --force --deep --sign - --entitlements "$SOURCES_DIR/ReceiptSorterApp.entitlements" "$BUNDLE_NAME"
+else
+    echo "   No entitlements found (Network access might fail)..."
+    codesign --force --deep --sign - "$BUNDLE_NAME"
+fi
 
 echo ""
 echo "✅ Build Complete!"
