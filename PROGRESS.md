@@ -4,22 +4,26 @@
 
 ## Session: January 6, 2026
 
-### 🚀 Phase 2 & 3 Success (Native macOS App)
-- **Resolved Gemini 404 Issues**: Successfully debugged the model mapping issues by verifying authorized models via `debug_models.py`. Switched the macOS app to use **Gemini 2.0 Flash**, ensuring cutting-edge extraction performance.
-- **Native Notifications Implementation**: Integrated `UserNotifications` to provide system-level feedback on processing and syncing success.
-- **App Icon Integration**: Successfully designed and applied a custom blue-and-yellow Squircle icon to the native application.
-- **Distribution Bundle**: Finalized `macos/scripts/bundle.sh`, which now produces a signed, ready-to-run `Receipt Sorter.app` with proper entitlements.
-
 ### 🛠️ Fixes & Polish
-- **REST Migration**: Replaced the Gemini Swift SDK with direct REST API calls to fix persistent gRPC/Sandbox network issues.
-- **Settings UI Fix**: Increased the default size of the macOS Settings window and added vertical scrolling to ensure all configuration steps are visible.
-- **Fixed Network Access**: Added `com.apple.security.network.client` and temporarily disabled strict Sandboxing to ensure reliable API connectivity in ad-hoc builds.
-- **Error Handling**: Implemented `LocalizedError` for the core engine to provide descriptive UI messages instead of technical codes.
+- **Dynamic Batch Queue**: Improved the macOS app to allow dropping new files into the sidebar at any time.
+    - Moved the drop target to the main sidebar container.
+    - Refactored the processing loop to dynamically pick up new "pending" items added while a batch is already running.
+- **Gemini Networking Fix**: Replaced the Google Generative AI Swift SDK with a direct **URLSession/REST implementation**.
+- **Settings UI Fix**: Increased the default size of the macOS Settings window.
+- **Gemini Error Reporting**: Enhanced `GeminiError` to conform to `LocalizedError`.
 
-### 🚀 Major Features Added (Phase 1)
-- **User Onboarding**: Setup Wizard & One-Click Launcher.
-- **Visual Feedback**: Loading spinners in the Web UI.
-- **Batch Editing**: Review dashboard for Web users.
-- **Gemini & Web App**: Full migration to Gemini AI and FastAPI backend.
+### 🚀 Phase 3 Progress (Distribution)
+- **App Icon Generation**: Designed and implemented a professional macOS app icon.
+- **Build Script**: Created `macos/scripts/bundle.sh` for automated packaging.
+
+### 🚀 Phase 2 Progress (Native macOS App)
+- **Batch Processing**: Implemented robust multi-file queuing and processing.
+- **Completed Sync Pipeline**: Wired up the "Sync to Sheets" button.
+- **UI Polish & Architecture**: Settings Window, Live Preview, Visual Feedback.
+- **Google Sheets Integration**: Implemented `SheetService`.
+- **Gemini Swift Integration**: Implemented `GeminiService`.
+- **Full macOS Pipeline**: Drop -> OCR -> AI -> Sync.
+- **Native SwiftUI App**: Implemented `ReceiptSorterApp`.
+- **Native OCR**: Implemented `OCRService` using Vision.
 
 ---

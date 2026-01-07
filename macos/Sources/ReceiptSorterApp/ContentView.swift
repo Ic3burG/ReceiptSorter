@@ -45,11 +45,6 @@ struct ContentView: View {
                             .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .onDrop(of: ["public.file-url"], isTargeted: nil) { providers in
-                        loadFiles(from: providers)
-                        return true
-                    }
                 } else {
                     List(selection: $selectedItemId) {
                         ForEach($items) { $item in
@@ -108,6 +103,11 @@ struct ContentView: View {
                 }
             }
             .navigationSplitViewColumnWidth(min: 250, ideal: 300)
+            .background(Color(NSColor.controlBackgroundColor)) // Ensure background catches drops
+            .onDrop(of: ["public.file-url"], isTargeted: nil) { providers in
+                loadFiles(from: providers)
+                return true
+            }
             
         } detail: {
             // DETAIL: Preview & Data
@@ -230,11 +230,12 @@ struct ContentView: View {
         isBatchProcessing = true
         
         Task {
-            for index in items.indices {
-                if items[index].status == .pending {
-                    await processItem(at: index)
-                }
+            // Continuously process pending items until none remain
+            // This handles items added while the batch is running
+            while let index = items.firstIndex(where: { $0.status == .pending }) {
+                await processItem(at: index)
             }
+            
             isBatchProcessing = false
             await MainActor.run {
                 notify(title: "Batch Complete", body: "Finished processing receipts.")
