@@ -48,15 +48,13 @@ public final class AuthService: NSObject {
             )
             
             self.currentAuthorizationFlow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
-                // Stop listener
-                self.redirectHTTPHandler?.cancelHTTPListener()
-                self.redirectHTTPHandler = nil
-                
-                if let authState = authState {
-                    self.setAuthState(authState)
-                    continuation.resume()
-                } else {
-                    continuation.resume(throwing: AuthError.authFailed(error?.localizedDescription ?? "User cancelled"))
+                Task { @MainActor in
+                    if let authState = authState {
+                        self.setAuthState(authState)
+                        continuation.resume()
+                    } else {
+                        continuation.resume(throwing: AuthError.authFailed(error?.localizedDescription ?? "User cancelled"))
+                    }
                 }
             }
         }
