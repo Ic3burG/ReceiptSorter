@@ -13,14 +13,16 @@ struct SettingsView: View {
                 }
                 .tag(Tabs.general)
             
-            SyncSettingsView()
-                .tabItem {
-                    Label("Sync", systemImage: "arrow.triangle.2.circlepath")
-                }
-                .tag(Tabs.sync)
+            ScrollView {
+                SyncSettingsView()
+            }
+            .tabItem {
+                Label("Sync", systemImage: "arrow.triangle.2.circlepath")
+            }
+            .tag(Tabs.sync)
         }
         .padding(20)
-        .frame(width: 450, height: 250)
+        .frame(width: 500, height: 450)
     }
 }
 
