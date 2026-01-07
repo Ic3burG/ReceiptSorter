@@ -5,13 +5,17 @@ import QuickLookUI
 struct ContentView: View {
     // Persistent Settings
     @AppStorage("geminiApiKey") private var apiKey: String = ""
+    @AppStorage("googleSheetId") private var googleSheetId: String = ""
+    @AppStorage("serviceAccountPath") private var serviceAccountPath: String = "service_account.json"
     
     // State
     @State private var extractedText: String = ""
     @State private var isProcessing = false
+    @State private var isSyncing = false
     @State private var errorMessage: String?
     @State private var receiptData: ReceiptData?
     @State private var selectedFileURL: URL?
+    @State private var showSyncSuccess = false
     
     var body: some View {
         HSplitView {
@@ -92,18 +96,30 @@ struct ContentView: View {
                             
                             Spacer()
                             
-                            Button(action: {
-                                // Sync action placeholder
-                            }) {
-                                HStack {
-                                    Image(systemName: "arrow.triangle.2.circlepath")
-                                    Text("Sync to Sheets")
+                            if showSyncSuccess {
+                                Label("Synced Successfully!", systemImage: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.green.opacity(0.1))
+                                    .cornerRadius(8)
+                            } else {
+                                Button(action: syncToSheets) {
+                                    HStack {
+                                        if isSyncing {
+                                            ProgressView().controlSize(.small)
+                                        } else {
+                                            Image(systemName: "arrow.triangle.2.circlepath")
+                                        }
+                                        Text("Sync to Sheets")
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(5)
                                 }
-                                .frame(maxWidth: .infinity)
-                                .padding(5)
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.large)
+                                .disabled(isSyncing)
                             }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.large)
                             
                         } else if let error = errorMessage {
                             VStack(alignment: .leading) {
@@ -139,6 +155,7 @@ struct ContentView: View {
         self.receiptData = nil
         self.extractedText = ""
         self.errorMessage = nil
+        self.showSyncSuccess = false
     }
     
     private func processDroppedFiles(_ providers: [NSItemProvider]) {
@@ -172,6 +189,7 @@ struct ContentView: View {
         self.isProcessing = true
         self.errorMessage = nil
         self.receiptData = nil
+        self.showSyncSuccess = false
         
         let core = ReceiptSorterCore(apiKey: apiKey)
         
@@ -189,6 +207,38 @@ struct ContentView: View {
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
                     self.isProcessing = false
+                }
+            }
+        }
+    }
+    
+    private func syncToSheets() {
+        guard let data = receiptData else { return }
+        
+        guard !googleSheetId.isEmpty else {
+            self.errorMessage = "Please configure Google Sheet ID in Settings (Cmd+,)"
+            return
+        }
+        
+        self.isSyncing = true
+        self.errorMessage = nil
+        
+        // Ensure path resolves properly (if relative)
+        let path = serviceAccountPath
+        
+        Task {
+            do {
+                let service = SheetService(serviceAccountPath: path, sheetID: googleSheetId)
+                try await service.appendReceipt(data)
+                
+                await MainActor.run {
+                    self.isSyncing = false
+                    self.showSyncSuccess = true
+                }
+            } catch {
+                await MainActor.run {
+                    self.isSyncing = false
+                    self.errorMessage = "Sync Failed: \(error.localizedDescription)"
                 }
             }
         }
