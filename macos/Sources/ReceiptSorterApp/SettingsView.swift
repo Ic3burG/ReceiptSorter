@@ -76,19 +76,19 @@ struct SyncSettingsView: View {
             Section(header: Text("Setup Guide")) {
                 VStack(alignment: .leading, spacing: 8) {
                     Label("1. Create Client ID", systemImage: "1.circle")
-                    Text("Go to Google Cloud Console > APIs & Services > Credentials. Create an **OAuth 2.0 Client ID** for 'iOS' (works for macOS).")
+                    Text("Go to Google Cloud Console > APIs & Services > Credentials. Create an **OAuth 2.0 Client ID**.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     
-                    Label("2. Configure Redirect", systemImage: "2.circle")
-                    Text("Use the Loopback IP: `http://127.0.0.1:0/callback` as the redirect URI if asked.")
+                    Label("2. Select 'Desktop App'", systemImage: "2.circle")
+                    Text("Important: Select **Desktop App** as the Application Type (NOT iOS). This enables the required authentication flow.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     
                     Label("3. Sign In", systemImage: "3.circle")
-                    Text("Once configured, use the 'Sign In' button on the main screen to authorize access to your Sheets.")
+                    Text("Copy the Client ID above and click 'Sign In' on the main screen.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
