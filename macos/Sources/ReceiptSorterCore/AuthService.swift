@@ -2,11 +2,13 @@ import Foundation
 @preconcurrency import AppAuth
 import AuthenticationServices
 
-public final class AuthService: NSObject, @unchecked Sendable {
-    @MainActor private var currentAuthorizationFlow: OIDExternalUserAgentSession?
+@MainActor
+public final class AuthService: NSObject {
+    private var currentAuthorizationFlow: OIDExternalUserAgentSession?
     private let kIssuer = "https://accounts.google.com"
     private let kClientID: String
-    private let kRedirectURI = "http://127.0.0.1:0/callback"
+    // Use standard loopback without path to avoid strict matching issues on some Google Cloud configs
+    private let kRedirectURI = "http://127.0.0.1" 
     private let kAuthStateKey = "authState"
     
     // AuthState is thread-safe (we use a lock or serial queue if needed, but for now simple atomic access pattern)
