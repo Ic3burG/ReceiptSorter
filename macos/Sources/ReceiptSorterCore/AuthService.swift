@@ -15,7 +15,7 @@ public actor AuthService: NSObject, @unchecked Sendable {
     public init(clientID: String) {
         self.kClientID = clientID
         super.init()
-        self.loadStateSync()
+        self.authState = Self.loadStateFromDisk()
     }
     
     public func isAuthorized() -> Bool {
@@ -38,7 +38,6 @@ public actor AuthService: NSObject, @unchecked Sendable {
                 }
             }
             
-            // We need to keep a reference to the flow
             Task { await self.setAuthFlow(flow) }
         }
     }
@@ -84,7 +83,7 @@ public actor AuthService: NSObject, @unchecked Sendable {
             }
         }
         
-        self.saveState()
+        saveState()
         try await action(token)
     }
     
@@ -104,11 +103,12 @@ public actor AuthService: NSObject, @unchecked Sendable {
         }
     }
     
-    private func loadStateSync() {
-        if let data = UserDefaults.standard.data(forKey: kAuthStateKey),
+    private static func loadStateFromDisk() -> OIDAuthState? {
+        if let data = UserDefaults.standard.data(forKey: "authState"),
            let state = try? NSKeyedUnarchiver.unarchivedObject(ofClass: OIDAuthState.self, from: data) {
-            self.authState = state
+            return state
         }
+        return nil
     }
 }
 
