@@ -5,6 +5,7 @@
 ## Session: January 6, 2026
 
 ### 🚀 Major Features Added
+- **Visual Feedback**: Added animated loading overlays to the web interface. Users now see a "Processing Receipts" spinner during upload and a "Syncing to Cloud" spinner during batch confirmation.
 - **Batch Editing & Review**: Implemented a two-stage processing workflow. Uploaded receipts are now presented in a review dashboard (`review.html`) where users can manually correct vendors, dates, amounts, and categories before final organization and cloud synchronization.
 - **Settings UI**: Implemented a new settings page (`/settings`) in the web application. Users can now configure their Gemini API Key, Google Sheet ID, and Service Account path directly through the browser. Changes are persisted to the `.env` file.
 - **Docker Support**: Added `Dockerfile`, `docker-compose.yml`, and `.dockerignore`. The application can now be run entirely within a container, simplifying deployment and ensuring Tesseract OCR dependencies are met automatically.

@@ -72,10 +72,21 @@
         </div>
     </div>
 
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm mx-4">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Processing Receipts</h3>
+            <p class="text-gray-500">Gemini is extracting data...<br>This may take a few seconds.</p>
+        </div>
+    </div>
+
     <script>
         const fileInput = document.getElementById('dropzone-file');
         const fileList = document.getElementById('file-list');
         const fileListUl = fileList.querySelector('ul');
+        const form = document.querySelector('form');
+        const loadingOverlay = document.getElementById('loading-overlay');
 
         fileInput.addEventListener('change', (e) => {
             const files = e.target.files;
@@ -90,6 +101,10 @@
             } else {
                 fileList.classList.add('hidden');
             }
+        });
+
+        form.addEventListener('submit', () => {
+            loadingOverlay.classList.remove('hidden');
         });
     </script>
 </body>
