@@ -40,7 +40,7 @@ struct GeminiAPIError: Codable {
 @available(macOS 13.0, *)
 public actor GeminiService {
     private let apiKey: String
-    private let modelName = "gemini-1.5-flash-001"
+    private let modelName = "gemini-pro"
     
     public init(apiKey: String) {
         self.apiKey = apiKey
@@ -51,7 +51,8 @@ public actor GeminiService {
             throw GeminiError.emptyInput
         }
         
-        let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/\(modelName):generateContent?key=\(apiKey)"
+        // Use v1 stable endpoint
+        let endpoint = "https://generativelanguage.googleapis.com/v1/models/\(modelName):generateContent?key=\(apiKey)"
         
         guard let url = URL(string: endpoint) else {
             throw GeminiError.apiError("Invalid API URL")
