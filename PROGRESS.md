@@ -5,6 +5,7 @@
 ## Session: January 6, 2026
 
 ### 🚀 Major Features Added
+- **Docker Support**: Added `Dockerfile`, `docker-compose.yml`, and `.dockerignore`. The application can now be run entirely within a container, simplifying deployment and ensuring Tesseract OCR dependencies are met automatically.
 - **Product Roadmap**: Created `ROADMAP.md` outlining the strategic shift to a native macOS application using Swift and Apple's Vision Framework.
 - **Web Application**: Launched a local web interface using **FastAPI** and **Tailwind CSS**. Users can now drag-and-drop receipts for processing via `run_web.py`.
 - **Gemini Integration**: Completely migrated the AI engine from Anthropic Claude to **Google Gemini**. Refactored `DataExtractor` and `Categorizer` to use `google-generativeai`.
