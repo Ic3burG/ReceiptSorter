@@ -14,11 +14,13 @@ public final class AuthService: NSObject {
     
     private var authState: OIDAuthState?
     
-    public init(clientID: String, clientSecret: String? = nil) {
+    public nonisolated init(clientID: String, clientSecret: String? = nil) {
         self.kClientID = clientID
         self.kClientSecret = clientSecret
         super.init()
-        self.loadState()
+        Task { @MainActor in
+            self.loadState()
+        }
     }
     
     public var isAuthorized: Bool {
@@ -28,6 +30,7 @@ public final class AuthService: NSObject {
     public func signIn(presenting window: NSWindow) async throws {
         // 1. Start the Loopback Listener
         let handler = OIDRedirectHTTPHandler(successURL: nil)
+        // startHTTPListener returns a URL, not Optional<URL> in newer versions
         let redirectURI = handler.startHTTPListener(nil)
         self.redirectHTTPHandler = handler
         
