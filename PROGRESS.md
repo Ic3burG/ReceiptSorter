@@ -5,15 +5,18 @@
 ## Session: January 6, 2026
 
 ### 🚀 Phase 2 Progress (Native macOS App)
+- **Google Sheets Integration**: Implemented `SheetService` in Swift.
+    - Uses **JWT** (via `SwiftJWT`) to sign Service Account authentication requests.
+    - Directly calls the Google Sheets API to append rows.
+- **Modern UI Update**: Bumped target to **macOS 13.0 (Ventura)** to utilize `Grid` and `GridRow` for a cleaner data layout.
 - **Gemini Swift Integration**: Integrated the `GoogleGenerativeAI` Swift SDK.
     - Created `GeminiService.swift` as a thread-safe `actor`.
-    - Implemented JSON parsing for receipt data (Vendor, Date, Amount, etc.).
 - **Full macOS Pipeline**: The app now performs a complete end-to-end extraction:
     1.  **File Drop**: Accept PDF/Images via native Drag & Drop.
     2.  **Vision OCR**: Native text recognition.
     3.  **Gemini AI**: Intelligent data extraction from OCR text.
 - **Native SwiftUI App**: Implemented the `ReceiptSorterApp` target.
-    - **UI Enhancements**: Added Secure API Key input and structured data display using SwiftUI `Grid`.
+    - **UI Enhancements**: Added Secure API Key input and structured data display.
 - **Swift CLI Tool**: Developed `receipt-cli` for testing.
 - **Native OCR**: Implemented `OCRService` using Apple's Vision Framework.
 
@@ -25,11 +28,8 @@
 - **Docker Support**: Containerization.
 - **Gemini & Web App**: Migrated to Gemini and FastAPI.
 
-### 🛠️ Improvements & Fixes
-- **Swift 6 Concurrency**: Resolved `Sendable` and Data Race issues by using actors and `@preconcurrency`.
-- **Project Packaging**: Structured as a multi-target SPM package.
-
 ### 📦 Dependencies (New)
+- **SwiftJWT**: For signing Google Service Account requests.
 - **Google Generative AI (Swift)**: For native AI capabilities.
 - **SwiftUI, Vision, PDFKit**: Native Apple frameworks.
 

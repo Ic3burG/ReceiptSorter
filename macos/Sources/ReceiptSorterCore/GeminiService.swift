@@ -9,7 +9,7 @@ public struct ReceiptData: Codable, Sendable {
     public let description: String?
 }
 
-@available(macOS 12.0, *)
+@available(macOS 13.0, *)
 public actor GeminiService {
     private let model: GenerativeModel
     

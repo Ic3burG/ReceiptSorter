@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "ReceiptSorterCore",
     platforms: [
-        .macOS(.v12) // Ensure we target macOS Monterey or later for Vision/Async features
+        .macOS(.v13) // Target macOS 13 (Ventura) for Grid and modern concurrency
     ],
     products: [
         // The library containing core logic
@@ -26,14 +26,16 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/google/generative-ai-swift", from: "0.5.0")
+        .package(url: "https://github.com/google/generative-ai-swift", from: "0.5.0"),
+        .package(url: "https://github.com/Kitura/Swift-JWT.git", from: "4.0.0")
     ],
     targets: [
         // Core Logic
         .target(
             name: "ReceiptSorterCore",
             dependencies: [
-                .product(name: "GoogleGenerativeAI", package: "generative-ai-swift")
+                .product(name: "GoogleGenerativeAI", package: "generative-ai-swift"),
+                .product(name: "SwiftJWT", package: "Swift-JWT")
             ]
         ),
         // CLI Tool

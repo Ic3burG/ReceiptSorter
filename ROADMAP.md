@@ -38,7 +38,7 @@ We will structure the project using **Swift Package Manager (SPM)** to modulariz
 - [x] **Initialize Package**: Created `ReceiptSorterCore` library via SPM.
 - [x] **OCRService**: Implemented native text recognition using Apple Vision Framework (handles Images and PDFs).
 - [x] **GeminiService**: Integrated Google Generative AI Swift SDK for data extraction.
-- [ ] **SheetService**: Handles OAuth2 and Google Sheets API calls.
+- [x] **SheetService**: Implemented Service Account auth via SwiftJWT and Google Sheets API calls.
 
 #### Step 2: Swift CLI Tool
 - [x] **Implementation**: Created `receipt-cli` executable for direct testing.

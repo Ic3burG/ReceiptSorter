@@ -3,7 +3,7 @@ import Vision
 import CoreImage
 import PDFKit
 
-@available(macOS 10.15, *)
+@available(macOS 13.0, *)
 public final class OCRService: Sendable {
     
     public init() {}
