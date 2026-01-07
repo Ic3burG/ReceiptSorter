@@ -47,6 +47,6 @@ public actor SheetService {
 }
 
 public enum SheetError: Error {
-    case notConfigured
+    case sheetsNotConfigured
     case apiError(String)
 }

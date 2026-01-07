@@ -12,14 +12,12 @@ let package = Package(
         .executable(name: "ReceiptSorterApp", targets: ["ReceiptSorterApp"])
     ],
     dependencies: [
-        .package(url: "https://github.com/Kitura/Swift-JWT.git", from: "4.0.0"),
         .package(url: "https://github.com/openid/AppAuth-iOS.git", from: "1.6.2")
     ],
     targets: [
         .target(
             name: "ReceiptSorterCore",
             dependencies: [
-                .product(name: "SwiftJWT", package: "Swift-JWT"),
                 .product(name: "AppAuth", package: "AppAuth-iOS")
             ]
         ),

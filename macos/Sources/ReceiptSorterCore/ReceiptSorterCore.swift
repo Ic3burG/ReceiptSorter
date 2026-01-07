@@ -54,5 +54,5 @@ extension GeminiError {
 }
 
 extension SheetError {
-    public static let sheetsNotConfigured = NSError(domain: "SheetError", code: 401, userInfo: [NSLocalizedDescriptionKey: "Google Sheets not configured"])
+    public static let sheetsNotConfiguredError = NSError(domain: "SheetError", code: 401, userInfo: [NSLocalizedDescriptionKey: "Google Sheets not configured"])
 }
