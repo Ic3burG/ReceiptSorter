@@ -57,8 +57,84 @@ async def startup_event():
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     """Render the main dashboard"""
-    # Get stats or recent files if possible
     return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/settings", response_class=HTMLResponse)
+async def get_settings(request: Request):
+    """Render the settings page"""
+    from dotenv import dotenv_values
+    current_env = dotenv_values(".env")
+    return templates.TemplateResponse("settings.html", {
+        "request": request,
+        "gemini_api_key": current_env.get("GEMINI_API_KEY", ""),
+        "google_sheet_id": current_env.get("GOOGLE_SHEET_ID", ""),
+        "service_account_file": current_env.get("GOOGLE_SERVICE_ACCOUNT_FILE", "service_account.json")
+    })
+
+@app.post("/settings")
+async def save_settings(
+    request: Request,
+    gemini_api_key: str = Form(...),
+    google_sheet_id: str = Form(...),
+    service_account_file: str = Form(...)
+):
+    """Save settings to .env file"""
+    try:
+        env_path = Path(".env")
+        # Read existing lines to preserve comments or other vars
+        lines = []
+        if env_path.exists():
+            with open(env_path, "r") as f:
+                lines = f.readlines()
+        
+        # Update or add keys
+        new_values = {
+            "GEMINI_API_KEY": gemini_api_key,
+            "GOOGLE_SHEET_ID": google_sheet_id,
+            "GOOGLE_SERVICE_ACCOUNT_FILE": service_account_file
+        }
+        
+        updated_lines = []
+        keys_handled = set()
+        
+        for line in lines:
+            stripped = line.strip()
+            if stripped and "=" in stripped and not stripped.startswith("#"):
+                key = stripped.split("=")[0]
+                if key in new_values:
+                    updated_lines.append(f"{key}={new_values[key]}\n")
+                    keys_handled.add(key)
+                    continue
+            updated_lines.append(line)
+            
+        for key, value in new_values.items():
+            if key not in keys_handled:
+                updated_lines.append(f"{key}={value}\n")
+        
+        with open(env_path, "w") as f:
+            f.writelines(updated_lines)
+            
+        # Reload environment and re-init services
+        os.environ["GEMINI_API_KEY"] = gemini_api_key
+        os.environ["GOOGLE_SHEET_ID"] = google_sheet_id
+        os.environ["GOOGLE_SERVICE_ACCOUNT_FILE"] = service_account_file
+        await startup_event()
+        
+        return templates.TemplateResponse("settings.html", {
+            "request": request,
+            "message": "Settings saved successfully!",
+            "gemini_api_key": gemini_api_key,
+            "google_sheet_id": google_sheet_id,
+            "service_account_file": service_account_file
+        })
+    except Exception as e:
+        return templates.TemplateResponse("settings.html", {
+            "request": request,
+            "error": str(e),
+            "gemini_api_key": gemini_api_key,
+            "google_sheet_id": google_sheet_id,
+            "service_account_file": service_account_file
+        })
 
 @app.post("/upload")
 async def upload_files(request: Request, files: List[UploadFile] = File(...)):

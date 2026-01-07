@@ -5,6 +5,7 @@
 ## Session: January 6, 2026
 
 ### 🚀 Major Features Added
+- **Settings UI**: Implemented a new settings page (`/settings`) in the web application. Users can now configure their Gemini API Key, Google Sheet ID, and Service Account path directly through the browser. Changes are persisted to the `.env` file.
 - **Docker Support**: Added `Dockerfile`, `docker-compose.yml`, and `.dockerignore`. The application can now be run entirely within a container, simplifying deployment and ensuring Tesseract OCR dependencies are met automatically.
 - **Product Roadmap**: Created `ROADMAP.md` outlining the strategic shift to a native macOS application using Swift and Apple's Vision Framework.
 - **Web Application**: Launched a local web interface using **FastAPI** and **Tailwind CSS**. Users can now drag-and-drop receipts for processing via `run_web.py`.
