@@ -110,10 +110,20 @@ public final class AuthService: NSObject {
     }
 }
 
-public enum AuthError: Error {
+public enum AuthError: LocalizedError {
     case invalidIssuer
     case discoveryFailed(String)
     case authFailed(String)
     case notAuthorized
     case tokenRefreshFailed(String)
+    
+    public var errorDescription: String? {
+        switch self {
+        case .invalidIssuer: return "Invalid Issuer URL."
+        case .discoveryFailed(let msg): return "Discovery Failed: \(msg)"
+        case .authFailed(let msg): return "Authentication Failed: \(msg)"
+        case .notAuthorized: return "Not Authorized. Please sign in."
+        case .tokenRefreshFailed(let msg): return "Token Refresh Failed: \(msg)"
+        }
+    }
 }
