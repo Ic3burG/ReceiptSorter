@@ -37,7 +37,7 @@ public final class AuthService: NSObject {
                 additionalParameters: nil
             )
             
-            let flow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
+            self.currentAuthorizationFlow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
                 if let authState = authState {
                     self.setAuthState(authState)
                     continuation.resume()
@@ -45,7 +45,6 @@ public final class AuthService: NSObject {
                     continuation.resume(throwing: AuthError.authFailed(error?.localizedDescription ?? "User cancelled"))
                 }
             }
-            self.currentAuthorizationFlow = flow
         }
     }
     

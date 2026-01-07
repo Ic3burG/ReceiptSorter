@@ -8,7 +8,6 @@ public struct ReceiptData: Codable, Sendable, Equatable {
     public let description: String?
 }
 
-// Request/Response Structures for Gemini API
 struct GeminiRequest: Codable {
     let contents: [GeminiContent]
 }
@@ -51,7 +50,6 @@ public actor GeminiService {
             throw GeminiError.emptyInput
         }
         
-        // Use v1beta endpoint for 2.0 models
         let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/\(modelName):generateContent?key=\(apiKey)"
         
         guard let url = URL(string: endpoint) else {
@@ -92,9 +90,7 @@ public actor GeminiService {
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
-        // Debug logging
         if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
-            // Try to parse error details
             if let errorResponse = try? JSONDecoder().decode(GeminiResponse.self, from: data),
                let apiError = errorResponse.error {
                 throw GeminiError.apiError("Google Error \(apiError.code): \(apiError.message)")
@@ -113,7 +109,6 @@ public actor GeminiService {
     }
     
     private func parseResponse(_ text: String) throws -> ReceiptData {
-        // Clean markdown if present
         let cleanJSON = text.replacingOccurrences(of: "```json", with: "")
                             .replacingOccurrences(of: "```", with: "")
                             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -134,14 +129,10 @@ public enum GeminiError: LocalizedError {
     
     public var errorDescription: String? {
         switch self {
-        case .noResponse:
-            return "Gemini returned no text."
-        case .invalidData:
-            return "Could not parse JSON response from Gemini."
-        case .emptyInput:
-            return "OCR extracted no text."
-        case .apiError(let message):
-            return message
+        case .noResponse: return "Gemini returned no text."
+        case .invalidData: return "Could not parse JSON response."
+        case .emptyInput: return "OCR extracted no text."
+        case .apiError(let message): return message
         }
     }
 }

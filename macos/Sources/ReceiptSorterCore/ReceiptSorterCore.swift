@@ -17,9 +17,6 @@ public struct ReceiptSorterCore: Sendable {
         }
         
         if let clientID = clientID, !clientID.isEmpty {
-            // Need to initialize @MainActor class safely
-            // For now, assume we're on the main thread during init or use a workaround
-            // In SwiftUI apps, this is usually fine.
             let auth = AuthService(clientID: clientID)
             self.authService = auth
             if let sheetID = sheetID, !sheetID.isEmpty {
@@ -52,10 +49,10 @@ public struct ReceiptSorterCore: Sendable {
     }
 }
 
-extension GeminiError {
-    public static let notConfigured = NSError(domain: "GeminiError", code: 401, userInfo: [NSLocalizedDescriptionKey: "API Key not provided"])
+public extension GeminiError {
+    static let notConfigured = NSError(domain: "GeminiError", code: 401, userInfo: [NSLocalizedDescriptionKey: "API Key not provided"])
 }
 
-extension SheetError {
-    public static let sheetsNotConfiguredError = NSError(domain: "SheetError", code: 401, userInfo: [NSLocalizedDescriptionKey: "Google Sheets not configured"])
+public extension SheetError {
+    static let sheetsNotConfigured = NSError(domain: "SheetError", code: 401, userInfo: [NSLocalizedDescriptionKey: "Google Sheets not configured"])
 }
