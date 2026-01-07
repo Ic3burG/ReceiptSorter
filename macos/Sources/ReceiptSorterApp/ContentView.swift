@@ -296,42 +296,6 @@ struct ContentView: View {
         }
     }
     
-    // ... processBatch ...
-    // ... processItem ...
-    // ... syncAll ...
-    // ... syncSingle ...
-    // ... syncItem ...
-    
-    // MARK: - Helpers
-    // ... (rest of file) ...
-}
-
-// Add extension to fix alert placement or add it to body
-extension ContentView {
-    var alertView: some View {
-        EmptyView().alert("Sign In Error", isPresented: $showSignInError, actions: {
-            Button("OK", role: .cancel) { }
-        }, message: {
-            Text(signInError ?? "Unknown error")
-        })
-    }
-}
-        Task {
-            for provider in providers {
-                if let urlData = try? await provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) as? Data,
-                   let url = URL(dataRepresentation: urlData, relativeTo: nil) {
-                    
-                    let newItem = ProcessingItem(url: url)
-                    await MainActor.run {
-                        items.append(newItem)
-                        if items.count == 1 { selectedItemId = newItem.id }
-                    }
-                }
-            }
-            processBatch()
-        }
-    }
-    
     private func processBatch() {
         guard !isBatchProcessing else { return }
         isBatchProcessing = true
