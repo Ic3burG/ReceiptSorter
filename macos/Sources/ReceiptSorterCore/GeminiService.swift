@@ -40,7 +40,7 @@ struct GeminiAPIError: Codable {
 @available(macOS 13.0, *)
 public actor GeminiService {
     private let apiKey: String
-    private let modelName = "gemini-1.5-flash"
+    private let modelName = "gemini-pro"
     
     public init(apiKey: String) {
         self.apiKey = apiKey
