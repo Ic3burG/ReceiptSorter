@@ -63,7 +63,7 @@ public final class AuthService: NSObject, @unchecked Sendable {
         UserDefaults.standard.removeObject(forKey: kAuthStateKey)
     }
     
-    public func performAction(action: @escaping (String) async throws -> Void) async throws {
+    public func performAction(action: @escaping @Sendable (String) async throws -> Void) async throws {
         guard let authState = self.authState else {
             throw AuthError.notAuthorized
         }
