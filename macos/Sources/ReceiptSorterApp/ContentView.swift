@@ -47,6 +47,13 @@ struct ContentView: View {
                         Text("Drop Receipts Here")
                             .font(.headline)
                             .foregroundColor(.secondary)
+                        
+                        if !isAuthorized {
+                            Button("Sign In to Google") {
+                                signIn()
+                            }
+                            .padding(.top, 10)
+                        }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -90,10 +97,10 @@ struct ContentView: View {
                             .foregroundColor(.red)
                             .font(.caption)
                         }
-                        .padding()
+                        .padding([.top, .horizontal])
                         
-                        if items.contains(where: { $0.status == .extracted }) {
-                            if isAuthorized {
+                        if isAuthorized {
+                            if items.contains(where: { $0.status == .extracted }) {
                                 Button(action: syncAll) {
                                     HStack {
                                         Image(systemName: "arrow.triangle.2.circlepath")
@@ -103,13 +110,17 @@ struct ContentView: View {
                                 }
                                 .buttonStyle(.borderedProminent)
                                 .padding([.horizontal, .bottom])
-                            } else {
-                                Button("Sign In to Sync") {
-                                    signIn()
+                            }
+                        } else {
+                            Button(action: signIn) {
+                                HStack {
+                                    Image(systemName: "person.circle")
+                                    Text("Sign In to Google")
                                 }
                                 .frame(maxWidth: .infinity)
-                                .padding([.horizontal, .bottom])
                             }
+                            .controlSize(.large)
+                            .padding([.horizontal, .bottom])
                         }
                     }
                 }
