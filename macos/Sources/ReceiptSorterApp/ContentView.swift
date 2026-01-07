@@ -5,9 +5,8 @@ struct ContentView: View {
     @State private var extractedText: String = "Drag a receipt here..."
     @State private var isProcessing = false
     @State private var errorMessage: String?
-    
-    // Initialize Core Logic
-    let core = ReceiptSorterCore()
+    @State private var apiKey: String = ""
+    @State private var receiptData: ReceiptData?
     
     var body: some View {
         VStack(spacing: 20) {
@@ -16,9 +15,15 @@ struct ContentView: View {
                 Image(systemName: "doc.text.viewfinder")
                     .font(.largeTitle)
                     .foregroundColor(.blue)
-                Text("Receipt Sorter")
-                    .font(.title)
-                    .fontWeight(.bold)
+                VStack(alignment: .leading) {
+                    Text("Receipt Sorter")
+                        .font(.title)
+                        .fontWeight(.bold)
+                    
+                    SecureField("Gemini API Key", text: $apiKey)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 300)
+                }
             }
             .padding(.top)
             
@@ -31,7 +36,7 @@ struct ContentView: View {
                 
                 VStack {
                     if isProcessing {
-                        ProgressView("Processing with Vision Framework...")
+                        ProgressView("Analyzing with Vision & Gemini...")
                     } else {
                         Image(systemName: "arrow.down.doc.fill")
                             .font(.system(size: 40))
@@ -42,16 +47,42 @@ struct ContentView: View {
                     }
                 }
             }
-            .frame(height: 200)
-            .padding()
+            .frame(height: 150)
+            .padding(.horizontal)
             .onDrop(of: ["public.file-url"], isTargeted: nil) { providers in
                 processDroppedFiles(providers)
                 return true
             }
             
             // Results Area
+            if let data = receiptData {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Extracted Data (Gemini)")
+                        .font(.headline)
+                    
+                    Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 10) {
+                        GridRow {
+                            Text("Vendor:").bold()
+                            Text(data.vendor ?? "Unknown")
+                        }
+                        GridRow {
+                            Text("Date:").bold()
+                            Text(data.date ?? "Unknown")
+                        }
+                        GridRow {
+                            Text("Amount:").bold()
+                            Text("\(String(format: "%.2f", data.total_amount ?? 0.0)) \(data.currency ?? "")")
+                        }
+                    }
+                    .padding()
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(8)
+                }
+                .padding(.horizontal)
+            }
+
             VStack(alignment: .leading) {
-                Text("Extracted Text:")
+                Text("Raw OCR Text:")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
@@ -75,10 +106,15 @@ struct ContentView: View {
                     .padding(.bottom)
             }
         }
-        .frame(minWidth: 500, minHeight: 600)
+        .frame(minWidth: 600, minHeight: 700)
     }
     
     private func processDroppedFiles(_ providers: [NSItemProvider]) {
+        guard !apiKey.isEmpty else {
+            self.errorMessage = "Please enter your Gemini API Key first."
+            return
+        }
+        
         guard let provider = providers.first else { return }
         
         provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { (urlData, error) in
@@ -98,7 +134,7 @@ struct ContentView: View {
                 return
             }
             
-            // Pass the URL to the processing method (which handles main actor updates internally)
+            // Pass the URL to the processing method
             DispatchQueue.main.async {
                 self.processFile(at: url)
             }
@@ -108,22 +144,28 @@ struct ContentView: View {
     private func processFile(at url: URL) {
         self.isProcessing = true
         self.errorMessage = nil
-        self.extractedText = "Analyzing \(url.lastPathComponent)..."
+        self.receiptData = nil
+        self.extractedText = "Extracting text from \(url.lastPathComponent)..."
         
-        // Capture core explicitly to avoid actor isolation issues
-        let coreService = self.core
+        let core = ReceiptSorterCore(apiKey: apiKey)
         
         Task {
             do {
-                let text = try await coreService.extractText(from: url)
+                // 1. OCR
+                let text = try await core.extractText(from: url)
                 await MainActor.run {
                     self.extractedText = text
+                }
+                
+                // 2. Gemini
+                let data = try await core.extractReceiptData(from: text)
+                await MainActor.run {
+                    self.receiptData = data
                     self.isProcessing = false
                 }
             } catch {
                 await MainActor.run {
-                    self.errorMessage = "OCR Failed: \(error.localizedDescription)"
-                    self.extractedText = "Error"
+                    self.errorMessage = "Processing Failed: \(error.localizedDescription)"
                     self.isProcessing = false
                 }
             }

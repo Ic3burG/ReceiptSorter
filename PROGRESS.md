@@ -5,13 +5,17 @@
 ## Session: January 6, 2026
 
 ### 🚀 Phase 2 Progress (Native macOS App)
+- **Gemini Swift Integration**: Integrated the `GoogleGenerativeAI` Swift SDK.
+    - Created `GeminiService.swift` as a thread-safe `actor`.
+    - Implemented JSON parsing for receipt data (Vendor, Date, Amount, etc.).
+- **Full macOS Pipeline**: The app now performs a complete end-to-end extraction:
+    1.  **File Drop**: Accept PDF/Images via native Drag & Drop.
+    2.  **Vision OCR**: Native text recognition.
+    3.  **Gemini AI**: Intelligent data extraction from OCR text.
 - **Native SwiftUI App**: Implemented the `ReceiptSorterApp` target.
-    - **Drag & Drop UI**: Created `ContentView.swift` featuring a native drop zone for PDFs and Images.
-    - **Real-time OCR**: Integrated `ReceiptSorterCore` to process dropped files and display extracted text instantly.
-    - **Concurrency Safe**: Ensured all UI updates and background tasks adhere to Swift 6 concurrency standards.
+    - **UI Enhancements**: Added Secure API Key input and structured data display using SwiftUI `Grid`.
 - **Swift CLI Tool**: Developed `receipt-cli` for testing.
 - **Native OCR**: Implemented `OCRService` using Apple's Vision Framework.
-- **Initialization**: Created `ReceiptSorterCore` package.
 
 ### 🚀 Major Features Added (Phase 1)
 - **User Onboarding**: Setup Wizard & One-Click Launcher.
@@ -22,11 +26,11 @@
 - **Gemini & Web App**: Migrated to Gemini and FastAPI.
 
 ### 🛠️ Improvements & Fixes
-- **Concurrency**: Fixed data race warnings in SwiftUI `ContentView`.
-- **Architecture**: Separated Core Logic (`ReceiptSorterCore`) from UI (`ReceiptSorterApp`) and CLI (`ReceiptCLI`).
+- **Swift 6 Concurrency**: Resolved `Sendable` and Data Race issues by using actors and `@preconcurrency`.
+- **Project Packaging**: Structured as a multi-target SPM package.
 
 ### 📦 Dependencies (New)
-- **SwiftUI**: Native macOS Interface.
-- **Vision Framework**: OCR.
+- **Google Generative AI (Swift)**: For native AI capabilities.
+- **SwiftUI, Vision, PDFKit**: Native Apple frameworks.
 
 ---

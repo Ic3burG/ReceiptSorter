@@ -4,7 +4,7 @@ import CoreImage
 import PDFKit
 
 @available(macOS 10.15, *)
-public class OCRService {
+public final class OCRService: Sendable {
     
     public init() {}
     

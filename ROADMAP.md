@@ -37,7 +37,7 @@ We will structure the project using **Swift Package Manager (SPM)** to modulariz
 #### Step 1: Core Logic Package (`ReceiptSorterCore`)
 - [x] **Initialize Package**: Created `ReceiptSorterCore` library via SPM.
 - [x] **OCRService**: Implemented native text recognition using Apple Vision Framework (handles Images and PDFs).
-- [ ] **GeminiService**: Interacting with Google's Generative AI Swift SDK.
+- [x] **GeminiService**: Integrated Google Generative AI Swift SDK for data extraction.
 - [ ] **SheetService**: Handles OAuth2 and Google Sheets API calls.
 
 #### Step 2: Swift CLI Tool
