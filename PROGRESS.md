@@ -4,22 +4,32 @@
 
 ## Session: January 6, 2026
 
-### 🛠️ Fixes & Polish
-- **Fixed Network Access**: Added `ReceiptSorterApp.entitlements` with `com.apple.security.network.client` to allow outgoing API calls in the sandboxed macOS app.
-- **Improved Error Handling**: Updated `GeminiService.swift` to catch `GenerateContentError` and surface the underlying error message to the UI instead of a generic code.
-- **Documentation**: Clarified Google Sheets setup in `README.md` and App UIs.
-
-### 🚀 Phase 3 Progress (Distribution)
-- **App Icon Generation**: Designed and implemented a professional macOS app icon.
-- **Build Script**: Created `macos/scripts/bundle.sh` for automated packaging.
-
 ### 🚀 Phase 2 Progress (Native macOS App)
+- **Native Notifications**: Implemented system-level alerts using `UserNotifications`.
+    - The app now requests notification permissions on first launch.
+    - Sends success alerts when data extraction is complete.
+    - Sends success alerts when a receipt is synced to Google Sheets.
 - **Completed Sync Pipeline**: Wired up the "Sync to Sheets" button.
 - **UI Polish & Architecture**: Settings Window, Live Preview, Visual Feedback.
-- **Google Sheets Integration**: Implemented `SheetService`.
-- **Gemini Swift Integration**: Integrated `GoogleGenerativeAI`.
-- **Full macOS Pipeline**: Drop -> OCR -> AI -> Sync.
-- **Native SwiftUI App**: Implemented `ReceiptSorterApp`.
+- **Google Sheets Integration**: Implemented `SheetService` in Swift using JWT authentication.
+- **Modern UI Update**: Bumped target to **macOS 13.0**.
+- **Gemini Swift Integration**: Integrated the `GoogleGenerativeAI` Swift SDK.
+- **Full macOS Pipeline**: End-to-end extraction.
+- **Native SwiftUI App**: Implemented the `ReceiptSorterApp` target.
+- **Swift CLI Tool**: Developed `receipt-cli`.
 - **Native OCR**: Implemented `OCRService` using Vision.
+
+### 🛠️ Fixes & Polish
+- **Fixed Network Access**: Added entitlements to allow outgoing API calls in the sandboxed app.
+- **Improved Error Handling**: Surfaced specific Gemini API errors to the UI.
+- **Documentation**: Clarified Google Sheets setup instructions in README and App UIs.
+
+### 🚀 Major Features Added (Phase 1)
+- **User Onboarding**: Setup Wizard & One-Click Launcher.
+- **Visual Feedback**: Loading spinners.
+- **Batch Editing**: Review dashboard.
+- **Settings UI**: Config page.
+- **Docker Support**: Containerization.
+- **Gemini & Web App**: Migrated to Gemini and FastAPI.
 
 ---

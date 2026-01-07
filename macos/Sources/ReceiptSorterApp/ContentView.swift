@@ -1,6 +1,7 @@
 import SwiftUI
 import ReceiptSorterCore
 import QuickLookUI
+import UserNotifications
 
 struct ContentView: View {
     // Persistent Settings
@@ -148,6 +149,9 @@ struct ContentView: View {
             .background(Color(NSColor.windowBackgroundColor))
         }
         .frame(minWidth: 800, minHeight: 600)
+        .onAppear {
+            requestNotificationPermissions()
+        }
     }
     
     private func clearData() {
@@ -202,6 +206,7 @@ struct ContentView: View {
                     self.extractedText = text
                     self.receiptData = data
                     self.isProcessing = false
+                    notify(title: "Processing Complete", body: "Successfully extracted data from \(url.lastPathComponent)")
                 }
             } catch {
                 await MainActor.run {
@@ -234,6 +239,7 @@ struct ContentView: View {
                 await MainActor.run {
                     self.isSyncing = false
                     self.showSyncSuccess = true
+                    notify(title: "Sync Success", body: "Receipt for \(data.vendor ?? "Unknown") has been added to Google Sheets.")
                 }
             } catch {
                 await MainActor.run {
@@ -242,6 +248,22 @@ struct ContentView: View {
                 }
             }
         }
+    }
+    
+    // MARK: - Notifications
+    
+    private func requestNotificationPermissions() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    }
+    
+    private func notify(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request)
     }
 }
 
