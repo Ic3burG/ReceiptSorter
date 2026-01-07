@@ -53,9 +53,9 @@ We will structure the project using **Swift Package Manager (SPM)** to modulariz
 - [ ] **Native Notifications**: Notify when processing completes.
 
 ### 📦 Phase 3: Distribution
-- **Signing**: Code sign with Apple Developer ID.
-- **Notarization**: Submit to Apple Notary Service (can be done via `xcrun notarytool` CLI).
-- **Packaging**: Create a `.dmg` for distribution.
+- [x] **Packaging**: Created `bundle.sh` to compile and build the `.app` file.
+- [ ] **Signing**: Code sign with Apple Developer ID.
+- [ ] **Notarization**: Submit to Apple Notary Service.
 
 ## 🔮 Future Ideas
 - **Mobile Companion**: iOS App sharing the same `ReceiptSorterCore`.

@@ -4,22 +4,22 @@
 
 ## Session: January 6, 2026
 
+### 🚀 Phase 3 Progress (Distribution)
+- **Build Script**: Created `macos/scripts/bundle.sh`.
+    - Automates the compilation of the Swift package in release mode.
+    - bundles the binary into a standard macOS `Receipt Sorter.app`.
+    - Handles `Info.plist` injection and ad-hoc code signing.
+
 ### 🚀 Phase 2 Progress (Native macOS App)
 - **Completed Sync Pipeline**: Wired up the "Sync to Sheets" button in the macOS app.
-    - Connects the UI to `SheetService`.
-    - Reads configuration dynamically from user settings.
-    - Provides real-time visual feedback (loading/success states).
-- **UI Polish & Architecture**:
-    - **Settings Window**: Implemented a native `SettingsView` (accessible via `Cmd+,`) to manage API keys and paths using `AppStorage`.
-    - **Live Preview**: Added a split-view interface with `PDFKit` support, allowing users to see the receipt alongside the extracted data.
-    - **Visual Feedback**: Integrated loading overlays and clear error states.
+- **UI Polish & Architecture**: Settings Window, Live Preview, Visual Feedback.
 - **Google Sheets Integration**: Implemented `SheetService` in Swift using JWT authentication.
-- **Modern UI Update**: Bumped target to **macOS 13.0** for modern SwiftUI features.
+- **Modern UI Update**: Bumped target to **macOS 13.0**.
 - **Gemini Swift Integration**: Integrated the `GoogleGenerativeAI` Swift SDK.
-- **Full macOS Pipeline**: End-to-end extraction (Drop -> OCR -> AI -> UI -> Sync).
+- **Full macOS Pipeline**: End-to-end extraction.
 - **Native SwiftUI App**: Implemented the `ReceiptSorterApp` target.
-- **Swift CLI Tool**: Developed `receipt-cli` for testing.
-- **Native OCR**: Implemented `OCRService` using Apple's Vision Framework.
+- **Swift CLI Tool**: Developed `receipt-cli`.
+- **Native OCR**: Implemented `OCRService` using Vision.
 
 ### 🚀 Major Features Added (Phase 1)
 - **User Onboarding**: Setup Wizard & One-Click Launcher.
@@ -30,8 +30,6 @@
 - **Gemini & Web App**: Migrated to Gemini and FastAPI.
 
 ### 📦 Dependencies (New)
-- **SwiftJWT**: For signing Google Service Account requests.
-- **Google Generative AI (Swift)**: For native AI capabilities.
-- **SwiftUI, Vision, PDFKit**: Native Apple frameworks.
+- **SwiftJWT**, **Google Generative AI (Swift)**, **SwiftUI**, **Vision**, **PDFKit**.
 
 ---
