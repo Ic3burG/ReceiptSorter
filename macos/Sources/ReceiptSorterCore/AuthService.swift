@@ -4,9 +4,10 @@ import AuthenticationServices
 
 public final class AuthService: NSObject, @unchecked Sendable {
     @MainActor private var currentAuthorizationFlow: OIDExternalUserAgentSession?
+    @MainActor private var redirectHTTPHandler: OIDRedirectHTTPHandler?
+    
     private let kIssuer = "https://accounts.google.com"
     private let kClientID: String
-    private let kRedirectURI = "http://127.0.0.1" // Loopback without path
     private let kAuthStateKey = "authState"
     
     private let lock = NSLock()
@@ -29,21 +30,35 @@ public final class AuthService: NSObject, @unchecked Sendable {
     
     @MainActor
     public func signIn(presenting window: NSWindow) async throws {
+        // 1. Start the Loopback Listener to get a valid Redirect URI with an ephemeral port
+        let handler = OIDRedirectHTTPHandler(successURL: nil)
+        guard let redirectURI = handler.startHTTPListener(nil) else {
+            throw AuthError.authFailed("Failed to start loopback listener")
+        }
+        self.redirectHTTPHandler = handler
+        
+        // 2. Configure Google Endpoints
         let authEndpoint = URL(string: "https://accounts.google.com/o/oauth2/v2/auth")!
         let tokenEndpoint = URL(string: "https://oauth2.googleapis.com/token")!
         let config = OIDServiceConfiguration(authorizationEndpoint: authEndpoint, tokenEndpoint: tokenEndpoint)
 
+        // 3. Perform Auth Request
         return try await withCheckedThrowingContinuation { continuation in
             let request = OIDAuthorizationRequest(
                 configuration: config,
                 clientId: self.kClientID,
                 scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-                redirectURL: URL(string: self.kRedirectURI)!,
+                redirectURL: redirectURI,
                 responseType: OIDResponseTypeCode,
                 additionalParameters: nil
             )
             
-            let flow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
+            // AppAuth's macOS user agent uses ASWebAuthenticationSession or system browser
+            self.currentAuthorizationFlow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
+                // Stop listener
+                self.redirectHTTPHandler?.cancelHTTPListener()
+                self.redirectHTTPHandler = nil
+                
                 if let authState = authState {
                     self.setAuthState(authState)
                     continuation.resume()
@@ -51,7 +66,6 @@ public final class AuthService: NSObject, @unchecked Sendable {
                     continuation.resume(throwing: AuthError.authFailed(error?.localizedDescription ?? "User cancelled"))
                 }
             }
-            self.currentAuthorizationFlow = flow
         }
     }
     
@@ -66,7 +80,6 @@ public final class AuthService: NSObject, @unchecked Sendable {
         }
         
         let token = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
-            // performAction is thread-safe in AppAuth
             authState.performAction { accessToken, idToken, error in
                 if let accessToken = accessToken {
                     continuation.resume(returning: accessToken)
