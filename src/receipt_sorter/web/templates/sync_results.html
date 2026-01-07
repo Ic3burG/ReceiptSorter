@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sync Complete - Receipt Sorter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="text-center mb-10">
+            <div class="bg-green-100 text-green-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-check text-4xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800">Sync Complete!</h1>
+            <p class="text-gray-600">Your receipts have been organized and spreadsheets updated.</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase">File</th>
+                        <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Vendor</th>
+                        <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase text-right">Amount</th>
+                        <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Category</th>
+                        <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for result in results %}
+                    <tr>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-800">{{ result.filename }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ result.vendor or '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 text-right font-mono">{{ result.amount or '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ result.category or '-' }}</td>
+                        <td class="px-6 py-4">
+                            {% if result.status == 'success' %}
+                            <span class="text-green-500"><i class="fas fa-check-circle"></i></span>
+                            {% else %}
+                            <span class="text-red-500" title="{{ result.message }}"><i class="fas fa-times-circle"></i></span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-10 text-center">
+            <a href="/" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-10 rounded-full transition-colors shadow-md">
+                Done
+            </a>
+        </div>
+    </div>
+</body>
+</html>

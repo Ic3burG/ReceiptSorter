@@ -11,7 +11,7 @@ This document outlines the development trajectory for Receipt Sorter, focusing o
 *Goal: Polish the current Python implementation.*
 - [x] **Docker Support**: Containerize the application for easy deployment without managing Python environments.
 - [x] **Settings UI**: Allow users to configure API keys and target Google Sheets directly from the web interface.
-- [ ] **Batch Editing**: Allow users to manually correct categories or amounts before syncing to Google Sheets.
+- [x] **Batch Editing**: Allow users to manually correct categories or amounts before syncing to Google Sheets.
 - [ ] **Visual Feedback**: Add progress bars for uploading and processing large batches.
 
 ## 🍎 Phase 2: Native macOS App (The Swift Transition)

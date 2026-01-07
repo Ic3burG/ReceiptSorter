@@ -138,76 +138,110 @@ async def save_settings(
 
 @app.post("/upload")
 async def upload_files(request: Request, files: List[UploadFile] = File(...)):
-    """Handle file uploads and processing"""
+    """Handle file uploads and return extracted data for review"""
     results = []
-    
-    # Ensure upload directory exists
     upload_dir = Path(config.SOURCE_FOLDER)
     upload_dir.mkdir(parents=True, exist_ok=True)
     
     for file in files:
         try:
-            # Save file temporarily
             file_path = upload_dir / file.filename
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
                 
-            # Process the file
-            result = process_single_file(str(file_path))
+            # Step 1: Extract only (no syncing yet)
+            result = extract_only(str(file_path))
             results.append(result)
-            
         except Exception as e:
-            results.append({
-                "filename": file.filename,
-                "status": "error",
-                "message": str(e)
-            })
+            results.append({"filename": file.filename, "status": "error", "message": str(e)})
             
-    return templates.TemplateResponse("results.html", {"request": request, "results": results})
+    return templates.TemplateResponse("review.html", {"request": request, "results": results})
 
-def process_single_file(file_path: str) -> dict:
-    """Process a single file using the existing logic"""
+@app.post("/confirm")
+async def confirm_batch(request: Request):
+    """Finalize the batch after user review and sync to spreadsheets"""
+    form_data = await request.form()
+    
+    # Group form data by index
+    batch = {}
+    for key, value in form_data.items():
+        if '[' in key and ']' in key:
+            index = key.split('[')[1].split(']')[0]
+            field = key.split('[')[0]
+            if index not in batch:
+                batch[index] = {}
+            batch[index][field] = value
+
+    sync_results = []
+    for index, data in batch.items():
+        try:
+            # Prepare data for finalization
+            receipt_data = {
+                "vendor": data.get("vendor"),
+                "date": data.get("date"),
+                "total_amount": float(data.get("amount", 0)),
+                "currency": data.get("currency"),
+                "description": data.get("description", "")
+            }
+            category = data.get("category")
+            confidence = int(data.get("confidence", 100))
+            file_path = data.get("file_path")
+            
+            # Step 2: Finalize (organize and sync)
+            result = finalize_processing(file_path, receipt_data, category, confidence)
+            sync_results.append(result)
+        except Exception as e:
+            sync_results.append({"filename": data.get("filename"), "status": "error", "message": str(e)})
+
+    return templates.TemplateResponse("sync_results.html", {"request": request, "results": sync_results})
+
+def extract_only(file_path: str) -> dict:
+    """Perform initial extraction and categorization without saving to spreadsheets"""
     try:
-        # 1. Validate
         if not processor.validate_file(file_path):
             return {"filename": os.path.basename(file_path), "status": "error", "message": "Invalid file"}
 
-        # 2. Extract Text
         text = processor.extract_text(file_path)
         if not text:
             return {"filename": os.path.basename(file_path), "status": "error", "message": "No text extracted"}
 
-        # 3. Extract Data
         data = extractor.extract_receipt_data(text)
         if not data:
-            return {"filename": os.path.basename(file_path), "status": "error", "message": "Data extraction failed"}
+            return {"filename": os.path.basename(file_path), "status": "error", "message": "Extraction failed"}
 
-        # 4. Categorize
         cat_result = categorizer.categorize_receipt(data)
-        category = cat_result.get('category', 'Other')
-        confidence = cat_result.get('confidence', 0)
-        needs_review = categorizer.needs_review(confidence)
+        
+        return {
+            "filename": os.path.basename(file_path),
+            "file_path": file_path,
+            "status": "success",
+            "data": data,
+            "category": cat_result.get('category', 'Other'),
+            "confidence": cat_result.get('confidence', 0),
+            "needs_review": categorizer.needs_review(cat_result.get('confidence', 0)),
+            "all_categories": config.TAX_CATEGORIES
+        }
+    except Exception as e:
+        return {"filename": os.path.basename(file_path), "status": "error", "message": str(e)}
 
-        # 5. Organize
+def finalize_processing(file_path: str, data: dict, category: str, confidence: int) -> dict:
+    """Organize file and sync to spreadsheets after review"""
+    try:
+        needs_review = categorizer.needs_review(confidence)
         organized_path = organizer.organize_receipt(file_path, data, needs_review)
         
-        # 6. Update Spreadsheets
         if spreadsheet_mgr:
             spreadsheet_mgr.add_receipt_entry(data, category, confidence, organized_path)
-            
         if gs_mgr:
             gs_mgr.add_receipt_entry(data, category, confidence, organized_path)
 
         return {
             "filename": os.path.basename(file_path),
             "status": "success",
-            "data": data,
-            "category": category,
-            "confidence": confidence,
-            "organized_path": organized_path,
-            "needs_review": needs_review
+            "vendor": data["vendor"],
+            "amount": data["total_amount"],
+            "category": category
         }
-
     except Exception as e:
         return {"filename": os.path.basename(file_path), "status": "error", "message": str(e)}
 
