@@ -49,6 +49,10 @@ public final class AuthService: NSObject {
             
             self.currentAuthorizationFlow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
                 Task { @MainActor in
+                    // Stop listener
+                    self.redirectHTTPHandler?.cancelHTTPListener()
+                    self.redirectHTTPHandler = nil
+                    
                     if let authState = authState {
                         self.setAuthState(authState)
                         continuation.resume()
@@ -57,6 +61,8 @@ public final class AuthService: NSObject {
                     }
                 }
             }
+            // Link the flow to the handler so it can process the redirect
+            handler.currentAuthorizationFlow = self.currentAuthorizationFlow
         }
     }
     
