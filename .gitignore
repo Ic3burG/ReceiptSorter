@@ -26,3 +26,4 @@ dist/
 processing_log.txt
 receipts/sorted/
 receipts/source/
+macos/*.app

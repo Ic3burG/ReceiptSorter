@@ -1,24 +1,25 @@
 import Foundation
-import AppAuth
+@preconcurrency import AppAuth
 import AuthenticationServices
 
 @available(macOS 13.0, *)
-public actor AuthService: NSObject {
-    private var currentAuthorizationFlow: OIDExternalUserAgentSession?
+public actor AuthService: NSObject, @unchecked Sendable {
+    @MainActor private var currentAuthorizationFlow: OIDExternalUserAgentSession?
     private let kIssuer = "https://accounts.google.com"
     private let kClientID: String
     private let kRedirectURI = "http://127.0.0.1:0/callback"
     
     private let kAuthStateKey = "authState"
     private var authState: OIDAuthState?
+    private var isLoaded = false
     
     public init(clientID: String) {
         self.kClientID = clientID
         super.init()
-        self.loadState()
     }
     
-    public var isAuthorized: Bool {
+    public func isAuthorized() async -> Bool {
+        if !isLoaded { await loadState() }
         return authState?.isAuthorized ?? false
     }
     
@@ -47,8 +48,10 @@ public actor AuthService: NSObject {
                 
                 self.currentAuthorizationFlow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
                     if let authState = authState {
-                        self.setAuthState(authState)
-                        continuation.resume()
+                        Task {
+                            await self.setAuthState(authState)
+                            continuation.resume()
+                        }
                     } else {
                         continuation.resume(throwing: AuthError.authFailed(error?.localizedDescription ?? "User cancelled"))
                     }
@@ -63,6 +66,8 @@ public actor AuthService: NSObject {
     }
     
     public func performAction(action: @escaping (String) async throws -> Void) async throws {
+        if !isLoaded { await loadState() }
+
         guard let authState = self.authState else {
             throw AuthError.notAuthorized
         }
@@ -77,7 +82,7 @@ public actor AuthService: NSObject {
             }
         }
         
-        self.saveState()
+        saveState()
         try await action(token)
     }
     
@@ -93,6 +98,7 @@ public actor AuthService: NSObject {
            let state = try? NSKeyedUnarchiver.unarchivedObject(ofClass: OIDAuthState.self, from: data) {
             self.authState = state
         }
+        self.isLoaded = true
     }
     
     private func setAuthState(_ state: OIDAuthState) {

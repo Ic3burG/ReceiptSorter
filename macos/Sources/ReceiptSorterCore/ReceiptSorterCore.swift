@@ -10,7 +10,7 @@ public struct ReceiptSorterCore: Sendable {
     public init(apiKey: String? = nil, clientID: String? = nil, sheetID: String? = nil) {
         self.ocrService = OCRService()
         
-        if let apiKey = apiKey {
+        if let apiKey = apiKey, !apiKey.isEmpty {
             self.geminiService = GeminiService(apiKey: apiKey)
         } else {
             self.geminiService = nil
@@ -43,7 +43,7 @@ public struct ReceiptSorterCore: Sendable {
     
     public func uploadToSheets(data: ReceiptData) async throws {
         guard let sheetService = sheetService else {
-            throw SheetError.notConfigured
+            throw SheetError.sheetsNotConfigured
         }
         try await sheetService.appendReceipt(data)
     }
@@ -54,5 +54,5 @@ extension GeminiError {
 }
 
 extension SheetError {
-    public static let notConfigured = NSError(domain: "SheetError", code: 401, userInfo: [NSLocalizedDescriptionKey: "Google Sheets not configured"])
+    public static let sheetsNotConfigured = NSError(domain: "SheetError", code: 401, userInfo: [NSLocalizedDescriptionKey: "Google Sheets not configured"])
 }
