@@ -5,6 +5,9 @@
 ## Session: January 6, 2026
 
 ### 🚀 Phase 3 Progress (Distribution)
+- **Documentation Overhaul**: Rewrote `README.md` and updated App UIs to clearly explain Google Sheets configuration.
+    - Added a step-by-step guide for creating Service Accounts and finding Spreadsheet IDs.
+    - Integrated inline help text directly into the macOS `SettingsView` and Web App `settings.html`.
 - **App Icon Generation**: Designed and implemented a professional macOS app icon.
     - Created a Python script (`macos/scripts/generate_icon.py`) to draw a minimalist, high-resolution icon using `Pillow`.
     - Automated the conversion of PNG assets into a native macOS `.icns` file using `sips` and `iconutil`.

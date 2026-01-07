@@ -50,18 +50,48 @@ struct SyncSettingsView: View {
     
     var body: some View {
         Form {
-            Section(header: Text("Google Sheets")) {
+            Section(header: Text("Configuration")) {
                 TextField("Spreadsheet ID", text: $googleSheetId)
                     .textFieldStyle(.roundedBorder)
-                Text("The ID string from your Google Sheet URL.")
+                Text("Copy the ID from your browser URL:")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                Text("docs.google.com/spreadsheets/d/**1BxiMVs0XRA5nFMdKb...**/edit")
+                    .font(.caption2)
+                    .padding(4)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(4)
+                
+                Divider().padding(.vertical, 5)
                 
                 TextField("Service Account Path", text: $serviceAccountPath)
                     .textFieldStyle(.roundedBorder)
-                Text("Path to your service_account.json file.")
+                Text("Path to your credentials JSON file.")
                     .font(.caption)
                     .foregroundColor(.secondary)
+            }
+            
+            Section(header: Text("Setup Guide")) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("1. Create Service Account", systemImage: "1.circle")
+                    Text("Go to Google Cloud Console > IAM & Admin > Service Accounts. Create one and download the **JSON Key**.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    Label("2. Save the File", systemImage: "2.circle")
+                    Text("Move the downloaded JSON file into the 'receipt-sorter' folder and rename it to 'service_account.json' (or enter the full path above).")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    Label("3. Share the Sheet", systemImage: "3.circle")
+                    Text("Open your Service Account JSON file, find the 'client_email', and **Share** your Google Sheet with that email address as an Editor.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 5)
             }
         }
         .padding()

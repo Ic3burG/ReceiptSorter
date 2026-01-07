@@ -83,25 +83,39 @@ After installation on Windows, update `config.py` with the path to tesseract.exe
 TESSERACT_CMD = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 ```
 
-### Step 4: Set Up API Key and Google Sheets
+### Step 4: Set Up API Key
 
 1. Get your Google Gemini API key from https://aistudio.google.com/
-2. **(Optional)** Set up Google Sheets:
-   - Create a Google Cloud Project and enable Google Sheets and Google Drive APIs.
-   - Create a Service Account, download the JSON key, and rename it to `service_account.json` in the project root.
-   - Create a new Google Sheet and share it with your Service Account email.
-   - Copy the Spreadsheet ID from the URL: `https://docs.google.com/spreadsheets/d/[ID_IS_HERE]/edit`
-3. Copy `.env.example` to `.env`:
+2. Copy `.env.example` to `.env`:
    ```bash
    cp .env.example .env
    ```
-4. Edit `.env` and add your keys:
-   ```
-   GEMINI_API_KEY=your-actual-api-key-here
-   GOOGLE_SHEET_ID=your-spreadsheet-id
-   ```
+3. Edit `.env` and add your `GEMINI_API_KEY`.
 
-### Step 5: Configure Paths (Optional)
+### Step 5: Configure Google Sheets (Optional)
+
+To enable syncing to Google Sheets, you need to set up a **Service Account**.
+
+1. **Create Service Account**:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/).
+   - Create a new project (e.g., "Receipt Sorter").
+   - Enable the **Google Sheets API**.
+   - Go to **IAM & Admin > Service Accounts** and create a new service account.
+   - Go to the **Keys** tab, click **Add Key > Create new key**, and select **JSON**.
+   - A file will download. Rename it to `service_account.json` and move it to this project's folder.
+
+2. **Get Spreadsheet ID**:
+   - Open your Google Sheet in a browser.
+   - Look at the URL: `https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKb.../edit`
+   - The long string between `/d/` and `/edit` is your **Spreadsheet ID**.
+
+3. **Share the Sheet**:
+   - Open `service_account.json` in a text editor and copy the `client_email` address.
+   - Go to your Google Sheet, click **Share**, and paste that email address with **Editor** permissions.
+
+4. **Update App Settings**:
+   - **Web App**: Go to Settings and enter the ID.
+   - **macOS App**: Go to App Menu > Settings > Sync and enter the ID and path.
 
 Edit `config.py` to customize:
 - Source folder for receipts
