@@ -1,141 +1,168 @@
 import SwiftUI
 import ReceiptSorterCore
+import QuickLookUI
 
 struct ContentView: View {
-    @State private var extractedText: String = "Drag a receipt here..."
+    // Persistent Settings
+    @AppStorage("geminiApiKey") private var apiKey: String = ""
+    
+    // State
+    @State private var extractedText: String = ""
     @State private var isProcessing = false
     @State private var errorMessage: String?
-    @State private var apiKey: String = ""
     @State private var receiptData: ReceiptData?
+    @State private var selectedFileURL: URL?
     
     var body: some View {
-        VStack(spacing: 20) {
-            // Header
-            HStack {
-                Image(systemName: "doc.text.viewfinder")
-                    .font(.largeTitle)
-                    .foregroundColor(.blue)
-                VStack(alignment: .leading) {
-                    Text("Receipt Sorter")
-                        .font(.title)
-                        .fontWeight(.bold)
-                    
-                    SecureField("Gemini API Key", text: $apiKey)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 300)
-                }
-            }
-            .padding(.top)
-            
-            // Drop Zone
+        HSplitView {
+            // Left Pane: Document Preview
             ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [10]))
-                    .foregroundColor(isProcessing ? .gray : .blue)
-                    .background(Color(NSColor.controlBackgroundColor))
+                Color(NSColor.controlBackgroundColor)
                 
-                VStack {
-                    if isProcessing {
-                        ProgressView("Analyzing with Vision & Gemini...")
+                if let url = selectedFileURL {
+                    if url.pathExtension.lowercased() == "pdf" {
+                        PDFKitRepresentedView(url: url)
                     } else {
-                        Image(systemName: "arrow.down.doc.fill")
-                            .font(.system(size: 40))
-                            .foregroundColor(.blue)
-                            .padding()
-                        Text("Drag & Drop Receipt PDF or Image")
-                            .font(.headline)
+                        AsyncImage(url: url) { image in
+                            image.resizable().aspectRatio(contentMode: .fit)
+                        } placeholder: {
+                            ProgressView()
+                        }
+                    }
+                } else {
+                    VStack(spacing: 15) {
+                        Image(systemName: "doc.text.viewfinder")
+                            .font(.system(size: 50))
+                            .foregroundColor(.secondary)
+                        Text("Drop Receipt Here")
+                            .font(.title2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                // Overlay loading state
+                if isProcessing {
+                    ZStack {
+                        Color.black.opacity(0.3)
+                        VStack {
+                            ProgressView()
+                                .controlSize(.large)
+                            Text("Processing...")
+                                .foregroundColor(.white)
+                                .font(.headline)
+                                .padding(.top, 5)
+                        }
+                        .padding()
+                        .background(Material.thin)
+                        .cornerRadius(12)
                     }
                 }
             }
-            .frame(height: 150)
-            .padding(.horizontal)
+            .frame(minWidth: 300, maxWidth: .infinity, minHeight: 400, maxHeight: .infinity)
             .onDrop(of: ["public.file-url"], isTargeted: nil) { providers in
                 processDroppedFiles(providers)
                 return true
             }
             
-            // Results Area
-            if let data = receiptData {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Extracted Data (Gemini)")
+            // Right Pane: Data & Actions
+            VStack(alignment: .leading, spacing: 0) {
+                // Header
+                HStack {
+                    Text("Details")
                         .font(.headline)
-                    
-                    Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 10) {
-                        GridRow {
-                            Text("Vendor:").bold()
-                            Text(data.vendor ?? "Unknown")
+                    Spacer()
+                    if receiptData != nil {
+                        Button("Clear") {
+                            clearData()
                         }
-                        GridRow {
-                            Text("Date:").bold()
-                            Text(data.date ?? "Unknown")
-                        }
-                        GridRow {
-                            Text("Amount:").bold()
-                            Text("\(String(format: "%.2f", data.total_amount ?? 0.0)) \(data.currency ?? "")")
+                    }
+                }
+                .padding()
+                .background(Color(NSColor.controlBackgroundColor))
+                
+                Divider()
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        if let data = receiptData {
+                            DataCard(title: "Vendor", icon: "building.2", value: data.vendor)
+                            DataCard(title: "Date", icon: "calendar", value: data.date)
+                            DataCard(title: "Amount", icon: "dollarsign.circle", value: "\(String(format: "%.2f", data.total_amount ?? 0.0)) \(data.currency ?? "")")
+                            DataCard(title: "Description", icon: "text.alignleft", value: data.description)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                // Sync action placeholder
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                    Text("Sync to Sheets")
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(5)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.large)
+                            
+                        } else if let error = errorMessage {
+                            VStack(alignment: .leading) {
+                                Label("Error", systemImage: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.red)
+                                    .font(.headline)
+                                Text(error)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            .padding()
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(8)
+                        } else {
+                            Text("No data extracted.")
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.top, 50)
                         }
                     }
                     .padding()
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(8)
                 }
-                .padding(.horizontal)
             }
-
-            VStack(alignment: .leading) {
-                Text("Raw OCR Text:")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                ScrollView {
-                    Text(extractedText)
-                        .font(.body)
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .textSelection(.enabled)
-                }
-                .background(Color(NSColor.textBackgroundColor))
-                .cornerRadius(8)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.2), lineWidth: 1))
-            }
-            .padding([.horizontal, .bottom])
-            
-            if let error = errorMessage {
-                Text(error)
-                    .foregroundColor(.red)
-                    .font(.caption)
-                    .padding(.bottom)
-            }
+            .frame(minWidth: 250, maxWidth: 400, maxHeight: .infinity)
+            .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(minWidth: 600, minHeight: 700)
+        .frame(minWidth: 800, minHeight: 600)
+    }
+    
+    private func clearData() {
+        self.selectedFileURL = nil
+        self.receiptData = nil
+        self.extractedText = ""
+        self.errorMessage = nil
     }
     
     private func processDroppedFiles(_ providers: [NSItemProvider]) {
         guard !apiKey.isEmpty else {
-            self.errorMessage = "Please enter your Gemini API Key first."
+            self.errorMessage = "Please set your Gemini API Key in Settings (Cmd+,)"
             return
         }
         
         guard let provider = providers.first else { return }
         
         provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { (urlData, error) in
-            // Handle data extraction off the main actor
             if let error = error {
-                DispatchQueue.main.async {
-                    self.errorMessage = error.localizedDescription
-                }
+                DispatchQueue.main.async { self.errorMessage = error.localizedDescription }
                 return
             }
             
             guard let data = urlData as? Data,
                   let url = URL(dataRepresentation: data, relativeTo: nil) else {
-                DispatchQueue.main.async {
-                    self.errorMessage = "Could not load file URL."
-                }
+                DispatchQueue.main.async { self.errorMessage = "Could not load file." }
                 return
             }
             
-            // Pass the URL to the processing method
             DispatchQueue.main.async {
+                self.selectedFileURL = url
                 self.processFile(at: url)
             }
         }
@@ -145,30 +172,47 @@ struct ContentView: View {
         self.isProcessing = true
         self.errorMessage = nil
         self.receiptData = nil
-        self.extractedText = "Extracting text from \(url.lastPathComponent)..."
         
         let core = ReceiptSorterCore(apiKey: apiKey)
         
         Task {
             do {
-                // 1. OCR
                 let text = try await core.extractText(from: url)
+                let data = try await core.extractReceiptData(from: text)
+                
                 await MainActor.run {
                     self.extractedText = text
-                }
-                
-                // 2. Gemini
-                let data = try await core.extractReceiptData(from: text)
-                await MainActor.run {
                     self.receiptData = data
                     self.isProcessing = false
                 }
             } catch {
                 await MainActor.run {
-                    self.errorMessage = "Processing Failed: \(error.localizedDescription)"
+                    self.errorMessage = error.localizedDescription
                     self.isProcessing = false
                 }
             }
         }
+    }
+}
+
+struct DataCard: View {
+    let title: String
+    let icon: String
+    let value: String?
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Label(title, systemImage: icon)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Text(value ?? "Unknown")
+                .font(.body)
+                .fontWeight(.medium)
+                .textSelection(.enabled)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(8)
     }
 }

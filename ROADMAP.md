@@ -48,7 +48,7 @@ We will structure the project using **Swift Package Manager (SPM)** to modulariz
 #### Step 3: macOS UI (SwiftUI)
 - [x] **Setup**: Added `ReceiptSorterApp` executable target with `Info.plist`.
 - [x] **Drop Zone**: Implemented Native drag-and-drop target in `ContentView`.
-- [ ] **Live Preview**: PDF/Image viewer using `PDFKit` and SwiftUI.
+- [x] **Live Preview**: PDF/Image viewer using `PDFKit` and SwiftUI.
 - [ ] **Menu Bar**: Optional "Menu Bar App" mode for quick access.
 - [ ] **Native Notifications**: Notify when processing completes.
 

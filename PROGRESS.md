@@ -5,18 +5,15 @@
 ## Session: January 6, 2026
 
 ### 🚀 Phase 2 Progress (Native macOS App)
-- **Google Sheets Integration**: Implemented `SheetService` in Swift.
-    - Uses **JWT** (via `SwiftJWT`) to sign Service Account authentication requests.
-    - Directly calls the Google Sheets API to append rows.
-- **Modern UI Update**: Bumped target to **macOS 13.0 (Ventura)** to utilize `Grid` and `GridRow` for a cleaner data layout.
+- **UI Polish & Architecture**:
+    - **Settings Window**: Implemented a native `SettingsView` (accessible via `Cmd+,`) to manage API keys and paths using `AppStorage`.
+    - **Live Preview**: Added a split-view interface with `PDFKit` support, allowing users to see the receipt alongside the extracted data.
+    - **Visual Feedback**: Integrated loading overlays and clear error states.
+- **Google Sheets Integration**: Implemented `SheetService` in Swift using JWT authentication.
+- **Modern UI Update**: Bumped target to **macOS 13.0** for modern SwiftUI features.
 - **Gemini Swift Integration**: Integrated the `GoogleGenerativeAI` Swift SDK.
-    - Created `GeminiService.swift` as a thread-safe `actor`.
-- **Full macOS Pipeline**: The app now performs a complete end-to-end extraction:
-    1.  **File Drop**: Accept PDF/Images via native Drag & Drop.
-    2.  **Vision OCR**: Native text recognition.
-    3.  **Gemini AI**: Intelligent data extraction from OCR text.
+- **Full macOS Pipeline**: End-to-end extraction (Drop -> OCR -> AI -> UI).
 - **Native SwiftUI App**: Implemented the `ReceiptSorterApp` target.
-    - **UI Enhancements**: Added Secure API Key input and structured data display.
 - **Swift CLI Tool**: Developed `receipt-cli` for testing.
 - **Native OCR**: Implemented `OCRService` using Apple's Vision Framework.
 

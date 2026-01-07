@@ -7,5 +7,9 @@ struct ReceiptSorterApp: App {
         WindowGroup {
             ContentView()
         }
+        
+        Settings {
+            SettingsView()
+        }
     }
 }
