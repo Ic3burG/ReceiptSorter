@@ -35,18 +35,15 @@ We will migrate from **Python** to **Swift**, replacing external dependencies wi
 We will structure the project using **Swift Package Manager (SPM)** to modularize the code, allowing us to build both a CLI tool and a GUI app from the same core logic.
 
 #### Step 1: Core Logic Package (`ReceiptSorterCore`)
-Create a pure Swift package to handle the business logic.
-- **Command**: `swift package init --type library --name ReceiptSorterCore`
-- **Modules**:
-    - `OCRService`: Wraps `VNRecognizeTextRequest` (Vision Framework) to extract text from Images and PDFs.
-    - `GeminiService`: interacting with Google's Generative AI REST API or Swift SDK.
-    - `SheetService`: Handles OAuth2 and Google Sheets API calls.
+- [x] **Initialize Package**: Created `ReceiptSorterCore` library via SPM.
+- [x] **OCRService**: Implemented native text recognition using Apple Vision Framework (handles Images and PDFs).
+- [ ] **GeminiService**: Interacting with Google's Generative AI Swift SDK.
+- [ ] **SheetService**: Handles OAuth2 and Google Sheets API calls.
 
 #### Step 2: Swift CLI Tool
-Build a command-line interface to verify the core logic without a UI.
-- **Command**: `swift package init --type executable --name receipt-cli`
-- **Functionality**: `receipt-cli process ~/Downloads/receipt.pdf`
-- **Goal**: Verify OCR and API connectivity in isolation.
+- [x] **Implementation**: Created `receipt-cli` executable for direct testing.
+- [x] **Functionality**: `swift run receipt-cli <path-to-file>` extracts and prints text.
+- [x] **Goal**: Verify OCR connectivity in isolation.
 
 #### Step 3: macOS UI (SwiftUI)
 Build the visual application that consumes `ReceiptSorterCore`.
