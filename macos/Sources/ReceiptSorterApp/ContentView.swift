@@ -31,18 +31,48 @@ struct ContentView: View {
     @State private var selectedItemId: UUID?
     @State private var isBatchProcessing = false
     
-    // Core (re-initialized when settings change)
+    // Core Logic State
     @State private var core: ReceiptSorterCore?
     @State private var isAuthorized = false
     
     var body: some View {
         NavigationSplitView {
-            // ... (Sidebar code unchanged) ...
+            // SIDEBAR: File List
             VStack {
                 if items.isEmpty {
-                    // ...
+                    VStack(spacing: 15) {
+                        Image(systemName: "square.stack.3d.down.right")
+                            .font(.system(size: 40))
+                            .foregroundColor(.secondary)
+                        Text("Drop Receipts Here")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    // ... (List code unchanged) ...
+                    List(selection: $selectedItemId) {
+                        ForEach($items) { $item in
+                            NavigationLink(value: item.id) {
+                                HStack {
+                                    Image(systemName: icon(for: item))
+                                        .foregroundColor(color(for: item))
+                                    
+                                    VStack(alignment: .leading) {
+                                        Text(item.url.lastPathComponent)
+                                            .font(.headline)
+                                            .truncationMode(.middle)
+                                        if let vendor = item.data?.vendor {
+                                            Text(vendor).font(.caption).foregroundColor(.secondary)
+                                        } else {
+                                            Text(statusText(for: item)).font(.caption).foregroundColor(.secondary)
+                                        }
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
+                    }
+                    .listStyle(.sidebar)
                     
                     // Batch Actions
                     VStack {
@@ -90,43 +120,103 @@ struct ContentView: View {
                 loadFiles(from: providers)
                 return true
             }
-            .onAppear {
-                initializeCore()
-            }
+            .onAppear { initializeCore() }
             .onChange(of: apiKey) { _ in initializeCore() }
             .onChange(of: clientID) { _ in initializeCore() }
             
         } detail: {
-            // ... (Detail view code) ...
+            // DETAIL: Preview & Data
+            if let selectedId = selectedItemId,
+               let index = items.firstIndex(where: { $0.id == selectedId }) {
+                let item = items[index]
+                
+                HSplitView {
+                    // Preview (Left)
+                    ZStack {
+                        Color(NSColor.controlBackgroundColor)
+                        if item.url.pathExtension.lowercased() == "pdf" {
+                            PDFKitRepresentedView(url: item.url)
+                        } else {
+                            AsyncImage(url: item.url) { image in
+                                image.resizable().aspectRatio(contentMode: .fit)
+                            } placeholder: {
+                                ProgressView()
+                            }
+                        }
+                    }
+                    .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity)
+                    
+                    // Data (Right)
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("Details")
+                                .font(.headline)
                             Spacer()
-                            
-                            if showSyncSuccess {
-                                // ...
-                            } else {
+                            if item.status == .extracted {
                                 if isAuthorized {
-                                    Button(action: { syncSingle(index) }) {
-                                        HStack {
-                                            if items[index].status == .syncing {
-                                                ProgressView().controlSize(.small)
-                                            } else {
-                                                Image(systemName: "arrow.triangle.2.circlepath")
-                                            }
-                                            Text("Sync to Sheets")
-                                        }
-                                        .frame(maxWidth: .infinity)
-                                        .padding(5)
-                                    }
-                                    .buttonStyle(.borderedProminent)
-                                    .controlSize(.large)
-                                    .disabled(items[index].status == .syncing)
+                                    Button("Sync This") { syncSingle(index) }
                                 } else {
-                                    Button("Sign In to Google") {
-                                        signIn()
-                                    }
-                                    .controlSize(.large)
+                                    Button("Sign In") { signIn() }
                                 }
                             }
-            // ...
+                        }
+                        .padding()
+                        .background(Color(NSColor.controlBackgroundColor))
+                        
+                        Divider()
+                        
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 20) {
+                                if let data = item.data {
+                                    DataCard(title: "Vendor", icon: "building.2", value: data.vendor)
+                                    DataCard(title: "Date", icon: "calendar", value: data.date)
+                                    DataCard(title: "Amount", icon: "dollarsign.circle", value: "\(String(format: "%.2f", data.total_amount ?? 0.0)) \(data.currency ?? "")")
+                                    DataCard(title: "Description", icon: "text.alignleft", value: data.description)
+                                    
+                                    if item.status == .done {
+                                        Label("Synced", systemImage: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                            .padding()
+                                            .frame(maxWidth: .infinity)
+                                            .background(Color.green.opacity(0.1))
+                                            .cornerRadius(8)
+                                    }
+                                } else if let error = item.error {
+                                    VStack(alignment: .leading) {
+                                        Label("Error", systemImage: "exclamationmark.triangle.fill")
+                                            .foregroundColor(.red)
+                                            .font(.headline)
+                                        Text(error)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding()
+                                    .background(Color.red.opacity(0.1))
+                                    .cornerRadius(8)
+                                } else {
+                                    VStack(spacing: 10) {
+                                        if item.status == .processing {
+                                            ProgressView()
+                                            Text("Analyzing...")
+                                        } else {
+                                            Text("Waiting...")
+                                        }
+                                    }
+                                    .foregroundColor(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .padding(.top, 50)
+                                }
+                            }
+                            .padding()
+                        }
+                    }
+                    .frame(minWidth: 250, maxWidth: 400, maxHeight: .infinity)
+                    .background(Color(NSColor.windowBackgroundColor))
+                }
+            } else {
+                Text("Select a receipt to view details")
+                    .foregroundColor(.secondary)
+            }
         }
         .frame(minWidth: 900, minHeight: 600)
         .onAppear { requestNotificationPermissions() }
@@ -146,10 +236,8 @@ struct ContentView: View {
     
     private func signIn() {
         guard let core = core, let auth = core.authService else { return }
-        
         Task {
             do {
-                // Get the current window to present the auth session
                 if let window = NSApp.windows.first {
                     try await auth.signIn(presenting: window)
                     await MainActor.run { self.isAuthorized = true }
@@ -161,11 +249,32 @@ struct ContentView: View {
     }
     
     private func loadFiles(from providers: [NSItemProvider]) {
-        // ...
+        Task {
+            for provider in providers {
+                if let urlData = try? await provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) as? Data,
+                   let url = URL(dataRepresentation: urlData, relativeTo: nil) {
+                    
+                    let newItem = ProcessingItem(url: url)
+                    await MainActor.run {
+                        items.append(newItem)
+                        if items.count == 1 { selectedItemId = newItem.id }
+                    }
+                }
+            }
+            processBatch()
+        }
     }
     
     private func processBatch() {
-        // ...
+        guard !isBatchProcessing else { return }
+        isBatchProcessing = true
+        Task {
+            while let index = items.firstIndex(where: { $0.status == .pending }) {
+                await processItem(at: index)
+            }
+            isBatchProcessing = false
+            await MainActor.run { notify(title: "Batch Complete", body: "Finished processing receipts.") }
+        }
     }
     
     private func processItem(at index: Int) async {
@@ -173,16 +282,12 @@ struct ContentView: View {
             await MainActor.run { items[index].error = "Missing API Key" }
             return
         }
-        guard let core = self.core else { return } // Use initialized core
-        
+        guard let core = self.core else { return }
         await MainActor.run { items[index].status = .processing }
         
-        let url = items[index].url
-        
         do {
-            let text = try await core.extractText(from: url)
+            let text = try await core.extractText(from: items[index].url)
             let data = try await core.extractReceiptData(from: text)
-            
             await MainActor.run {
                 items[index].data = data
                 items[index].status = .extracted
@@ -206,20 +311,15 @@ struct ContentView: View {
     }
     
     private func syncSingle(_ index: Int) {
-        Task {
-            await syncItem(at: index)
-        }
+        Task { await syncItem(at: index) }
     }
     
     private func syncItem(at index: Int) async {
         guard let data = items[index].data else { return }
         guard let core = self.core else { return }
-        
         await MainActor.run { items[index].status = .syncing }
-        
         do {
             try await core.uploadToSheets(data: data)
-            
             await MainActor.run { items[index].status = .done }
         } catch {
             await MainActor.run {

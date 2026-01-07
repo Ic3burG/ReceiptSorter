@@ -48,7 +48,7 @@ struct GeneralSettingsView: View {
 
 struct SyncSettingsView: View {
     @AppStorage("googleSheetId") private var googleSheetId: String = ""
-    @AppStorage("serviceAccountPath") private var serviceAccountPath: String = "service_account.json"
+    @AppStorage("googleClientID") private var clientID: String = ""
     
     var body: some View {
         Form {
@@ -66,29 +66,29 @@ struct SyncSettingsView: View {
                 
                 Divider().padding(.vertical, 5)
                 
-                TextField("Service Account Path", text: $serviceAccountPath)
+                TextField("OAuth Client ID", text: $clientID)
                     .textFieldStyle(.roundedBorder)
-                Text("Path to your credentials JSON file.")
+                Text("Your Google Cloud OAuth 2.0 Client ID.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
             
             Section(header: Text("Setup Guide")) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("1. Create Service Account", systemImage: "1.circle")
-                    Text("Go to Google Cloud Console > IAM & Admin > Service Accounts. Create one and download the **JSON Key**.")
+                    Label("1. Create Client ID", systemImage: "1.circle")
+                    Text("Go to Google Cloud Console > APIs & Services > Credentials. Create an **OAuth 2.0 Client ID** for 'iOS' (works for macOS).")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     
-                    Label("2. Save the File", systemImage: "2.circle")
-                    Text("Move the downloaded JSON file into the 'receipt-sorter' folder and rename it to 'service_account.json' (or enter the full path above).")
+                    Label("2. Configure Redirect", systemImage: "2.circle")
+                    Text("Use the Loopback IP: `http://127.0.0.1:0/callback` as the redirect URI if asked.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     
-                    Label("3. Share the Sheet", systemImage: "3.circle")
-                    Text("Open your Service Account JSON file, find the 'client_email', and **Share** your Google Sheet with that email address as an Editor.")
+                    Label("3. Sign In", systemImage: "3.circle")
+                    Text("Once configured, use the 'Sign In' button on the main screen to authorize access to your Sheets.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
