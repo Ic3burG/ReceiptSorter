@@ -34,8 +34,9 @@ The app classifies receipts into these categories:
 ### Prerequisites
 
 - Python 3.8 or higher
-- Tesseract OCR (for scanned PDFs)
-- Anthropic API key
+- Tesseract OCR (for scanned documents)
+- Google Gemini API key
+- Docker & Docker Compose (optional, for containerized setup)
 
 ### Step 1: Clone or Download
 
@@ -97,6 +98,17 @@ Edit `config.py` to customize:
 - Confidence threshold for manual review
 
 ## Usage
+
+### Docker Usage (Easiest)
+
+If you have Docker installed, you don't need to install Python or Tesseract locally:
+
+1. Create your `.env` file with your API keys.
+2. Run the container:
+   ```bash
+   docker-compose up --build
+   ```
+3. Access the web app at `http://localhost:8000`
 
 ### Web Application (Recommended)
 
@@ -199,10 +211,10 @@ SUPPORTED_CURRENCIES = ["CAD", "USD", "EUR", "GBP", "JPY", "AUD", "CHF", "MXN"]
 - Try opening the PDF manually to verify it's not corrupted
 - Check Tesseract path in `config.py` (Windows users)
 
-### "ANTHROPIC_API_KEY not found"
-- Make sure you created the `.env` file
+### "GEMINI_API_KEY not found"
+- Make sure you created the `.env` file or used the Settings UI
 - Verify the API key is correct
-- Alternatively, set environment variable: `export ANTHROPIC_API_KEY='your-key'`
+- Alternatively, set environment variable: `export GEMINI_API_KEY='your-key'`
 
 ### OCR not working
 - Verify Tesseract installation: `tesseract --version`
@@ -220,20 +232,19 @@ SUPPORTED_CURRENCIES = ["CAD", "USD", "EUR", "GBP", "JPY", "AUD", "CHF", "MXN"]
 
 ```
 receipt-sorter/
-├── main.py                 # Main application entry point
-├── config.py              # Configuration (categories, currencies, paths)
-├── pdf_processor.py       # Document reading and text extraction
-├── data_extractor.py      # Extract amount, date, vendor, currency
-├── categorizer.py         # Classify receipts into tax categories
-├── file_organizer.py      # Move files to currency folders
-├── spreadsheet_manager.py # Create/update Excel files
-├── google_sheets_manager.py # Sync data to Google Sheets
-├── test_google_sheets.py  # Test script for cloud connectivity
-├── requirements.txt       # Python dependencies
-├── .env.example          # Template for API keys
-├── .env                   # API keys (not committed to git)
-├── .gitignore            # Git ignore rules
-└── README.md             # This file
+├── src/receipt_sorter/     # Core application package
+│   ├── web/                # FastAPI web interface & templates
+│   ├── config.py           # Configuration
+│   ├── pdf_processor.py    # Document extraction
+│   ├── data_extractor.py   # Gemini extraction logic
+│   ├── categorizer.py      # Gemini categorization logic
+│   └── ...
+├── tests/                  # Test suite
+├── docs/                   # Additional documentation
+├── pyproject.toml          # Package configuration
+├── Dockerfile              # Docker configuration
+├── run_web.py              # Web app entry point
+└── run.py                  # CLI entry point
 ```
 
 ### Testing
@@ -249,13 +260,11 @@ Check the output in `~/receipts/sorted/`
 
 ## API Costs
 
-This app uses the Claude API for intelligent extraction and categorization. Each receipt requires approximately:
-- 1 API call for data extraction (~500 tokens)
-- 1 API call for categorization (~300 tokens)
+This app uses the Google Gemini API for intelligent extraction and categorization. Each receipt requires approximately:
+- 1 API call for data extraction
+- 1 API call for categorization
 
-Cost per receipt: ~$0.01-0.02 USD (with Claude 3.5 Sonnet)
-
-Batch processing 100 receipts ≈ $1-2 USD
+Gemini 1.5 Flash is highly cost-effective and often has a generous free tier for developers.
 
 ## Future Enhancements
 
@@ -281,6 +290,6 @@ For issues or questions:
 
 ## Acknowledgments
 
-- Built with [Claude AI](https://www.anthropic.com/) by Anthropic
+- Built with [Google Gemini](https://aistudio.google.com/)
 - PDF processing powered by [pdfplumber](https://github.com/jsvine/pdfplumber)
 - OCR powered by [Tesseract](https://github.com/tesseract-ocr/tesseract)
