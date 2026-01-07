@@ -1,0 +1,28 @@
+# Project Progress Log
+
+**IMPORTANT:** This file must be updated with a summary of changes after every session or significant code modification. These updates must be committed and pushed to the GitHub repository immediately.
+
+## Session: January 6, 2026
+
+### 🚀 Major Features Added
+- **Google Sheets Integration**: Implemented `GoogleSheetsManager` to sync receipt data to Google Sheets. Added `gspread` and `google-auth` dependencies.
+- **Image Processing Support**: Enhanced `DocumentProcessor` (formerly `PDFProcessor`) to handle image files (JPG, PNG, etc.) using OCR, in addition to PDFs.
+- **Project Restructuring**: Refactored the entire codebase into a standard Python package structure:
+    - Moved source code to `src/receipt_sorter/`.
+    - Moved tests to `tests/`.
+    - Moved documentation to `docs/`.
+    - Added `pyproject.toml` for modern packaging.
+    - Added `run.py` entry point.
+
+### 🛠️ Improvements & Fixes
+- **Configuration**: Updated `config.py` and added `.env.example` to support Google Sheets credentials.
+- **File Organization**: Improved `FileOrganizer` to preserve original file extensions.
+- **Testing**: Added `test_google_sheets.py` to verify cloud connectivity and updated `tests/test_setup.py` to work with the new package structure.
+- **Documentation**: Updated `README.md` to reflect new features, installation steps, and project structure. Added `LICENSE` (MIT).
+
+### 📦 Dependencies
+- Added `gspread` and `google-auth`.
+- Removed strict version pinning for `Pillow` to resolve build issues on Python 3.14.
+- Configured project as an editable package (`pip install -e .`).
+
+---
