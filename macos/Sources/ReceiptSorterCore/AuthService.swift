@@ -2,32 +2,30 @@ import Foundation
 @preconcurrency import AppAuth
 import AuthenticationServices
 
-@available(macOS 13.0, *)
-public actor AuthService: NSObject, @unchecked Sendable {
-    private var authFlow: OIDExternalUserAgentSession?
+@MainActor
+public final class AuthService: NSObject {
+    private var currentAuthorizationFlow: OIDExternalUserAgentSession?
     private let kIssuer = "https://accounts.google.com"
     private let kClientID: String
     private let kRedirectURI = "http://127.0.0.1:0/callback"
-    
     private let kAuthStateKey = "authState"
+    
     private var authState: OIDAuthState?
     
     public init(clientID: String) {
         self.kClientID = clientID
         super.init()
-        self.authState = Self.loadStateFromDisk()
+        self.loadState()
     }
     
-    public func isAuthorized() -> Bool {
+    public var isAuthorized: Bool {
         return authState?.isAuthorized ?? false
     }
     
-    @MainActor
     public func signIn(presenting window: NSWindow) async throws {
-        // Define Google Endpoints manually to avoid discovery hangs
+        // Create the configuration manually
         let authEndpoint = URL(string: "https://accounts.google.com/o/oauth2/v2/auth")!
         let tokenEndpoint = URL(string: "https://oauth2.googleapis.com/token")!
-        
         let config = OIDServiceConfiguration(authorizationEndpoint: authEndpoint, tokenEndpoint: tokenEndpoint)
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -42,10 +40,8 @@ public actor AuthService: NSObject, @unchecked Sendable {
             
             self.currentAuthorizationFlow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
                 if let authState = authState {
-                    Task {
-                        await self.setAuthState(authState)
-                        continuation.resume()
-                    }
+                    self.setAuthState(authState)
+                    continuation.resume()
                 } else {
                     continuation.resume(throwing: AuthError.authFailed(error?.localizedDescription ?? "User cancelled"))
                 }
@@ -53,33 +49,12 @@ public actor AuthService: NSObject, @unchecked Sendable {
         }
     }
     
-    private func createAuthRequest() async throws -> OIDAuthorizationRequest {
-        return try await withCheckedThrowingContinuation { continuation in
-            guard let issuer = URL(string: kIssuer) else {
-                continuation.resume(throwing: AuthError.invalidIssuer)
-                return
-            }
-            
-            OIDAuthorizationService.discoverConfiguration(forIssuer: issuer) { configuration, error in
-                guard let config = configuration else {
-                    continuation.resume(throwing: AuthError.discoveryFailed(error?.localizedDescription ?? "Unknown"))
-                    return
-                }
-                
-                let request = OIDAuthorizationRequest(
-                    configuration: config,
-                    clientId: self.kClientID,
-                    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-                    redirectURL: URL(string: self.kRedirectURI)!,
-                    responseType: OIDResponseTypeCode,
-                    additionalParameters: nil
-                )
-                continuation.resume(returning: request)
-            }
-        }
+    public func signOut() {
+        self.authState = nil
+        UserDefaults.standard.removeObject(forKey: kAuthStateKey)
     }
     
-    public func performAction(action: @escaping @Sendable (String) async throws -> Void) async throws {
+    public func performAction(action: @escaping (String) async throws -> Void) async throws {
         guard let authState = self.authState else {
             throw AuthError.notAuthorized
         }
@@ -94,17 +69,8 @@ public actor AuthService: NSObject, @unchecked Sendable {
             }
         }
         
-        saveState()
-        try await action(token)
-    }
-    
-    private func updateAuthState(_ state: OIDAuthState) {
-        self.authState = state
         self.saveState()
-    }
-    
-    private func setAuthFlow(_ flow: OIDExternalUserAgentSession) {
-        self.authFlow = flow
+        try await action(token)
     }
     
     private func saveState() {
@@ -114,12 +80,16 @@ public actor AuthService: NSObject, @unchecked Sendable {
         }
     }
     
-    private static func loadStateFromDisk() -> OIDAuthState? {
-        if let data = UserDefaults.standard.data(forKey: "authState"),
+    private func loadState() {
+        if let data = UserDefaults.standard.data(forKey: kAuthStateKey),
            let state = try? NSKeyedUnarchiver.unarchivedObject(ofClass: OIDAuthState.self, from: data) {
-            return state
+            self.authState = state
         }
-        return nil
+    }
+    
+    private func setAuthState(_ state: OIDAuthState) {
+        self.authState = state
+        self.saveState()
     }
 }
 
