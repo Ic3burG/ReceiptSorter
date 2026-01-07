@@ -11,11 +11,7 @@ public actor SheetService {
     }
     
     public func appendReceipt(_ data: ReceiptData) async throws {
-        // Automatically hops to MainActor because authService is @MainActor
         try await authService.performAction { accessToken in
-            // This closure is non-isolated (Sendable), so we can perform network requests here
-            // without blocking the Main Actor.
-            
             let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(self.sheetID)/values/A1:append?valueInputOption=USER_ENTERED")!
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
