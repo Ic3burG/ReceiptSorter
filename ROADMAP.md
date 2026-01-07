@@ -50,7 +50,7 @@ We will structure the project using **Swift Package Manager (SPM)** to modulariz
 - [x] **Drop Zone**: Implemented Native drag-and-drop target in `ContentView`.
 - [x] **Live Preview**: PDF/Image viewer using `PDFKit` and SwiftUI.
 - [x] **Menu Bar**: (Skipped for now in favor of Settings Window)
-- [ ] **Native Notifications**: Notify when processing completes.
+- [x] **Native Notifications**: Implemented using UserNotifications framework.
 
 ### 📦 Phase 3: Distribution
 - [x] **Packaging**: Created `bundle.sh` to compile and build the `.app` file.
