@@ -49,10 +49,7 @@ public struct ReceiptSorterCore: Sendable {
     }
 }
 
-public extension GeminiError {
-    static let notConfigured = NSError(domain: "GeminiError", code: 401, userInfo: [NSLocalizedDescriptionKey: "API Key not provided"])
+extension GeminiError {
+    public static let notConfigured = NSError(domain: "GeminiError", code: 401, userInfo: [NSLocalizedDescriptionKey: "API Key not provided"])
 }
 
-public extension SheetError {
-    static let sheetsNotConfigured = NSError(domain: "SheetError", code: 401, userInfo: [NSLocalizedDescriptionKey: "Google Sheets not configured"])
-}
