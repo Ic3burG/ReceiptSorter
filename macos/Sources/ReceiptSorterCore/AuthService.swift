@@ -2,21 +2,16 @@ import Foundation
 @preconcurrency import AppAuth
 import AuthenticationServices
 
-public final class AuthService: NSObject, @unchecked Sendable {
-    @MainActor private var currentAuthorizationFlow: OIDExternalUserAgentSession?
-    @MainActor private var redirectHTTPHandler: OIDRedirectHTTPHandler?
+@MainActor
+public final class AuthService: NSObject {
+    private var currentAuthorizationFlow: OIDExternalUserAgentSession?
+    private var redirectHTTPHandler: OIDRedirectHTTPHandler?
     
     private let kIssuer = "https://accounts.google.com"
     private let kClientID: String
     private let kAuthStateKey = "authState"
     
-    private let lock = NSLock()
-    private var _authState: OIDAuthState?
-    
-    private var authState: OIDAuthState? {
-        get { lock.withLock { _authState } }
-        set { lock.withLock { _authState = newValue } }
-    }
+    private var authState: OIDAuthState?
     
     public init(clientID: String) {
         self.kClientID = clientID
@@ -28,13 +23,10 @@ public final class AuthService: NSObject, @unchecked Sendable {
         return authState?.isAuthorized ?? false
     }
     
-    @MainActor
     public func signIn(presenting window: NSWindow) async throws {
-        // 1. Start the Loopback Listener to get a valid Redirect URI with an ephemeral port
+        // 1. Start the Loopback Listener
         let handler = OIDRedirectHTTPHandler(successURL: nil)
-        guard let redirectURI = handler.startHTTPListener(nil) else {
-            throw AuthError.authFailed("Failed to start loopback listener")
-        }
+        let redirectURI = handler.startHTTPListener(nil)
         self.redirectHTTPHandler = handler
         
         // 2. Configure Google Endpoints
@@ -53,7 +45,6 @@ public final class AuthService: NSObject, @unchecked Sendable {
                 additionalParameters: nil
             )
             
-            // AppAuth's macOS user agent uses ASWebAuthenticationSession or system browser
             self.currentAuthorizationFlow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
                 // Stop listener
                 self.redirectHTTPHandler?.cancelHTTPListener()
