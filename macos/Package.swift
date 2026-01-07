@@ -26,7 +26,6 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/google/generative-ai-swift", from: "0.5.0"),
         .package(url: "https://github.com/Kitura/Swift-JWT.git", from: "4.0.0")
     ],
     targets: [
@@ -34,7 +33,6 @@ let package = Package(
         .target(
             name: "ReceiptSorterCore",
             dependencies: [
-                .product(name: "GoogleGenerativeAI", package: "generative-ai-swift"),
                 .product(name: "SwiftJWT", package: "Swift-JWT")
             ]
         ),

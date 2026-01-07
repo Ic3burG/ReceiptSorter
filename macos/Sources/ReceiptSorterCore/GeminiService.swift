@@ -1,5 +1,4 @@
 import Foundation
-@preconcurrency import GoogleGenerativeAI
 
 public struct ReceiptData: Codable, Sendable {
     public let total_amount: Double?
@@ -9,23 +8,56 @@ public struct ReceiptData: Codable, Sendable {
     public let description: String?
 }
 
+// Request/Response Structures for Gemini API
+struct GeminiRequest: Codable {
+    let contents: [GeminiContent]
+}
+
+struct GeminiContent: Codable {
+    let parts: [GeminiPart]
+}
+
+struct GeminiPart: Codable {
+    let text: String
+}
+
+struct GeminiResponse: Codable {
+    let candidates: [GeminiCandidate]?
+    let error: GeminiAPIError?
+}
+
+struct GeminiCandidate: Codable {
+    let content: GeminiContent
+    let finishReason: String?
+}
+
+struct GeminiAPIError: Codable {
+    let code: Int
+    let message: String
+    let status: String
+}
+
 @available(macOS 13.0, *)
 public actor GeminiService {
-    private let model: GenerativeModel
+    private let apiKey: String
+    private let modelName = "gemini-1.5-flash"
     
     public init(apiKey: String) {
-        // Fallback to gemini-pro for better compatibility if flash fails
-        // Logging for debug purposes
-        print("🤖 Initializing GeminiService with API Key length: \(apiKey.count)")
-        self.model = GenerativeModel(name: "gemini-pro", apiKey: apiKey)
+        self.apiKey = apiKey
     }
     
     public func extractData(from text: String) async throws -> ReceiptData {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw GeminiError.emptyInput
         }
-
-        let prompt = """
+        
+        let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/\(modelName):generateContent?key=\(apiKey)"
+        
+        guard let url = URL(string: endpoint) else {
+            throw GeminiError.apiError("Invalid API URL")
+        }
+        
+        let promptText = """
         Extract the following information from this receipt text and return it as a JSON object:
         
         Required fields:
@@ -48,132 +80,67 @@ public actor GeminiService {
         Return ONLY a valid JSON object. Do not include markdown formatting or explanations.
         """
         
-        do {
-    
-                let response = try await model.generateContent(prompt)
-    
-                if let responseText = response.text {
-    
-                    return try parseResponse(responseText)
-    
-                } else {
-    
-                    // Analyze why text is missing
-    
-                    if let candidate = response.candidates.first {
-    
-                        let reason = candidate.finishReason
-    
-                        throw GeminiError.apiError("Blocked: \(reason)")
-    
-                    }
-    
-                    throw GeminiError.noResponse
-    
-                }
-    
-            } catch let error as GenerateContentError {
-    
-                // Unwrap specific Gemini errors
-    
-                switch error {
-    
-                case .internalError(let underlying):
-    
-                    throw GeminiError.apiError("Internal Error: \(underlying.localizedDescription)")
-    
-                case .promptBlocked(let response):
-    
-                    throw GeminiError.apiError("Prompt Blocked: \(response.text ?? "Unknown reason")")
-    
-                case .responseStoppedEarly(let reason, _):
-    
-                    throw GeminiError.apiError("Response Stopped: \(reason)")
-    
-                default:
-    
-                    throw GeminiError.apiError("Gemini Error: \(error.localizedDescription)")
-    
-                }
-    
-            } catch let error as GeminiError {
-    
-                throw error
-    
-            } catch {
-    
-                throw GeminiError.apiError(error.localizedDescription)
-    
-            }
-    
-        }
-    
+        let requestBody = GeminiRequest(contents: [
+            GeminiContent(parts: [GeminiPart(text: promptText)])
+        ])
         
-    
-        private func parseResponse(_ text: String) throws -> ReceiptData {
-    
-            // Clean markdown if present
-    
-            let cleanJSON = text.replacingOccurrences(of: "```json", with: "")
-    
-                                .replacingOccurrences(of: "```", with: "")
-    
-                                .trimmingCharacters(in: .whitespacesAndNewlines)
-    
-            
-    
-            guard let data = cleanJSON.data(using: .utf8) else {
-    
-                throw GeminiError.invalidData
-    
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(requestBody)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        // Debug logging
+        if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
+            // Try to parse error details
+            if let errorResponse = try? JSONDecoder().decode(GeminiResponse.self, from: data),
+               let apiError = errorResponse.error {
+                throw GeminiError.apiError("Google Error \(apiError.code): \(apiError.message)")
             }
-    
-            
-    
-            return try JSONDecoder().decode(ReceiptData.self, from: data)
-    
+            throw GeminiError.apiError("HTTP Error \(httpResponse.statusCode)")
         }
-    
+        
+        let geminiResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
+        
+        guard let candidate = geminiResponse.candidates?.first,
+              let textPart = candidate.content.parts.first else {
+            throw GeminiError.noResponse
+        }
+        
+        return try parseResponse(textPart.text)
     }
     
-    
-    
-    public enum GeminiError: LocalizedError {
-    
-        case noResponse
-    
-        case invalidData
-    
-        case emptyInput
-    
-        case apiError(String)
-    
+    private func parseResponse(_ text: String) throws -> ReceiptData {
+        // Clean markdown if present
+        let cleanJSON = text.replacingOccurrences(of: "```json", with: "")
+                            .replacingOccurrences(of: "```", with: "")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
         
-    
-        public var errorDescription: String? {
-    
-            switch self {
-    
-            case .noResponse:
-    
-                return "Gemini returned no text (content might be blocked)."
-    
-            case .invalidData:
-    
-                return "Could not parse JSON response from Gemini."
-    
-            case .emptyInput:
-    
-                return "OCR extracted no text. Cannot process empty receipt."
-    
-            case .apiError(let message):
-    
-                return "Gemini API Error: \(message)"
-    
-            }
-    
+        guard let data = cleanJSON.data(using: .utf8) else {
+            throw GeminiError.invalidData
         }
-    
+        
+        return try JSONDecoder().decode(ReceiptData.self, from: data)
     }
+}
+
+public enum GeminiError: LocalizedError {
+    case noResponse
+    case invalidData
+    case emptyInput
+    case apiError(String)
     
-    
+    public var errorDescription: String? {
+        switch self {
+        case .noResponse:
+            return "Gemini returned no text."
+        case .invalidData:
+            return "Could not parse JSON response from Gemini."
+        case .emptyInput:
+            return "OCR extracted no text."
+        case .apiError(let message):
+            return message
+        }
+    }
+}

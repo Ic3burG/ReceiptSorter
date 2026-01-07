@@ -5,12 +5,12 @@
 ## Session: January 6, 2026
 
 ### 🛠️ Fixes & Polish
+- **Gemini Networking Fix**: Replaced the Google Generative AI Swift SDK with a direct **URLSession/REST implementation**.
+    - Solves persistent `RPCError 1` issues caused by gRPC/Sandbox conflicts.
+    - Provides detailed HTTP error codes (e.g., "HTTP 403", "Invalid API Key") instead of generic failures.
+    - Reduces app bundle size by removing heavy dependencies.
+- **Settings UI Fix**: Increased the default size of the macOS Settings window.
 - **Gemini Error Reporting**: Enhanced `GeminiError` to conform to `LocalizedError`.
-    - Now provides human-readable messages instead of generic error codes (e.g., "OCR extracted no text" instead of "error 0").
-    - Explicitly checks for empty OCR input before calling the API.
-    - Inspects `finishReason` to report if content was blocked by safety filters.
-- **Settings UI Fix**: Increased the default size of the macOS Settings window (500x450) and added vertical scrolling to the Sync tab.
-- **Fixed Network Access**: Added entitlements to allow outgoing API calls.
 
 ### 🚀 Phase 3 Progress (Distribution)
 - **App Icon Generation**: Designed and implemented a professional macOS app icon.
@@ -20,7 +20,7 @@
 - **Completed Sync Pipeline**: Wired up the "Sync to Sheets" button.
 - **UI Polish & Architecture**: Settings Window, Live Preview, Visual Feedback.
 - **Google Sheets Integration**: Implemented `SheetService`.
-- **Gemini Swift Integration**: Integrated `GoogleGenerativeAI`.
+- **Gemini Swift Integration**: Implemented `GeminiService`.
 - **Full macOS Pipeline**: Drop -> OCR -> AI -> Sync.
 - **Native SwiftUI App**: Implemented `ReceiptSorterApp`.
 - **Native OCR**: Implemented `OCRService` using Vision.
