@@ -244,10 +244,9 @@ struct ContentView: View {
     
     private func initializeCore() {
         self.core = ReceiptSorterCore(apiKey: apiKey, clientID: clientID, sheetID: googleSheetId)
-        Task {
+        Task { @MainActor in
             if let auth = core?.authService {
-                let authorized = await auth.isAuthorized()
-                await MainActor.run { self.isAuthorized = authorized }
+                self.isAuthorized = auth.isAuthorized
             }
         }
     }
