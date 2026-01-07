@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "receipt_sorter"
+version = "0.1.0"
+description = "A tool to organize receipt PDFs and images."
+readme = "README.md"
+authors = [{ name = "OJDavis" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pdfplumber==0.11.0",
+    "pypdf2==3.0.1",
+    "pytesseract==0.3.10",
+    "Pillow",
+    "anthropic==0.25.1",
+    "openpyxl==3.1.2",
+    "pandas==2.2.2",
+    "python-dotenv==1.0.1",
+    "python-dateutil==2.9.0",
+    "gspread==6.1.0",
+    "google-auth==2.29.0",
+]
+requires-python = ">=3.8"
+
+[project.scripts]
+receipt-sorter = "receipt_sorter.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

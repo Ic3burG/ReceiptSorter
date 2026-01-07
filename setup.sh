@@ -33,7 +33,7 @@ echo "   ✓ Virtual environment activated"
 echo ""
 echo "📦 Installing Python dependencies..."
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -e .
 echo "   ✓ Dependencies installed"
 
 # Check for Tesseract
@@ -78,7 +78,7 @@ echo ""
 echo "Next steps:"
 echo "1. Edit .env and add your ANTHROPIC_API_KEY"
 echo "2. Place PDF receipts in ~/receipts/source/"
-echo "3. Run: python main.py"
+echo "3. Run: python run.py"
 echo ""
 echo "To activate the virtual environment in future sessions:"
 echo "   source venv/bin/activate"

@@ -4,12 +4,13 @@ Automatically process PDF receipts, extract financial data, categorize expenses 
 
 ## Features
 
-- 📄 **PDF Processing**: Extracts text from native PDFs and uses OCR for scanned documents
+- 📄 **Document Processing**: Extracts text from native PDFs and images (JPG, PNG, etc.) using OCR
 - 🤖 **AI-Powered Extraction**: Uses Claude AI to intelligently extract receipt data (amount, date, vendor, currency)
 - 🏷️ **Smart Categorization**: Automatically categorizes receipts into Canadian tax deduction categories
 - 💰 **Multi-Currency Support**: Handles CAD, USD, EUR, GBP, JPY, AUD, CHF
 - 📁 **Automatic Organization**: Sorts receipts into currency-specific folders with standardized naming
 - 📊 **Excel Reporting**: Generates formatted spreadsheets with category totals and breakdowns
+- ☁️ **Google Sheets Integration**: Automatically syncs receipt data to Google Sheets (one sheet per currency)
 - ⚠️ **Quality Assurance**: Flags low-confidence categorizations for manual review
 
 ## Canadian Tax Categories
@@ -67,16 +68,22 @@ After installation on Windows, update `config.py` with the path to tesseract.exe
 TESSERACT_CMD = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 ```
 
-### Step 4: Set Up API Key
+### Step 4: Set Up API Key and Google Sheets
 
 1. Get your Anthropic API key from https://console.anthropic.com/
-2. Copy `.env.example` to `.env`:
+2. **(Optional)** Set up Google Sheets:
+   - Create a Google Cloud Project and enable Google Sheets and Google Drive APIs.
+   - Create a Service Account, download the JSON key, and rename it to `service_account.json` in the project root.
+   - Create a new Google Sheet and share it with your Service Account email.
+   - Copy the Spreadsheet ID from the URL: `https://docs.google.com/spreadsheets/d/[ID_IS_HERE]/edit`
+3. Copy `.env.example` to `.env`:
    ```bash
    cp .env.example .env
    ```
-3. Edit `.env` and add your API key:
+4. Edit `.env` and add your keys:
    ```
    ANTHROPIC_API_KEY=your-actual-api-key-here
+   GOOGLE_SHEET_ID=your-spreadsheet-id
    ```
 
 ### Step 5: Configure Paths (Optional)
@@ -108,13 +115,14 @@ python main.py --source /path/to/receipts --output /path/to/sorted
 ### What Happens
 
 The app will:
-1. ✅ Validate your setup and check for PDFs
-2. 📖 Extract text from each PDF (with OCR fallback)
+1. ✅ Validate your setup and check for receipts
+2. 📖 Extract text from each document (PDF or Image with OCR)
 3. 🔍 Extract receipt data (vendor, date, amount, currency)
 4. 🏷️ Categorize into tax categories
 5. 📁 Move receipts to currency-specific folders
-6. 📊 Update Excel spreadsheets with extracted data
-7. 📋 Generate processing summary
+6. 📊 Update local Excel spreadsheets with extracted data
+7. ☁️ Sync data to Google Sheets (if configured)
+8. 📋 Generate processing summary
 
 ### Output Structure
 
@@ -123,16 +131,16 @@ sorted/
 ├── CAD/
 │   ├── CAD_Receipts.xlsx
 │   ├── 2024-01-15_Amazon_45.99.pdf
-│   └── 2024-01-16_Starbucks_12.50.pdf
+│   └── 2024-01-16_Starbucks_12.50.png
 ├── USD/
 │   ├── USD_Receipts.xlsx
 │   └── 2024-01-20_AWS_150.00.pdf
 ├── Review_Required/
-│   └── 2024-01-18_UnknownVendor_25.00.pdf
+│   └── 2024-01-18_UnknownVendor_25.00.jpg
 └── processing_log.txt
 ```
 
-## Excel Spreadsheet Format
+## Excel & Google Sheets Format
 
 Each currency gets its own spreadsheet with:
 
@@ -204,12 +212,15 @@ SUPPORTED_CURRENCIES = ["CAD", "USD", "EUR", "GBP", "JPY", "AUD", "CHF", "MXN"]
 receipt-sorter/
 ├── main.py                 # Main application entry point
 ├── config.py              # Configuration (categories, currencies, paths)
-├── pdf_processor.py       # PDF reading and text extraction
+├── pdf_processor.py       # Document reading and text extraction
 ├── data_extractor.py      # Extract amount, date, vendor, currency
 ├── categorizer.py         # Classify receipts into tax categories
 ├── file_organizer.py      # Move files to currency folders
 ├── spreadsheet_manager.py # Create/update Excel files
+├── google_sheets_manager.py # Sync data to Google Sheets
+├── test_google_sheets.py  # Test script for cloud connectivity
 ├── requirements.txt       # Python dependencies
+├── .env.example          # Template for API keys
 ├── .env                   # API keys (not committed to git)
 ├── .gitignore            # Git ignore rules
 └── README.md             # This file
