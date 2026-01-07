@@ -5,6 +5,9 @@
 ## Session: January 6, 2026
 
 ### 🚀 Major Features Added
+- **Phase 2 Implementation: Swift CLI Tool**: Created `receipt-cli`, a command-line utility within the `macos` package.
+    - Allows direct testing of the core OCR logic.
+    - Usage: `swift run receipt-cli <path>`
 - **Phase 2 Implementation: Native OCR**: Implemented `OCRService` in Swift using Apple's **Vision Framework**.
     - Replaces Tesseract dependency for the macOS app.
     - Handles both Images (`.jpg`, `.png`) and PDFs (`.pdf`) natively.
@@ -13,8 +16,6 @@
     - Created the `macos/` root directory.
     - Initialized the **`ReceiptSorterCore`** Swift package using SPM (Swift Package Manager).
 - **User Onboarding**: Created a seamless "First Run" experience.
-    - **Setup Wizard**: The web app now detects missing keys and redirects to a friendly `/setup` page.
-    - **One-Click Launcher**: Added `start_app.command` for macOS.
 - **Visual Feedback**: Added animated loading overlays to the web interface.
 - **Batch Editing & Review**: Implemented a two-stage processing workflow.
 - **Settings UI**: Implemented a new settings page (`/settings`).

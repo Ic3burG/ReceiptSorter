@@ -1,23 +1,36 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
     name: "ReceiptSorterCore",
+    platforms: [
+        .macOS(.v12) // Ensure we target macOS Monterey or later for Vision/Async features
+    ],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
+        // The library containing core logic
         .library(
             name: "ReceiptSorterCore",
             targets: ["ReceiptSorterCore"]
         ),
+        // The CLI tool to run the logic
+        .executable(
+            name: "receipt-cli",
+            targets: ["ReceiptCLI"]
+        )
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
+        // Core Logic
         .target(
             name: "ReceiptSorterCore"
         ),
+        // CLI Tool
+        .executableTarget(
+            name: "ReceiptCLI",
+            dependencies: ["ReceiptSorterCore"]
+        ),
+        // Tests
         .testTarget(
             name: "ReceiptSorterCoreTests",
             dependencies: ["ReceiptSorterCore"]
