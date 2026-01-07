@@ -12,12 +12,10 @@ public final class AuthService: NSObject {
     
     private var authState: OIDAuthState?
     
-    public nonisolated init(clientID: String) {
+    public init(clientID: String) {
         self.kClientID = clientID
         super.init()
-        Task { @MainActor in
-            self.loadState()
-        }
+        self.loadState()
     }
     
     public var isAuthorized: Bool {

@@ -79,5 +79,6 @@ fi
 echo ""
 echo "✅ Build Complete!"
 echo "👉 Application is ready at: $(pwd)/$BUNDLE_NAME"
+
 echo ""
 echo "To run it, type: open \"$BUNDLE_NAME\""
