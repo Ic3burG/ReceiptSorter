@@ -9,40 +9,42 @@ public final class AuthService: NSObject {
     
     private let kIssuer = "https://accounts.google.com"
     private let kClientID: String
+    private let kClientSecret: String? // Optional, but required for Google Desktop flow
+    private let kRedirectURI = "http://127.0.0.1"
     private let kAuthStateKey = "authState"
     
-    private var authState: OIDAuthState?
+    private let lock = NSLock()
+    private var _authState: OIDAuthState?
     
-    public nonisolated init(clientID: String) {
+    private var authState: OIDAuthState? {
+        get { lock.withLock { _authState } }
+        set { lock.withLock { _authState = newValue } }
+    }
+    
+    public init(clientID: String, clientSecret: String? = nil) {
         self.kClientID = clientID
+        self.kClientSecret = clientSecret
         super.init()
-        Task { @MainActor in
-            self.loadState()
-        }
+        self.loadState()
     }
     
     public var isAuthorized: Bool {
         return authState?.isAuthorized ?? false
     }
     
+    @MainActor
     public func signIn(presenting window: NSWindow) async throws {
-        // 1. Start the Loopback Listener
-        let handler = OIDRedirectHTTPHandler(successURL: nil)
-        let redirectURI = handler.startHTTPListener(nil)
-        self.redirectHTTPHandler = handler
-        
-        // 2. Configure Google Endpoints
         let authEndpoint = URL(string: "https://accounts.google.com/o/oauth2/v2/auth")!
         let tokenEndpoint = URL(string: "https://oauth2.googleapis.com/token")!
         let config = OIDServiceConfiguration(authorizationEndpoint: authEndpoint, tokenEndpoint: tokenEndpoint)
 
-        // 3. Perform Auth Request
         return try await withCheckedThrowingContinuation { continuation in
             let request = OIDAuthorizationRequest(
                 configuration: config,
                 clientId: self.kClientID,
+                clientSecret: self.kClientSecret, // Pass secret here
                 scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-                redirectURL: redirectURI,
+                redirectURL: URL(string: self.kRedirectURI)!,
                 responseType: OIDResponseTypeCode,
                 additionalParameters: nil
             )

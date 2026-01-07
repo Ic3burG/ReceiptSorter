@@ -49,6 +49,7 @@ struct GeneralSettingsView: View {
 struct SyncSettingsView: View {
     @AppStorage("googleSheetId") private var googleSheetId: String = ""
     @AppStorage("googleClientID") private var clientID: String = ""
+    @AppStorage("googleClientSecret") private var clientSecret: String = ""
     
     var body: some View {
         Form {
@@ -69,6 +70,12 @@ struct SyncSettingsView: View {
                 TextField("OAuth Client ID", text: $clientID)
                     .textFieldStyle(.roundedBorder)
                 Text("Your Google Cloud OAuth 2.0 Client ID.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                SecureField("OAuth Client Secret", text: $clientSecret)
+                    .textFieldStyle(.roundedBorder)
+                Text("Required for Desktop App authentication.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

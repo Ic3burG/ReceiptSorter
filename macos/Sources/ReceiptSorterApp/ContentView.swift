@@ -25,6 +25,7 @@ struct ContentView: View {
     @AppStorage("geminiApiKey") private var apiKey: String = ""
     @AppStorage("googleSheetId") private var googleSheetId: String = ""
     @AppStorage("googleClientID") private var clientID: String = ""
+    @AppStorage("googleClientSecret") private var clientSecret: String = ""
     
     // State
     @State private var items: [ProcessingItem] = []
@@ -136,6 +137,7 @@ struct ContentView: View {
             .onAppear { initializeCore() }
             .onChange(of: apiKey) { _ in initializeCore() }
             .onChange(of: clientID) { _ in initializeCore() }
+            .onChange(of: clientSecret) { _ in initializeCore() }
             
         } detail: {
             // DETAIL: Preview & Data
@@ -149,7 +151,8 @@ struct ContentView: View {
                         Color(NSColor.controlBackgroundColor)
                         if item.url.pathExtension.lowercased() == "pdf" {
                             PDFKitRepresentedView(url: item.url)
-                        } else {
+                        }
+                        else {
                             AsyncImage(url: item.url) { image in
                                 image.resizable().aspectRatio(contentMode: .fit)
                             } placeholder: {
@@ -168,7 +171,8 @@ struct ContentView: View {
                             if item.status == .extracted {
                                 if isAuthorized {
                                     Button("Sync This") { syncSingle(index) }
-                                } else {
+                                }
+                                else {
                                     Button("Sign In") { signIn() }
                                 }
                             }
@@ -194,7 +198,8 @@ struct ContentView: View {
                                             .background(Color.green.opacity(0.1))
                                             .cornerRadius(8)
                                     }
-                                } else if let error = item.error {
+                                }
+                                else if let error = item.error {
                                     VStack(alignment: .leading) {
                                         Label("Error", systemImage: "exclamationmark.triangle.fill")
                                             .foregroundColor(.red)
@@ -206,12 +211,14 @@ struct ContentView: View {
                                     .padding()
                                     .background(Color.red.opacity(0.1))
                                     .cornerRadius(8)
-                                } else {
+                                }
+                                else {
                                     VStack(spacing: 10) {
                                         if item.status == .processing {
                                             ProgressView()
                                             Text("Analyzing...")
-                                        } else {
+                                        }
+                                        else {
                                             Text("Waiting...")
                                         }
                                     }
@@ -226,7 +233,8 @@ struct ContentView: View {
                     .frame(minWidth: 250, maxWidth: 400, maxHeight: .infinity)
                     .background(Color(NSColor.windowBackgroundColor))
                 }
-            } else {
+            }
+            else {
                 Text("Select a receipt to view details")
                     .foregroundColor(.secondary)
             }
@@ -243,7 +251,7 @@ struct ContentView: View {
     // MARK: - Logic
     
     private func initializeCore() {
-        self.core = ReceiptSorterCore(apiKey: apiKey, clientID: clientID, sheetID: googleSheetId)
+        self.core = ReceiptSorterCore(apiKey: apiKey, clientID: clientID, clientSecret: clientSecret, sheetID: googleSheetId)
         Task { @MainActor in
             if let auth = core?.authService {
                 self.isAuthorized = auth.isAuthorized

@@ -7,7 +7,7 @@ public struct ReceiptSorterCore: Sendable {
     public let sheetService: SheetService?
     public let authService: AuthService?
 
-    public init(apiKey: String? = nil, clientID: String? = nil, sheetID: String? = nil) {
+    public init(apiKey: String? = nil, clientID: String? = nil, clientSecret: String? = nil, sheetID: String? = nil) {
         self.ocrService = OCRService()
         
         if let apiKey = apiKey, !apiKey.isEmpty {
@@ -17,7 +17,7 @@ public struct ReceiptSorterCore: Sendable {
         }
         
         if let clientID = clientID, !clientID.isEmpty {
-            let auth = AuthService(clientID: clientID)
+            let auth = AuthService(clientID: clientID, clientSecret: clientSecret)
             self.authService = auth
             if let sheetID = sheetID, !sheetID.isEmpty {
                 self.sheetService = SheetService(authService: auth, sheetID: sheetID)
