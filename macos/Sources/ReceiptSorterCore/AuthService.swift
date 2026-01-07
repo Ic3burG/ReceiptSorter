@@ -2,28 +2,35 @@ import Foundation
 @preconcurrency import AppAuth
 import AuthenticationServices
 
-@MainActor
-public final class AuthService: NSObject {
-    private var currentAuthorizationFlow: OIDExternalUserAgentSession?
+public final class AuthService: NSObject, @unchecked Sendable {
+    @MainActor private var currentAuthorizationFlow: OIDExternalUserAgentSession?
     private let kIssuer = "https://accounts.google.com"
     private let kClientID: String
     private let kRedirectURI = "http://127.0.0.1:0/callback"
     private let kAuthStateKey = "authState"
     
-    private var authState: OIDAuthState?
+    // AuthState is thread-safe (we use a lock or serial queue if needed, but for now simple atomic access pattern)
+    // Actually, simple var access is risky across threads without isolation. 
+    // We will use a private lock for state access to be truly Sendable.
+    private let lock = NSLock()
+    private var _authState: OIDAuthState?
     
-    public nonisolated init(clientID: String) {
+    private var authState: OIDAuthState? {
+        get { lock.withLock { _authState } }
+        set { lock.withLock { _authState = newValue } }
+    }
+    
+    public init(clientID: String) {
         self.kClientID = clientID
         super.init()
-        Task { @MainActor in
-            self.loadState()
-        }
+        self.loadState()
     }
     
     public var isAuthorized: Bool {
         return authState?.isAuthorized ?? false
     }
     
+    @MainActor
     public func signIn(presenting window: NSWindow) async throws {
         let authEndpoint = URL(string: "https://accounts.google.com/o/oauth2/v2/auth")!
         let tokenEndpoint = URL(string: "https://oauth2.googleapis.com/token")!
@@ -39,7 +46,7 @@ public final class AuthService: NSObject {
                 additionalParameters: nil
             )
             
-            self.currentAuthorizationFlow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
+            let flow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
                 if let authState = authState {
                     self.setAuthState(authState)
                     continuation.resume()
@@ -47,6 +54,7 @@ public final class AuthService: NSObject {
                     continuation.resume(throwing: AuthError.authFailed(error?.localizedDescription ?? "User cancelled"))
                 }
             }
+            self.currentAuthorizationFlow = flow
         }
     }
     
