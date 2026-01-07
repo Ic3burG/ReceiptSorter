@@ -5,6 +5,10 @@
 ## Session: January 6, 2026
 
 ### 🚀 Phase 3 Progress (Distribution)
+- **App Icon Generation**: Designed and implemented a professional macOS app icon.
+    - Created a Python script (`macos/scripts/generate_icon.py`) to draw a minimalist, high-resolution icon using `Pillow`.
+    - Automated the conversion of PNG assets into a native macOS `.icns` file using `sips` and `iconutil`.
+    - Updated `Info.plist` and the build script to bundle the icon correctly.
 - **Build Script**: Created `macos/scripts/bundle.sh`.
     - Automates the compilation of the Swift package in release mode.
     - bundles the binary into a standard macOS `Receipt Sorter.app`.

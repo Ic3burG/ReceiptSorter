@@ -51,6 +51,13 @@ else
     echo "⚠️  Warning: Info.plist not found at $SOURCES_DIR/Info.plist"
 fi
 
+echo "🖼️  Copying App Icon..."
+if [ -f "Resources/AppIcon.icns" ]; then
+    cp "Resources/AppIcon.icns" "$BUNDLE_NAME/Contents/Resources/AppIcon.icns"
+else
+    echo "⚠️  Warning: AppIcon.icns not found in Resources/"
+fi
+
 # 5. Copy Binary
 echo "💿 Copying Executable..."
 cp "$BUILD_PATH/$EXECUTABLE_NAME" "$BUNDLE_NAME/Contents/MacOS/$EXECUTABLE_NAME"
