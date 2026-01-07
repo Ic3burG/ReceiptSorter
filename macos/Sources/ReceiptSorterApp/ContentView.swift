@@ -30,6 +30,8 @@ struct ContentView: View {
     @State private var items: [ProcessingItem] = []
     @State private var selectedItemId: UUID?
     @State private var isBatchProcessing = false
+    @State private var signInError: String?
+    @State private var showSignInError = false
     
     // Core Logic State
     @State private var core: ReceiptSorterCore?
@@ -231,6 +233,11 @@ struct ContentView: View {
         }
         .frame(minWidth: 900, minHeight: 600)
         .onAppear { requestNotificationPermissions() }
+        .alert("Sign In Error", isPresented: $showSignInError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(signInError ?? "Unknown error")
+        }
     }
     
     // MARK: - Logic
@@ -246,20 +253,69 @@ struct ContentView: View {
     }
     
     private func signIn() {
-        guard let core = core, let auth = core.authService else { return }
+        guard let core = core, let auth = core.authService else {
+            self.signInError = "Auth Service not initialized. Check Client ID."
+            self.showSignInError = true
+            return
+        }
+        
         Task {
             do {
                 if let window = NSApp.windows.first {
                     try await auth.signIn(presenting: window)
                     await MainActor.run { self.isAuthorized = true }
+                } else {
+                    await MainActor.run {
+                        self.signInError = "No active window found."
+                        self.showSignInError = true
+                    }
                 }
             } catch {
-                print("Sign In Failed: \(error)")
+                await MainActor.run {
+                    self.signInError = "Sign In Failed: \(error.localizedDescription)"
+                    self.showSignInError = true
+                }
             }
         }
     }
     
     private func loadFiles(from providers: [NSItemProvider]) {
+        Task {
+            for provider in providers {
+                if let urlData = try? await provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) as? Data,
+                   let url = URL(dataRepresentation: urlData, relativeTo: nil) {
+                    
+                    let newItem = ProcessingItem(url: url)
+                    await MainActor.run {
+                        items.append(newItem)
+                        if items.count == 1 { selectedItemId = newItem.id }
+                    }
+                }
+            }
+            processBatch()
+        }
+    }
+    
+    // ... processBatch ...
+    // ... processItem ...
+    // ... syncAll ...
+    // ... syncSingle ...
+    // ... syncItem ...
+    
+    // MARK: - Helpers
+    // ... (rest of file) ...
+}
+
+// Add extension to fix alert placement or add it to body
+extension ContentView {
+    var alertView: some View {
+        EmptyView().alert("Sign In Error", isPresented: $showSignInError, actions: {
+            Button("OK", role: .cancel) { }
+        }, message: {
+            Text(signInError ?? "Unknown error")
+        })
+    }
+}
         Task {
             for provider in providers {
                 if let urlData = try? await provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) as? Data,

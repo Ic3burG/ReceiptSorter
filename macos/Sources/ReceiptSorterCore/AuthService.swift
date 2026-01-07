@@ -24,21 +24,32 @@ public actor AuthService: NSObject, @unchecked Sendable {
     
     @MainActor
     public func signIn(presenting window: NSWindow) async throws {
-        let request = try await self.createAuthRequest()
+        // Define Google Endpoints manually to avoid discovery hangs
+        let authEndpoint = URL(string: "https://accounts.google.com/o/oauth2/v2/auth")!
+        let tokenEndpoint = URL(string: "https://oauth2.googleapis.com/token")!
         
+        let config = OIDServiceConfiguration(authorizationEndpoint: authEndpoint, tokenEndpoint: tokenEndpoint)
+
         return try await withCheckedThrowingContinuation { continuation in
-            let flow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
+            let request = OIDAuthorizationRequest(
+                configuration: config,
+                clientId: self.kClientID,
+                scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+                redirectURL: URL(string: self.kRedirectURI)!,
+                responseType: OIDResponseTypeCode,
+                additionalParameters: nil
+            )
+            
+            self.currentAuthorizationFlow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
                 if let authState = authState {
                     Task {
-                        await self.updateAuthState(authState)
+                        await self.setAuthState(authState)
                         continuation.resume()
                     }
                 } else {
                     continuation.resume(throwing: AuthError.authFailed(error?.localizedDescription ?? "User cancelled"))
                 }
             }
-            
-            Task { await self.setAuthFlow(flow) }
         }
     }
     
