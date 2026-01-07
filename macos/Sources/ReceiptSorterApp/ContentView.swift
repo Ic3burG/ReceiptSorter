@@ -3,6 +3,23 @@ import ReceiptSorterCore
 import QuickLookUI
 import UserNotifications
 
+struct ProcessingItem: Identifiable, Equatable {
+    let id = UUID()
+    let url: URL
+    var status: ItemStatus = .pending
+    var data: ReceiptData?
+    var error: String?
+    
+    enum ItemStatus: Equatable {
+        case pending
+        case processing
+        case extracted
+        case syncing
+        case done
+        case error
+    }
+}
+
 struct ContentView: View {
     // Persistent Settings
     @AppStorage("geminiApiKey") private var apiKey: String = ""
@@ -10,247 +27,320 @@ struct ContentView: View {
     @AppStorage("serviceAccountPath") private var serviceAccountPath: String = "service_account.json"
     
     // State
-    @State private var extractedText: String = ""
-    @State private var isProcessing = false
-    @State private var isSyncing = false
-    @State private var errorMessage: String?
-    @State private var receiptData: ReceiptData?
-    @State private var selectedFileURL: URL?
-    @State private var showSyncSuccess = false
+    @State private var items: [ProcessingItem] = []
+    @State private var selectedItemId: UUID?
+    @State private var isBatchProcessing = false
     
     var body: some View {
-        HSplitView {
-            // Left Pane: Document Preview
-            ZStack {
-                Color(NSColor.controlBackgroundColor)
-                
-                if let url = selectedFileURL {
-                    if url.pathExtension.lowercased() == "pdf" {
-                        PDFKitRepresentedView(url: url)
-                    } else {
-                        AsyncImage(url: url) { image in
-                            image.resizable().aspectRatio(contentMode: .fit)
-                        } placeholder: {
-                            ProgressView()
-                        }
+        NavigationSplitView {
+            // SIDEBAR: File List
+            VStack {
+                if items.isEmpty {
+                    VStack(spacing: 15) {
+                        Image(systemName: "square.stack.3d.down.right")
+                            .font(.system(size: 40))
+                            .foregroundColor(.secondary)
+                        Text("Drop Receipts Here")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .onDrop(of: ["public.file-url"], isTargeted: nil) { providers in
+                        loadFiles(from: providers)
+                        return true
                     }
                 } else {
-                    VStack(spacing: 15) {
-                        Image(systemName: "doc.text.viewfinder")
-                            .font(.system(size: 50))
-                            .foregroundColor(.secondary)
-                        Text("Drop Receipt Here")
-                            .font(.title2)
-                            .foregroundColor(.secondary)
+                    List(selection: $selectedItemId) {
+                        ForEach($items) { $item in
+                            NavigationLink(value: item.id) {
+                                HStack {
+                                    Image(systemName: icon(for: item))
+                                        .foregroundColor(color(for: item))
+                                    
+                                    VStack(alignment: .leading) {
+                                        Text(item.url.lastPathComponent)
+                                            .font(.headline)
+                                            .truncationMode(.middle)
+                                        if let vendor = item.data?.vendor {
+                                            Text(vendor).font(.caption).foregroundColor(.secondary)
+                                        } else {
+                                            Text(statusText(for: item)).font(.caption).foregroundColor(.secondary)
+                                        }
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
                     }
-                }
-                
-                // Overlay loading state
-                if isProcessing {
-                    ZStack {
-                        Color.black.opacity(0.3)
-                        VStack {
-                            ProgressView()
-                                .controlSize(.large)
-                            Text("Processing...")
-                                .foregroundColor(.white)
-                                .font(.headline)
-                                .padding(.top, 5)
+                    .listStyle(.sidebar)
+                    
+                    // Batch Actions
+                    VStack {
+                        Divider()
+                        HStack {
+                            Text("\(items.count) files")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Button("Clear All") {
+                                items.removeAll()
+                                selectedItemId = nil
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundColor(.red)
+                            .font(.caption)
                         }
                         .padding()
-                        .background(Material.thin)
-                        .cornerRadius(12)
-                    }
-                }
-            }
-            .frame(minWidth: 300, maxWidth: .infinity, minHeight: 400, maxHeight: .infinity)
-            .onDrop(of: ["public.file-url"], isTargeted: nil) { providers in
-                processDroppedFiles(providers)
-                return true
-            }
-            
-            // Right Pane: Data & Actions
-            VStack(alignment: .leading, spacing: 0) {
-                // Header
-                HStack {
-                    Text("Details")
-                        .font(.headline)
-                    Spacer()
-                    if receiptData != nil {
-                        Button("Clear") {
-                            clearData()
+                        
+                        if items.contains(where: { $0.status == .extracted }) {
+                            Button(action: syncAll) {
+                                HStack {
+                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                    Text("Sync All Completed")
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .padding([.horizontal, .bottom])
                         }
                     }
                 }
-                .padding()
-                .background(Color(NSColor.controlBackgroundColor))
+            }
+            .navigationSplitViewColumnWidth(min: 250, ideal: 300)
+            
+        } detail: {
+            // DETAIL: Preview & Data
+            if let selectedId = selectedItemId,
+               let index = items.firstIndex(where: { $0.id == selectedId }) {
+                let item = items[index]
                 
-                Divider()
-                
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        if let data = receiptData {
-                            DataCard(title: "Vendor", icon: "building.2", value: data.vendor)
-                            DataCard(title: "Date", icon: "calendar", value: data.date)
-                            DataCard(title: "Amount", icon: "dollarsign.circle", value: "\(String(format: "%.2f", data.total_amount ?? 0.0)) \(data.currency ?? "")")
-                            DataCard(title: "Description", icon: "text.alignleft", value: data.description)
-                            
-                            Spacer()
-                            
-                            if showSyncSuccess {
-                                Label("Synced Successfully!", systemImage: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.green.opacity(0.1))
-                                    .cornerRadius(8)
-                            } else {
-                                Button(action: syncToSheets) {
-                                    HStack {
-                                        if isSyncing {
-                                            ProgressView().controlSize(.small)
-                                        } else {
-                                            Image(systemName: "arrow.triangle.2.circlepath")
-                                        }
-                                        Text("Sync to Sheets")
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(5)
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .controlSize(.large)
-                                .disabled(isSyncing)
+                HSplitView {
+                    // Preview (Left)
+                    ZStack {
+                        Color(NSColor.controlBackgroundColor)
+                        if item.url.pathExtension.lowercased() == "pdf" {
+                            PDFKitRepresentedView(url: item.url)
+                        } else {
+                            AsyncImage(url: item.url) { image in
+                                image.resizable().aspectRatio(contentMode: .fit)
+                            } placeholder: {
+                                ProgressView()
                             }
-                            
-                        } else if let error = errorMessage {
-                            VStack(alignment: .leading) {
-                                Label("Error", systemImage: "exclamationmark.triangle.fill")
-                                    .foregroundColor(.red)
-                                    .font(.headline)
-                                Text(error)
-                                    .font(.caption)
+                        }
+                    }
+                    .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity)
+                    
+                    // Data (Right)
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("Details")
+                                .font(.headline)
+                            Spacer()
+                            if item.status == .extracted {
+                                Button("Sync This") {
+                                    syncSingle(index)
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(Color(NSColor.controlBackgroundColor))
+                        
+                        Divider()
+                        
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 20) {
+                                if let data = item.data {
+                                    DataCard(title: "Vendor", icon: "building.2", value: data.vendor)
+                                    DataCard(title: "Date", icon: "calendar", value: data.date)
+                                    DataCard(title: "Amount", icon: "dollarsign.circle", value: "\(String(format: "%.2f", data.total_amount ?? 0.0)) \(data.currency ?? "")")
+                                    DataCard(title: "Description", icon: "text.alignleft", value: data.description)
+                                    
+                                    if item.status == .done {
+                                        Label("Synced", systemImage: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                            .padding()
+                                            .frame(maxWidth: .infinity)
+                                            .background(Color.green.opacity(0.1))
+                                            .cornerRadius(8)
+                                    }
+                                } else if let error = item.error {
+                                    VStack(alignment: .leading) {
+                                        Label("Error", systemImage: "exclamationmark.triangle.fill")
+                                            .foregroundColor(.red)
+                                            .font(.headline)
+                                        Text(error)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding()
+                                    .background(Color.red.opacity(0.1))
+                                    .cornerRadius(8)
+                                } else {
+                                    VStack(spacing: 10) {
+                                        if item.status == .processing {
+                                            ProgressView()
+                                            Text("Analyzing...")
+                                        } else {
+                                            Text("Waiting...")
+                                        }
+                                    }
                                     .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .padding(.top, 50)
+                                }
                             }
                             .padding()
-                            .background(Color.red.opacity(0.1))
-                            .cornerRadius(8)
-                        } else {
-                            Text("No data extracted.")
-                                .foregroundColor(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .padding(.top, 50)
                         }
                     }
-                    .padding()
+                    .frame(minWidth: 250, maxWidth: 400, maxHeight: .infinity)
+                    .background(Color(NSColor.windowBackgroundColor))
+                }
+            } else {
+                Text("Select a receipt to view details")
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(minWidth: 900, minHeight: 600)
+        .onAppear { requestNotificationPermissions() }
+    }
+    
+    // MARK: - Logic
+    
+    private func loadFiles(from providers: [NSItemProvider]) {
+        Task {
+            for provider in providers {
+                if let urlData = try? await provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) as? Data,
+                   let url = URL(dataRepresentation: urlData, relativeTo: nil) {
+                    
+                    let newItem = ProcessingItem(url: url)
+                    await MainActor.run {
+                        items.append(newItem)
+                        if items.count == 1 { selectedItemId = newItem.id }
+                    }
                 }
             }
-            .frame(minWidth: 250, maxWidth: 400, maxHeight: .infinity)
-            .background(Color(NSColor.windowBackgroundColor))
-        }
-        .frame(minWidth: 800, minHeight: 600)
-        .onAppear {
-            requestNotificationPermissions()
+            // Trigger batch processing
+            processBatch()
         }
     }
     
-    private func clearData() {
-        self.selectedFileURL = nil
-        self.receiptData = nil
-        self.extractedText = ""
-        self.errorMessage = nil
-        self.showSyncSuccess = false
+    private func processBatch() {
+        guard !isBatchProcessing else { return }
+        isBatchProcessing = true
+        
+        Task {
+            for index in items.indices {
+                if items[index].status == .pending {
+                    await processItem(at: index)
+                }
+            }
+            isBatchProcessing = false
+            await MainActor.run {
+                notify(title: "Batch Complete", body: "Finished processing receipts.")
+            }
+        }
     }
     
-    private func processDroppedFiles(_ providers: [NSItemProvider]) {
+    private func processItem(at index: Int) async {
         guard !apiKey.isEmpty else {
-            self.errorMessage = "Please set your Gemini API Key in Settings (Cmd+,)"
+            await MainActor.run { items[index].error = "Missing API Key" }
             return
         }
         
-        guard let provider = providers.first else { return }
+        await MainActor.run { items[index].status = .processing }
         
-        provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { (urlData, error) in
-            if let error = error {
-                DispatchQueue.main.async { self.errorMessage = error.localizedDescription }
-                return
-            }
-            
-            guard let data = urlData as? Data,
-                  let url = URL(dataRepresentation: data, relativeTo: nil) else {
-                DispatchQueue.main.async { self.errorMessage = "Could not load file." }
-                return
-            }
-            
-            DispatchQueue.main.async {
-                self.selectedFileURL = url
-                self.processFile(at: url)
-            }
-        }
-    }
-    
-    private func processFile(at url: URL) {
-        self.isProcessing = true
-        self.errorMessage = nil
-        self.receiptData = nil
-        self.showSyncSuccess = false
-        
+        let url = items[index].url
         let core = ReceiptSorterCore(apiKey: apiKey)
         
+        do {
+            let text = try await core.extractText(from: url)
+            let data = try await core.extractReceiptData(from: text)
+            
+            await MainActor.run {
+                items[index].data = data
+                items[index].status = .extracted
+            }
+        } catch {
+            await MainActor.run {
+                items[index].error = error.localizedDescription
+                items[index].status = .error
+            }
+        }
+    }
+    
+    private func syncAll() {
         Task {
-            do {
-                let text = try await core.extractText(from: url)
-                let data = try await core.extractReceiptData(from: text)
-                
-                await MainActor.run {
-                    self.extractedText = text
-                    self.receiptData = data
-                    self.isProcessing = false
-                    notify(title: "Processing Complete", body: "Successfully extracted data from \(url.lastPathComponent)")
-                }
-            } catch {
-                await MainActor.run {
-                    self.errorMessage = error.localizedDescription
-                    self.isProcessing = false
+            for index in items.indices {
+                if items[index].status == .extracted {
+                    await syncItem(at: index)
                 }
             }
         }
     }
     
-    private func syncToSheets() {
-        guard let data = receiptData else { return }
-        
-        guard !googleSheetId.isEmpty else {
-            self.errorMessage = "Please configure Google Sheet ID in Settings (Cmd+,)"
-            return
+    private func syncSingle(_ index: Int) {
+        Task {
+            await syncItem(at: index)
         }
+    }
+    
+    private func syncItem(at index: Int) async {
+        guard let data = items[index].data else { return }
+        guard !googleSheetId.isEmpty else { return }
         
-        self.isSyncing = true
-        self.errorMessage = nil
+        await MainActor.run { items[index].status = .syncing }
         
-        // Ensure path resolves properly (if relative)
+        // Ensure path resolves properly
         let path = serviceAccountPath
+        let sheetID = googleSheetId
         
-        Task {
-            do {
-                let service = SheetService(serviceAccountPath: path, sheetID: googleSheetId)
-                try await service.appendReceipt(data)
-                
-                await MainActor.run {
-                    self.isSyncing = false
-                    self.showSyncSuccess = true
-                    notify(title: "Sync Success", body: "Receipt for \(data.vendor ?? "Unknown") has been added to Google Sheets.")
-                }
-            } catch {
-                await MainActor.run {
-                    self.isSyncing = false
-                    self.errorMessage = "Sync Failed: \(error.localizedDescription)"
-                }
+        do {
+            // Run service on a background actor, but we can await it here
+            let service = SheetService(serviceAccountPath: path, sheetID: sheetID)
+            try await service.appendReceipt(data)
+            
+            await MainActor.run { items[index].status = .done }
+        } catch {
+            await MainActor.run {
+                items[index].error = "Sync Failed: \(error.localizedDescription)"
+                items[index].status = .error
             }
         }
     }
     
-    // MARK: - Notifications
+    // MARK: - Helpers
+    
+    private func icon(for item: ProcessingItem) -> String {
+        switch item.status {
+        case .pending: return "clock"
+        case .processing: return "gear"
+        case .extracted: return "checkmark.circle"
+        case .syncing: return "arrow.triangle.2.circlepath"
+        case .done: return "checkmark.circle.fill"
+        case .error: return "exclamationmark.circle.fill"
+        }
+    }
+    
+    private func color(for item: ProcessingItem) -> Color {
+        switch item.status {
+        case .done: return .green
+        case .extracted: return .blue
+        case .error: return .red
+        default: return .secondary
+        }
+    }
+    
+    private func statusText(for item: ProcessingItem) -> String {
+        switch item.status {
+        case .pending: return "Queued"
+        case .processing: return "Processing..."
+        case .extracted: return "Ready to Sync"
+        case .syncing: return "Syncing..."
+        case .done: return "Synced"
+        case .error: return "Failed"
+        }
+    }
     
     private func requestNotificationPermissions() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
@@ -261,7 +351,6 @@ struct ContentView: View {
         content.title = title
         content.body = body
         content.sound = .default
-        
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)
     }

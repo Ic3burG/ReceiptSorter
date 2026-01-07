@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ReceiptData: Codable, Sendable {
+public struct ReceiptData: Codable, Sendable, Equatable {
     public let total_amount: Double?
     public let currency: String?
     public let date: String?
