@@ -23,7 +23,6 @@ public final class AuthService: NSObject {
     }
     
     public func signIn(presenting window: NSWindow) async throws {
-        // Create the configuration manually
         let authEndpoint = URL(string: "https://accounts.google.com/o/oauth2/v2/auth")!
         let tokenEndpoint = URL(string: "https://oauth2.googleapis.com/token")!
         let config = OIDServiceConfiguration(authorizationEndpoint: authEndpoint, tokenEndpoint: tokenEndpoint)
@@ -38,22 +37,15 @@ public final class AuthService: NSObject {
                 additionalParameters: nil
             )
             
-                let flow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
-                    if let authState = authState {
-                        Task { @MainActor in
-                            self.setAuthState(authState)
-                            continuation.resume()
-                        }
-                    } else {
-                        continuation.resume(throwing: AuthError.authFailed(error?.localizedDescription ?? "User cancelled"))
-                    }
-                }
-                
-                // Keep reference to the flow to prevent deallocation
-                Task { @MainActor in
-                    self.currentAuthorizationFlow = flow
+            let flow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
+                if let authState = authState {
+                    self.setAuthState(authState)
+                    continuation.resume()
+                } else {
+                    continuation.resume(throwing: AuthError.authFailed(error?.localizedDescription ?? "User cancelled"))
                 }
             }
+            self.currentAuthorizationFlow = flow
         }
     }
     
