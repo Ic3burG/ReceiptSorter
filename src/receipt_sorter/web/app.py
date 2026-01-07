@@ -31,28 +31,109 @@ app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 templates_path = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(templates_path))
 
-# Initialize services
-# Note: These are initialized lazily or on startup to handle env vars
+# Global state
 processor = None
 extractor = None
 categorizer = None
 organizer = None
 spreadsheet_mgr = None
 gs_mgr = None
+needs_setup = False
 
-@app.on_event("startup")
-async def startup_event():
-    global processor, extractor, categorizer, organizer, spreadsheet_mgr, gs_mgr
+def init_services():
+    """Initialize all services"""
+    global processor, extractor, categorizer, organizer, spreadsheet_mgr, gs_mgr, needs_setup
     try:
+        # Check if API key is present
+        if not os.getenv("GEMINI_API_KEY"):
+            print("Missing Gemini API Key. Setup required.")
+            needs_setup = True
+            return
+
         processor = DocumentProcessor()
         extractor = DataExtractor()
         categorizer = Categorizer()
         organizer = FileOrganizer()
         spreadsheet_mgr = SpreadsheetManager()
         gs_mgr = GoogleSheetsManager()
+        needs_setup = False
         print("Services initialized successfully")
     except Exception as e:
         print(f"Error initializing services: {e}")
+        needs_setup = True
+
+@app.on_event("startup")
+async def startup_event():
+    init_services()
+
+@app.middleware("http")
+async def check_setup(request: Request, call_next):
+    """Middleware to force setup if not configured"""
+    global needs_setup
+    
+    # Allow static files and setup routes
+    if request.url.path.startswith("/static") or \
+       request.url.path in ["/setup", "/settings"]:
+        return await call_next(request)
+        
+    if needs_setup:
+        return RedirectResponse(url="/setup")
+        
+    return await call_next(request)
+
+@app.get("/setup", response_class=HTMLResponse)
+async def show_setup(request: Request):
+    """Render the setup wizard"""
+    return templates.TemplateResponse("setup.html", {"request": request})
+
+@app.post("/setup")
+async def process_setup(
+    request: Request,
+    gemini_api_key: str = Form(...),
+    google_sheet_id: Optional[str] = Form(None)
+):
+    """Save initial setup"""
+    try:
+        # Create or update .env
+        env_path = Path(".env")
+        lines = []
+        if env_path.exists():
+            with open(env_path, "r") as f:
+                lines = f.readlines()
+        
+        # Helper to update key
+        def update_key(key, val, line_list):
+            found = False
+            new_lines = []
+            for line in line_list:
+                if line.strip().startswith(f"{key}="):
+                    new_lines.append(f"{key}={val}\n")
+                    found = True
+                else:
+                    new_lines.append(line)
+            if not found:
+                new_lines.append(f"{key}={val}\n")
+            return new_lines
+
+        lines = update_key("GEMINI_API_KEY", gemini_api_key, lines)
+        if google_sheet_id:
+            lines = update_key("GOOGLE_SHEET_ID", google_sheet_id, lines)
+            
+        with open(env_path, "w") as f:
+            f.writelines(lines)
+            
+        # Update env vars in memory
+        os.environ["GEMINI_API_KEY"] = gemini_api_key
+        if google_sheet_id:
+            os.environ["GOOGLE_SHEET_ID"] = google_sheet_id
+            
+        # Re-initialize services
+        init_services()
+        
+        return RedirectResponse(url="/", status_code=303)
+        
+    except Exception as e:
+        return templates.TemplateResponse("setup.html", {"request": request, "error": str(e)})
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):

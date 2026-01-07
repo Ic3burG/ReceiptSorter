@@ -5,6 +5,9 @@
 ## Session: January 6, 2026
 
 ### 🚀 Major Features Added
+- **User Onboarding**: Created a seamless "First Run" experience.
+    - **Setup Wizard**: The web app now detects missing keys and redirects to a friendly `/setup` page where users can input their Gemini API Key and Google Sheet ID.
+    - **One-Click Launcher**: Added `start_app.command` for macOS, which automatically sets up the environment, installs dependencies, and launches the app.
 - **Visual Feedback**: Added animated loading overlays to the web interface. Users now see a "Processing Receipts" spinner during upload and a "Syncing to Cloud" spinner during batch confirmation.
 - **Batch Editing & Review**: Implemented a two-stage processing workflow. Uploaded receipts are now presented in a review dashboard (`review.html`) where users can manually correct vendors, dates, amounts, and categories before final organization and cloud synchronization.
 - **Settings UI**: Implemented a new settings page (`/settings`) in the web application. Users can now configure their Gemini API Key, Google Sheet ID, and Service Account path directly through the browser. Changes are persisted to the `.env` file.

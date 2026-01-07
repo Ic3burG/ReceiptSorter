@@ -31,6 +31,19 @@ The app classifies receipts into these categories:
 
 ## Installation
 
+### 🚀 Quick Start (macOS)
+
+1. **Clone or Download** this repository.
+2. Double-click **`start_app.command`**.
+3. The script will automatically:
+   - Create a virtual environment
+   - Install all dependencies
+   - Check for Tesseract OCR (and try to install it via Homebrew)
+   - Launch the app and open your browser
+4. Follow the **Setup Wizard** in your browser to enter your API keys.
+
+### Manual Installation
+
 ### Prerequisites
 
 - Python 3.8 or higher
