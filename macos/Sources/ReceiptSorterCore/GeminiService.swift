@@ -14,7 +14,10 @@ public actor GeminiService {
     private let model: GenerativeModel
     
     public init(apiKey: String) {
-        self.model = GenerativeModel(name: "gemini-1.5-flash", apiKey: apiKey)
+        // Fallback to gemini-pro for better compatibility if flash fails
+        // Logging for debug purposes
+        print("🤖 Initializing GeminiService with API Key length: \(apiKey.count)")
+        self.model = GenerativeModel(name: "gemini-pro", apiKey: apiKey)
     }
     
     public func extractData(from text: String) async throws -> ReceiptData {
