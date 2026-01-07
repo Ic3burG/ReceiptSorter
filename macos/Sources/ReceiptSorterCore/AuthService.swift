@@ -2,18 +2,13 @@ import Foundation
 @preconcurrency import AppAuth
 import AuthenticationServices
 
-@MainActor
-public final class AuthService: NSObject {
-    private var currentAuthorizationFlow: OIDExternalUserAgentSession?
+public final class AuthService: NSObject, @unchecked Sendable {
+    @MainActor private var currentAuthorizationFlow: OIDExternalUserAgentSession?
     private let kIssuer = "https://accounts.google.com"
     private let kClientID: String
-    // Use standard loopback without path to avoid strict matching issues on some Google Cloud configs
-    private let kRedirectURI = "http://127.0.0.1" 
+    private let kRedirectURI = "http://127.0.0.1" // Loopback without path
     private let kAuthStateKey = "authState"
     
-    // AuthState is thread-safe (we use a lock or serial queue if needed, but for now simple atomic access pattern)
-    // Actually, simple var access is risky across threads without isolation. 
-    // We will use a private lock for state access to be truly Sendable.
     private let lock = NSLock()
     private var _authState: OIDAuthState?
     
@@ -71,6 +66,7 @@ public final class AuthService: NSObject {
         }
         
         let token = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+            // performAction is thread-safe in AppAuth
             authState.performAction { accessToken, idToken, error in
                 if let accessToken = accessToken {
                     continuation.resume(returning: accessToken)
