@@ -48,7 +48,16 @@ public actor SheetService {
     }
 }
 
-public enum SheetError: Error {
+public enum SheetError: LocalizedError {
     case sheetsNotConfigured
     case apiError(String)
+    
+    public var errorDescription: String? {
+        switch self {
+        case .sheetsNotConfigured:
+            return "Google Sheets ID not configured in Settings."
+        case .apiError(let message):
+            return "Google Sheets API Error: \(message)"
+        }
+    }
 }

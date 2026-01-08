@@ -144,6 +144,7 @@ struct ContentView: View {
             .onChange(of: apiKey) { _ in initializeCore() }
             .onChange(of: clientID) { _ in initializeCore() }
             .onChange(of: clientSecret) { _ in initializeCore() }
+            .onChange(of: googleSheetId) { _ in initializeCore() }
             
         } detail: {
             // DETAIL: Preview & Data
