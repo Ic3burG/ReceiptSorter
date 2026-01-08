@@ -4,24 +4,20 @@
 
 ## Session: January 6, 2026
 
-### 🛠️ Fixes & Polish
-- **Dynamic Batch Queue**: Improved the macOS app to allow dropping new files into the sidebar at any time.
-    - Moved the drop target to the main sidebar container.
-    - Refactored the processing loop to dynamically pick up new "pending" items added while a batch is already running.
-- **Gemini Networking Fix**: Replaced the Google Generative AI Swift SDK with a direct **URLSession/REST implementation**.
-- **Settings UI Fix**: Increased the default size of the macOS Settings window.
-- **Gemini Error Reporting**: Enhanced `GeminiError` to conform to `LocalizedError`.
+### 🛠️ UX Improvements
+- **Smart Spreadsheet Link Parsing**: Updated `SettingsView` to accept full Google Sheets URLs (e.g., `https://docs.google.com/spreadsheets/d/ID/edit`). The app now automatically extracts the ID using Regex, making configuration much easier for non-technical users.
+- **Improved Error Handling**: Surfaced specific Gemini API errors to the UI.
+- **Documentation**: Clarified Google Sheets setup instructions in README and App UIs.
 
 ### 🚀 Phase 3 Progress (Distribution)
 - **App Icon Generation**: Designed and implemented a professional macOS app icon.
 - **Build Script**: Created `macos/scripts/bundle.sh` for automated packaging.
 
 ### 🚀 Phase 2 Progress (Native macOS App)
-- **Batch Processing**: Implemented robust multi-file queuing and processing.
 - **Completed Sync Pipeline**: Wired up the "Sync to Sheets" button.
 - **UI Polish & Architecture**: Settings Window, Live Preview, Visual Feedback.
 - **Google Sheets Integration**: Implemented `SheetService`.
-- **Gemini Swift Integration**: Implemented `GeminiService`.
+- **Gemini Swift Integration**: Integrated `GoogleGenerativeAI`.
 - **Full macOS Pipeline**: Drop -> OCR -> AI -> Sync.
 - **Native SwiftUI App**: Implemented `ReceiptSorterApp`.
 - **Native OCR**: Implemented `OCRService` using Vision.
