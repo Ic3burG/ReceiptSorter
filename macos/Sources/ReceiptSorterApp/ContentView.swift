@@ -88,25 +88,39 @@ struct ContentView: View {
                     VStack(spacing: 12) {
                         Divider()
                         
-                        // Status Bar
+                        // Authentication Status
                         HStack {
                             if isAuthorized {
-                                Label("Signed In", systemImage: "person.circle.fill")
+                                Label("Signed In", systemImage: "checkmark.circle.fill")
                                     .foregroundColor(.green)
                                     .font(.caption)
+                                Spacer()
+                                Button("Sign Out") {
+                                    signOut()
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundColor(.secondary)
+                                .font(.caption)
                             } else {
-                                Label("Not Signed In", systemImage: "person.circle")
+                                Label("Not Signed In", systemImage: "circle")
                                     .foregroundColor(.secondary)
                                     .font(.caption)
-                            }
-                            Spacer()
-                            Text("\(items.count) files")
+                                Spacer()
+                                Button("Sign In") {
+                                    signIn()
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundColor(.blue)
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                            }
                         }
                         .padding(.horizontal)
                         
                         HStack {
+                            Text("\(items.count) files")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Spacer()
                             Button("Clear All") {
                                 items.removeAll()
                                 selectedItemId = nil
@@ -114,23 +128,20 @@ struct ContentView: View {
                             .buttonStyle(.plain)
                             .foregroundColor(.red)
                             .font(.caption)
-                            
-                            Spacer()
-                            
-                            if isAuthorized && items.contains(where: { $0.status == .extracted }) {
-                                Button("Sync All") {
-                                    syncAll()
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .controlSize(.small)
-                            } else if !isAuthorized {
-                                Button("Sign In") {
-                                    signIn()
-                                }
-                                .controlSize(.small)
-                            }
                         }
-                        .padding([.horizontal, .bottom])
+                        .padding([.top, .horizontal])
+                        
+                        if isAuthorized && items.contains(where: { $0.status == .extracted }) {
+                            Button(action: syncAll) {
+                                HStack {
+                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                    Text("Sync All Completed")
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .padding([.horizontal, .bottom])
+                        }
                     }
                 }
             }
@@ -274,30 +285,23 @@ struct ContentView: View {
     }
     
     private func signIn() {
-        guard let core = core, let auth = core.authService else {
-            self.signInError = "Auth Service not initialized. Check Client ID."
-            self.showSignInError = true
-            return
-        }
-        
+        guard let core = core, let auth = core.authService else { return }
         Task {
             do {
                 if let window = NSApp.windows.first {
                     try await auth.signIn(presenting: window)
                     await MainActor.run { self.isAuthorized = true }
-                } else {
-                    await MainActor.run {
-                        self.signInError = "No active window found."
-                        self.showSignInError = true
-                    }
                 }
             } catch {
-                await MainActor.run {
-                    self.signInError = "Sign In Failed: \(error.localizedDescription)"
-                    self.showSignInError = true
-                }
+                print("Sign In Failed: \(error)")
             }
         }
+    }
+    
+    private func signOut() {
+        guard let core = core, let auth = core.authService else { return }
+        auth.signOut()
+        self.isAuthorized = false
     }
     
     private func loadFiles(from providers: [NSItemProvider]) {
