@@ -85,13 +85,28 @@ struct ContentView: View {
                     .listStyle(.sidebar)
                     
                     // Batch Actions
-                    VStack {
+                    VStack(spacing: 12) {
                         Divider()
+                        
+                        // Status Bar
                         HStack {
+                            if isAuthorized {
+                                Label("Signed In", systemImage: "person.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.caption)
+                            } else {
+                                Label("Not Signed In", systemImage: "person.circle")
+                                    .foregroundColor(.secondary)
+                                    .font(.caption)
+                            }
+                            Spacer()
                             Text("\(items.count) files")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            Spacer()
+                        }
+                        .padding(.horizontal)
+                        
+                        HStack {
                             Button("Clear All") {
                                 items.removeAll()
                                 selectedItemId = nil
@@ -99,32 +114,23 @@ struct ContentView: View {
                             .buttonStyle(.plain)
                             .foregroundColor(.red)
                             .font(.caption)
-                        }
-                        .padding([.top, .horizontal])
-                        
-                        if isAuthorized {
-                            if items.contains(where: { $0.status == .extracted }) {
-                                Button(action: syncAll) {
-                                    HStack {
-                                        Image(systemName: "arrow.triangle.2.circlepath")
-                                        Text("Sync All Completed")
-                                    }
-                                    .frame(maxWidth: .infinity)
+                            
+                            Spacer()
+                            
+                            if isAuthorized && items.contains(where: { $0.status == .extracted }) {
+                                Button("Sync All") {
+                                    syncAll()
                                 }
                                 .buttonStyle(.borderedProminent)
-                                .padding([.horizontal, .bottom])
-                            }
-                        } else {
-                            Button(action: signIn) {
-                                HStack {
-                                    Image(systemName: "person.circle")
-                                    Text("Sign In to Google")
+                                .controlSize(.small)
+                            } else if !isAuthorized {
+                                Button("Sign In") {
+                                    signIn()
                                 }
-                                .frame(maxWidth: .infinity)
+                                .controlSize(.small)
                             }
-                            .controlSize(.large)
-                            .padding([.horizontal, .bottom])
                         }
+                        .padding([.horizontal, .bottom])
                     }
                 }
             }
@@ -146,13 +152,13 @@ struct ContentView: View {
                 let item = items[index]
                 
                 HSplitView {
+                    // ... (Preview Logic Unchanged) ...
                     // Preview (Left)
                     ZStack {
                         Color(NSColor.controlBackgroundColor)
                         if item.url.pathExtension.lowercased() == "pdf" {
                             PDFKitRepresentedView(url: item.url)
-                        }
-                        else {
+                        } else {
                             AsyncImage(url: item.url) { image in
                                 image.resizable().aspectRatio(contentMode: .fit)
                             } placeholder: {
@@ -168,12 +174,16 @@ struct ContentView: View {
                             Text("Details")
                                 .font(.headline)
                             Spacer()
+                            
+                            // Action Buttons
                             if item.status == .extracted {
                                 if isAuthorized {
                                     Button("Sync This") { syncSingle(index) }
                                 }
-                                else {
-                                    Button("Sign In") { signIn() }
+                            } else if item.status == .error {
+                                Button("Retry") {
+                                    // Reset status and try processing again
+                                    Task { await processItem(at: index) }
                                 }
                             }
                         }
@@ -185,6 +195,7 @@ struct ContentView: View {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 20) {
                                 if let data = item.data {
+                                    // ... (Data Cards Unchanged) ...
                                     DataCard(title: "Vendor", icon: "building.2", value: data.vendor)
                                     DataCard(title: "Date", icon: "calendar", value: data.date)
                                     DataCard(title: "Amount", icon: "dollarsign.circle", value: "\(String(format: "%.2f", data.total_amount ?? 0.0)) \(data.currency ?? "")")
@@ -199,28 +210,31 @@ struct ContentView: View {
                                             .cornerRadius(8)
                                     }
                                 }
-                                else if let error = item.error {
-                                    VStack(alignment: .leading) {
-                                        Label("Error", systemImage: "exclamationmark.triangle.fill")
+                                
+                                // Error State
+                                if let error = item.error {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Label("Processing Failed", systemImage: "exclamationmark.triangle.fill")
                                             .foregroundColor(.red)
                                             .font(.headline)
                                         Text(error)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
+                                            .font(.body)
+                                            .foregroundColor(.primary)
+                                            .textSelection(.enabled)
+                                            .padding(8)
+                                            .background(Color.white)
+                                            .cornerRadius(6)
                                     }
                                     .padding()
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                                     .background(Color.red.opacity(0.1))
                                     .cornerRadius(8)
                                 }
-                                else {
+                                
+                                if item.status == .processing || item.status == .pending {
                                     VStack(spacing: 10) {
-                                        if item.status == .processing {
-                                            ProgressView()
-                                            Text("Analyzing...")
-                                        }
-                                        else {
-                                            Text("Waiting...")
-                                        }
+                                        ProgressView()
+                                        Text(item.status == .processing ? "Analyzing..." : "Waiting...")
                                     }
                                     .foregroundColor(.secondary)
                                     .frame(maxWidth: .infinity, alignment: .center)
@@ -233,8 +247,7 @@ struct ContentView: View {
                     .frame(minWidth: 250, maxWidth: 400, maxHeight: .infinity)
                     .background(Color(NSColor.windowBackgroundColor))
                 }
-            }
-            else {
+            } else {
                 Text("Select a receipt to view details")
                     .foregroundColor(.secondary)
             }
