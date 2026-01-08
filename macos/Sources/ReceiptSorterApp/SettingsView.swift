@@ -184,34 +184,108 @@ struct SyncSettingsView: View {
 
     
 
-    private func extractSheetID(from input: String) {
+        private func extractSheetID(from input: String) {
 
-        // Regex to find ID between /d/ and /
+    
 
-        // Pattern: /d/([a-zA-Z0-9-_]+)
+            // Handle full URLs
 
-        if input.contains("docs.google.com") {
+    
 
-            let pattern = "/d/([a-zA-Z0-9-_]+)"
+            if input.contains("/d/") {
 
-            if let regex = try? NSRegularExpression(pattern: pattern),
+    
 
-               let match = regex.firstMatch(in: input, range: NSRange(input.startIndex..., in: input)),
+                let components = input.components(separatedBy: "/d/")
 
-               let range = Range(match.range(at: 1), in: input) {
+    
 
-                self.googleSheetId = String(input[range])
+                if components.count > 1 {
+
+    
+
+                    let idPart = components[1]
+
+    
+
+                    // The ID ends at the next slash or end of string
+
+    
+
+                    if let idEndIndex = idPart.firstIndex(of: "/") {
+
+    
+
+                        self.googleSheetId = String(idPart[..<idEndIndex])
+
+    
+
+                    } else {
+
+    
+
+                        // ID might be the end of the string if no trailing slash
+
+    
+
+                        self.googleSheetId = idPart
+
+    
+
+                    }
+
+    
+
+                    return
+
+    
+
+                }
+
+    
 
             }
 
-        } else {
+    
 
-            // Assume it's just the ID if it's not a URL
+            
 
-            self.googleSheetId = input
+    
+
+            // If no /d/ found, assume the user pasted the ID directly
+
+    
+
+            // But clean up any potential query parameters just in case
+
+    
+
+            if let queryIndex = input.firstIndex(of: "?") {
+
+    
+
+                self.googleSheetId = String(input[..<queryIndex])
+
+    
+
+            } else {
+
+    
+
+                self.googleSheetId = input
+
+    
+
+            }
+
+    
 
         }
 
+    
+
     }
 
-}
+    
+
+    

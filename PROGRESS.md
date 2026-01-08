@@ -5,10 +5,10 @@
 ## Session: January 6, 2026
 
 ### 🛠️ UX Improvements
-- **Authentication Visibility**: Added a persistent status indicator at the bottom of the sidebar. Users can now see if they are "Signed In" or "Not Signed In" at a glance before dropping any files.
-- **Sign Out Capability**: Added a "Sign Out" button to allow users to disconnect their Google account and clear local session tokens.
-- **Smart Spreadsheet Link Parsing**: Updated `SettingsView` to automatically extract Sheet IDs from pasted URLs.
-- **Improved Error Handling**: Surfaced specific Gemini API errors to the UI.
+- **Robust Spreadsheet ID Parsing**: Fixed an issue where pasting full Google Sheets URLs resulted in API errors. The Settings logic now robustly strips the ID from any URL format containing `/d/`, regardless of protocol or query parameters.
+- **Authentication Visibility**: Added a persistent status indicator at the bottom of the sidebar.
+- **Sign Out Capability**: Added a "Sign Out" button.
+- **Smart Spreadsheet Link Parsing**: Initial implementation.
 
 ### 🚀 Phase 3 Progress (Distribution)
 - **App Icon Generation**: Designed and implemented a professional macOS app icon.
@@ -22,6 +22,6 @@
 - **Gemini Swift Integration**: Implemented `GeminiService`.
 - **Full macOS Pipeline**: Drop -> OCR -> AI -> UI -> Sync.
 - **Native SwiftUI App**: Implemented `ReceiptSorterApp`.
-- **Native OCR**: Implemented `OCRService` using Vision.
+- **Native OCR**: Implemented `OCRService`.
 
 ---
