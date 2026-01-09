@@ -47,6 +47,13 @@ public struct ReceiptSorterCore: Sendable {
         }
         try await sheetService.appendReceipt(data)
     }
+    
+    public func formatSheet() async throws {
+        guard let sheetService = sheetService else {
+            throw SheetError.sheetsNotConfigured
+        }
+        try await sheetService.formatHeader()
+    }
 }
 
 extension GeminiError {

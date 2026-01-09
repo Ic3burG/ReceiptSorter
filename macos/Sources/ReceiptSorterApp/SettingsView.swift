@@ -58,131 +58,229 @@ struct SyncSettingsView: View {
 
     // Intermediate state for binding
 
-    @State private var sheetInput: String = ""
+        @State private var sheetInput: String = ""
+
+        @State private var isFormatting = false
+
+        
+
+        var body: some View {
+
+            Form {
+
+                Section(header: Text("Configuration")) {
+
+                    TextField("Spreadsheet Link", text: $sheetInput)
+
+                        .textFieldStyle(.roundedBorder)
+
+                        .onChange(of: sheetInput) { newValue in
+
+                            extractSheetID(from: newValue)
+
+                        }
+
+                        .onAppear { sheetInput = googleSheetId }
 
     
 
-    var body: some View {
+                    if !googleSheetId.isEmpty && googleSheetId != sheetInput {
 
-        Form {
+                        Text("ID extracted: \(googleSheetId)")
 
-            Section(header: Text("Configuration")) {
+                            .font(.caption)
 
-                TextField("Spreadsheet Link", text: $sheetInput)
-
-                    .textFieldStyle(.roundedBorder)
-
-                    .onChange(of: sheetInput) { newValue in
-
-                        extractSheetID(from: newValue)
+                            .foregroundColor(.green)
 
                     }
 
-                    .onAppear { sheetInput = googleSheetId }
+    
 
-                
-
-                if !googleSheetId.isEmpty && googleSheetId != sheetInput {
-
-                    Text("ID extracted: \(googleSheetId)")
+                    Text("Paste the full URL of your Google Sheet.")
 
                         .font(.caption)
 
-                        .foregroundColor(.green)
+                        .foregroundColor(.secondary)
+
+    
+
+                    Divider().padding(.vertical, 5)
+
+    
+
+                    TextField("OAuth Client ID", text: $clientID)
+
+                        .textFieldStyle(.roundedBorder)
+
+                    Text("Your Google Cloud OAuth 2.0 Client ID.")
+
+                        .font(.caption)
+
+                        .foregroundColor(.secondary)
+
+    
+
+                                    SecureField("OAuth Client Secret", text: $clientSecret)
+
+    
+
+                                        .textFieldStyle(.roundedBorder)
+
+    
+
+                                    Text("Required for Desktop App authentication.")
+
+    
+
+                                        .font(.caption)
+
+    
+
+                                        .foregroundColor(.secondary)
+
+    
+
+    
+
+                                    if !googleSheetId.isEmpty {
+
+    
+
+                                        Button(action: formatSheet) {
+
+                                            HStack {
+
+                                                if isFormatting { ProgressView().controlSize(.small) }
+
+                                                Text("🎨 Apply Professional Formatting")
+
+                                            }
+
+                                        }
+
+                                        .buttonStyle(.bordered)
+
+                                        .disabled(isFormatting)
+
+                                        .padding(.top, 5)
+
+    
+
+                                    }
+
+    
+
+                                }
+
+    
+
+    
+
+                                Section(header: Text("Setup Guide")) {
+
+    
+
+    
+
+                    VStack(alignment: .leading, spacing: 8) {
+
+                        Label("1. Create Client ID", systemImage: "1.circle")
+
+                        Text("Go to Google Cloud Console > APIs & Services > Credentials. Create an **OAuth 2.0 Client ID**.")
+
+                            .font(.caption)
+
+                            .foregroundColor(.secondary)
+
+                            .fixedSize(horizontal: false, vertical: true)
+
+    
+
+                        Label("2. Select 'Desktop App'", systemImage: "2.circle")
+
+                        Text("Important: Select **Desktop App** as the Application Type (NOT iOS). This enables the required authentication flow.")
+
+                            .font(.caption)
+
+                            .foregroundColor(.secondary)
+
+                            .fixedSize(horizontal: false, vertical: true)
+
+    
+
+                        Label("3. Sign In", systemImage: "3.circle")
+
+                        Text("Copy the Client ID & Secret above, then click 'Sign In' on the main screen.")
+
+                            .font(.caption)
+
+                            .foregroundColor(.secondary)
+
+                            .fixedSize(horizontal: false, vertical: true)
+
+                    }
+
+                    .padding(.vertical, 5)
 
                 }
-
-                
-
-                Text("Paste the full URL of your Google Sheet.")
-
-                    .font(.caption)
-
-                    .foregroundColor(.secondary)
-
-                
-
-                Divider().padding(.vertical, 5)
-
-                
-
-                TextField("OAuth Client ID", text: $clientID)
-
-                    .textFieldStyle(.roundedBorder)
-
-                Text("Your Google Cloud OAuth 2.0 Client ID.")
-
-                    .font(.caption)
-
-                    .foregroundColor(.secondary)
-
-                
-
-                SecureField("OAuth Client Secret", text: $clientSecret)
-
-                    .textFieldStyle(.roundedBorder)
-
-                Text("Required for Desktop App authentication.")
-
-                    .font(.caption)
-
-                    .foregroundColor(.secondary)
 
             }
 
+            .padding()
+
+        }
+
+        
+
+        private func formatSheet() {
+
+            guard !googleSheetId.isEmpty else { return }
+
+            isFormatting = true
+
             
 
-            Section(header: Text("Setup Guide")) {
+            // Initialize core temporarily to use its services
 
-                VStack(alignment: .leading, spacing: 8) {
+            let core = ReceiptSorterCore(clientID: clientID, sheetID: googleSheetId)
 
-                    Label("1. Create Client ID", systemImage: "1.circle")
+            
 
-                    Text("Go to Google Cloud Console > APIs & Services > Credentials. Create an **OAuth 2.0 Client ID**.")
+            Task {
 
-                        .font(.caption)
+                do {
 
-                        .foregroundColor(.secondary)
+                    // Ensure we are signed in first
 
-                        .fixedSize(horizontal: false, vertical: true)
+                    if let auth = core.authService, await !auth.isAuthorized {
 
-                    
+                        if let window = NSApp.windows.first {
 
-                    Label("2. Select 'Desktop App'", systemImage: "2.circle")
+                            try await auth.signIn(presenting: window)
 
-                    Text("Important: Select **Desktop App** as the Application Type (NOT iOS). This enables the required authentication flow.")
+                        }
 
-                        .font(.caption)
-
-                        .foregroundColor(.secondary)
-
-                        .fixedSize(horizontal: false, vertical: true)
+                    }
 
                     
 
-                    Label("3. Sign In", systemImage: "3.circle")
+                    try await core.formatSheet()
 
-                    Text("Copy the Client ID & Secret above, then click 'Sign In' on the main screen.")
+                    isFormatting = false
 
-                        .font(.caption)
+                } catch {
 
-                        .foregroundColor(.secondary)
+                    print("Formatting failed: \(error)") // Simple log for settings
 
-                        .fixedSize(horizontal: false, vertical: true)
+                    isFormatting = false
 
                 }
-
-                .padding(.vertical, 5)
 
             }
 
         }
 
-        .padding()
-
-    }
-
-    
+        
 
         private func extractSheetID(from input: String) {
 
