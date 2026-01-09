@@ -1,23 +1,20 @@
-# Receipt Sorter & Categorization App
+# Receipt Sorter - macOS App
 
-[![Python CI](https://github.com/ojdavis/ReceiptSorter/workflows/Python%20CI/badge.svg)](https://github.com/ojdavis/ReceiptSorter/actions)
-[![Docker Build](https://github.com/ojdavis/ReceiptSorter/workflows/Docker%20Build%20%26%20Push/badge.svg)](https://github.com/ojdavis/ReceiptSorter/actions)
 [![macOS Build](https://github.com/ojdavis/ReceiptSorter/workflows/macOS%20App%20Build/badge.svg)](https://github.com/ojdavis/ReceiptSorter/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Automatically process PDF receipts, extract financial data, categorize expenses for Canadian tax purposes, handle multiple currencies, and organize everything into folders and spreadsheets.
+A native macOS application that automatically processes PDF receipts, extracts financial data, categorizes expenses for Canadian tax purposes, handles multiple currencies, and syncs everything to Google Sheets.
 
 ## Features
 
-- 🌐 **Local Web Interface**: Modern, easy-to-use web dashboard for uploading and viewing results
-- 📄 **Document Processing**: Extracts text from native PDFs and images (JPG, PNG, etc.) using OCR
+- 🖱️ **Native macOS Interface**: Beautiful SwiftUI interface with drag-and-drop support
+- 📄 **Document Processing**: Extracts text from native PDFs and images (JPG, PNG, etc.) using Apple Vision Framework
 - 🤖 **AI-Powered Extraction**: Uses Google Gemini AI to intelligently extract receipt data (amount, date, vendor, currency)
 - 🏷️ **Smart Categorization**: Automatically categorizes receipts into Canadian tax deduction categories
 - 💰 **Multi-Currency Support**: Handles CAD, USD, EUR, GBP, JPY, AUD, CHF
-- 📁 **Automatic Organization**: Sorts receipts into currency-specific folders with standardized naming
-- 📊 **Excel Reporting**: Generates formatted spreadsheets with category totals and breakdowns
-- ☁️ **Google Sheets Integration**: Automatically syncs receipt data to Google Sheets (one sheet per currency)
-- ⚠️ **Quality Assurance**: Flags low-confidence categorizations for manual review
+- ☁️ **Google Sheets Integration**: Automatically syncs receipt data to Google Sheets with professional formatting
+- 🔔 **Native Notifications**: macOS notifications for processing status
+- ⚡ **High Performance**: Native Swift implementation using Apple frameworks
 
 ## Canadian Tax Categories
 
@@ -36,329 +33,163 @@ The app classifies receipts into these categories:
 
 ## Installation
 
-### 🚀 Quick Start (macOS)
+### Requirements
 
-1. **Clone or Download** this repository.
-2. Double-click **`start_app.command`**.
-3. The script will automatically:
-   - Create a virtual environment
-   - Install all dependencies
-   - Check for Tesseract OCR (and try to install it via Homebrew)
-   - Launch the app and open your browser
-4. Follow the **Setup Wizard** in your browser to enter your API keys.
+- macOS 13.0 (Ventura) or later
+- Google Gemini API key ([Get one here](https://aistudio.google.com/))
+- Google Cloud Service Account (optional, for Google Sheets sync)
 
-### Manual Installation
+### Download
 
-### Prerequisites
+1. Download the latest release from the [Releases page](https://github.com/ojdavis/ReceiptSorter/releases)
+2. Extract the `.zip` file
+3. Move `Receipt Sorter.app` to your Applications folder
+4. Double-click to launch
 
-- Python 3.9 or higher
-- Tesseract OCR (for scanned documents)
-- Google Gemini API key
-- Docker & Docker Compose (optional, for containerized setup)
+### First Launch Setup
 
-### Step 1: Clone or Download
+1. **API Key Configuration**
 
-```bash
-cd ReceiptSorter
-```
+   - Go to Settings (⌘,)
+   - Enter your Google Gemini API key
+   - The key is stored securely in your macOS Keychain
 
-### Step 2: Install Python Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### Step 3: Install Tesseract OCR
-
-**macOS:**
-
-```bash
-brew install tesseract
-```
-
-**Ubuntu/Debian:**
-
-```bash
-sudo apt-get install tesseract-ocr
-```
-
-**Windows:**
-Download from: https://github.com/UB-Mannheim/tesseract/wiki
-
-After installation on Windows, update `config.py` with the path to tesseract.exe:
-
-```python
-TESSERACT_CMD = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-```
-
-### Step 4: Set Up API Key
-
-1. Get your Google Gemini API key from https://aistudio.google.com/
-2. Copy `.env.example` to `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-3. Edit `.env` and add your `GEMINI_API_KEY`.
-
-### Step 5: Configure Google Sheets (Optional)
-
-To enable syncing to Google Sheets, you need to set up a **Service Account**.
-
-1. **Create Service Account**:
-
-   - Go to [Google Cloud Console](https://console.cloud.google.com/).
-   - Create a new project (e.g., "Receipt Sorter").
-   - Enable the **Google Sheets API**.
-   - Go to **IAM & Admin > Service Accounts** and create a new service account.
-   - Go to the **Keys** tab, click **Add Key > Create new key**, and select **JSON**.
-   - A file will download. Rename it to `service_account.json` and move it to this project's folder.
-
-2. **Get Spreadsheet ID**:
-
-   - Open your Google Sheet in a browser.
-   - Look at the URL: `https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKb.../edit`
-   - The long string between `/d/` and `/edit` is your **Spreadsheet ID**.
-
-3. **Share the Sheet**:
-
-   - Open `service_account.json` in a text editor and copy the `client_email` address.
-   - Go to your Google Sheet, click **Share**, and paste that email address with **Editor** permissions.
-
-4. **Update App Settings**:
-   - **Web App**: Go to Settings and enter the ID.
-   - **macOS App**: Go to App Menu > Settings > Sync and enter the ID and path.
-
-Edit `config.py` to customize:
-
-- Source folder for receipts
-- Output folder for sorted receipts
-- Supported currencies
-- Tax categories
-- Confidence threshold for manual review
+2. **Google Sheets Setup** (Optional)
+   - Create a Service Account in [Google Cloud Console](https://console.cloud.google.com/)
+   - Enable the Google Sheets API
+   - Download the service account JSON credentials
+   - In Receipt Sorter Settings, go to the Sync tab
+   - Enter your Google Sheets ID and path to the credentials file
+   - Click "Authenticate" to connect
 
 ## Usage
 
-### Docker Usage (Easiest)
+### Processing Receipts
 
-If you have Docker installed, you don't need to install Python or Tesseract locally:
+1. Launch Receipt Sorter
+2. Drag and drop receipt files (PDF, JPG, PNG) onto the drop zone
+3. The app will automatically:
+   - Extract text using Apple Vision OCR
+   - Extract receipt data (vendor, date, amount, currency)
+   - Categorize the expense
+   - Display the results in the preview pane
+4. Review the extracted data
+5. Click "Sync to Sheets" to upload to Google Sheets
 
-1. Create your `.env` file with your API keys.
-2. Run the container:
-   ```bash
-   docker-compose up --build
-   ```
-3. Access the web app at `http://localhost:8000`
+### Batch Processing
 
-### Web Application (Recommended)
+- Drop multiple files at once
+- The app processes them sequentially
+- Progress is shown in the status bar
+- Notifications alert you when processing completes
 
-1. Start the web server:
-   ```bash
-   python run_web.py
-   ```
-2. Open your browser to `http://127.0.0.1:8000`
-3. Drag and drop your receipts to process them!
+### Google Sheets Format
 
-### CLI Usage
-
-1. Place your PDF/Image receipts in the source folder (default: `~/receipts/source`)
-2. Run the application:
-   ```bash
-   python run.py
-   ```
-
-### Custom Folders
-
-Specify custom source and output folders:
-
-```bash
-python main.py --source /path/to/receipts --output /path/to/sorted
-```
-
-### What Happens
-
-The app will:
-
-1. ✅ Validate your setup and check for receipts
-2. 📖 Extract text from each document (PDF or Image with OCR)
-3. 🔍 Extract receipt data (vendor, date, amount, currency)
-4. 🏷️ Categorize into tax categories
-5. 📁 Move receipts to currency-specific folders
-6. 📊 Update local Excel spreadsheets with extracted data
-7. ☁️ Sync data to Google Sheets (if configured)
-8. 📋 Generate processing summary
-
-### Output Structure
-
-```
-sorted/
-├── CAD/
-│   ├── CAD_Receipts.xlsx
-│   ├── 2024-01-15_Amazon_45.99.pdf
-│   └── 2024-01-16_Starbucks_12.50.png
-├── USD/
-│   ├── USD_Receipts.xlsx
-│   └── 2024-01-20_AWS_150.00.pdf
-├── Review_Required/
-│   └── 2024-01-18_UnknownVendor_25.00.jpg
-└── processing_log.txt
-```
-
-## Excel & Google Sheets Format
-
-Each currency gets its own spreadsheet with:
+Each receipt is added to your Google Sheet with:
 
 | Date       | Vendor | Description     | Category        | Amount | Currency | File Name                   | Notes |
 | ---------- | ------ | --------------- | --------------- | ------ | -------- | --------------------------- | ----- |
 | 2024-01-15 | Amazon | Office supplies | Office Expenses | 45.99  | CAD      | 2024-01-15_Amazon_45.99.pdf |       |
 
-Plus:
+The app also applies professional formatting:
 
-- **Total row** with sum of all amounts
-- **Category breakdown** section with totals per category
-- **Professional formatting** with headers, currency symbols, and formulas
+- Blue header row with white bold text
+- Frozen header row
+- Currency formatting for amounts
+- Auto-sized columns
 
-## Configuration
+## Building from Source
 
-### Customize Tax Categories
+### Prerequisites
 
-Edit `config.py` to modify the `TAX_CATEGORIES` list:
+- Xcode 15.0 or later
+- Swift 6.0 or later
+- macOS 13.0 SDK
 
-```python
-TAX_CATEGORIES = [
-    "Your Custom Category",
-    "Another Category",
-    # ...
-]
+### Build Steps
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/ojdavis/ReceiptSorter.git
+   cd ReceiptSorter/macos
+   ```
+
+2. Build with Swift Package Manager:
+
+   ```bash
+   swift build -c release
+   ```
+
+3. Create the app bundle:
+
+   ```bash
+   ./scripts/bundle.sh
+   ```
+
+4. The app will be created at `Receipt Sorter.app`
+
+### Running Tests
+
+```bash
+cd macos
+swift test
 ```
 
-### Adjust Confidence Threshold
+## Project Structure
 
-Change how sensitive the manual review flagging is:
-
-```python
-CATEGORIZATION_CONFIDENCE_THRESHOLD = 70  # 0-100
 ```
-
-Lower values = fewer manual reviews, higher values = more manual reviews
-
-### Add More Currencies
-
-Update the `SUPPORTED_CURRENCIES` list:
-
-```python
-SUPPORTED_CURRENCIES = ["CAD", "USD", "EUR", "GBP", "JPY", "AUD", "CHF", "MXN"]
+ReceiptSorter/
+├── macos/                      # macOS Swift application
+│   ├── Sources/
+│   │   ├── ReceiptSorterCore/  # Core business logic
+│   │   │   ├── OCRService.swift          # Apple Vision OCR
+│   │   │   ├── GeminiService.swift       # AI data extraction
+│   │   │   ├── SheetService.swift        # Google Sheets sync
+│   │   │   └── AuthService.swift         # OAuth authentication
+│   │   ├── ReceiptSorterApp/   # SwiftUI application
+│   │   │   ├── ContentView.swift         # Main interface
+│   │   │   ├── SettingsView.swift        # Settings window
+│   │   │   └── PDFKitView.swift          # PDF preview
+│   │   └── ReceiptCLI/         # Command-line tool
+│   ├── Tests/                  # Test suite
+│   ├── Resources/              # App resources
+│   ├── scripts/                # Build scripts
+│   └── Package.swift           # Swift package manifest
+├── LICENSE
+├── README.md
+├── ROADMAP.md
+└── PROGRESS.md
 ```
 
 ## Troubleshooting
 
-### "No text extracted from PDF"
+### "Receipt Sorter.app" is damaged and can't be opened
 
-- The PDF might be scanned/image-based - ensure Tesseract is installed
-- Try opening the PDF manually to verify it's not corrupted
-- Check Tesseract path in `config.py` (Windows users)
-
-### "GEMINI_API_KEY not found"
-
-- Make sure you created the `.env` file or used the Settings UI
-- Verify the API key is correct
-- Alternatively, set environment variable: `export GEMINI_API_KEY='your-key'`
-
-### OCR not working
-
-- Verify Tesseract installation: `tesseract --version`
-- On Windows, set `TESSERACT_CMD` in `config.py`
-- Ensure PDF quality is good enough for OCR
-
-### Categorization seems incorrect
-
-- Check the `Review_Required` folder for flagged receipts
-- You can manually adjust categories in the Excel files
-- Consider adjusting the confidence threshold in `config.py`
-
-## Development
-
-### Project Structure
-
-````
-receipt-sorter/
-├── src/receipt_sorter/     # Core application package
-│   ├── web/                # FastAPI web interface & templates
-│   ├── config.py           # Configuration
-│   ├── pdf_processor.py    # Document extraction
-│   ├── data_extractor.py   # Gemini extraction logic
-│   ├── categorizer.py      # Gemini categorization logic
-│   └── ...
-├── tests/                  # Test suite
-├── docs/                   # Additional documentation
-├── pyproject.toml          # Package configuration
-├── Dockerfile              # Docker configuration
-├── run_web.py              # Web app entry point
-└── run.py                  # CLI entry point
-### Testing
-
-Create a test folder with sample receipts:
+This is a Gatekeeper warning for unsigned apps. To bypass:
 
 ```bash
-mkdir -p ~/receipts/source
-# Add some PDF receipts
-python main.py
-````
-
-Check the output in `~/receipts/sorted/`
-
-### CI/CD Pipeline
-
-This project uses GitHub Actions for continuous integration and deployment:
-
-- **Python CI**: Runs linting, type checking, and tests on every push and PR
-- **Docker Build**: Builds and publishes Docker images to GitHub Container Registry
-- **macOS Build**: Builds the native Swift macOS application
-- **Release**: Automatically creates releases with all artifacts when version tags are pushed
-
-#### Running Tests Locally
-
-```bash
-# Install development dependencies
-pip install -r requirements-dev.txt
-
-# Run tests with coverage
-pytest
-
-# Run linting
-ruff check .
-black --check .
-mypy .
-
-# Run security checks
-bandit -r .
-safety check
+xattr -cr "/Applications/Receipt Sorter.app"
 ```
 
-#### Pre-commit Hooks
+### OCR not extracting text
 
-Set up pre-commit hooks to automatically check code quality before commits:
+- Ensure the image/PDF quality is good enough
+- Try with a different file to verify OCR is working
+- Check Console.app for Vision framework errors
 
-```bash
-# Install pre-commit
-pip install pre-commit
+### Google Sheets sync not working
 
-# Install the git hooks
-pre-commit install
+- Verify your service account JSON is valid
+- Ensure the Google Sheets API is enabled in your Google Cloud project
+- Check that the sheet ID is correct
+- Verify the service account email has Editor permissions on the sheet
 
-# Run manually on all files
-pre-commit run --all-files
-```
+### API errors
 
-#### Creating a Release
-
-1. Update version in `pyproject.toml`
-2. Commit changes: `git commit -am "chore: bump version to X.Y.Z"`
-3. Create and push tag: `git tag vX.Y.Z && git push origin vX.Y.Z`
-4. GitHub Actions will automatically:
-   - Build Python wheel package
-   - Build and push Docker image
-   - Build macOS app bundle
-   - Create GitHub release with all artifacts
+- Verify your Gemini API key is correct in Settings
+- Check your API quota at [Google AI Studio](https://aistudio.google.com/)
+- Ensure you have internet connectivity
 
 ## API Costs
 
@@ -371,29 +202,28 @@ Gemini 1.5 Flash is highly cost-effective and often has a generous free tier for
 
 ## Future Enhancements
 
-- [ ] Web interface for easier review and editing
+- [ ] Code signing and notarization for easier installation
 - [ ] Duplicate receipt detection
 - [ ] Currency conversion to CAD with exchange rates
 - [ ] Export to accounting software formats (QuickBooks, Xero)
-- [ ] Email integration to fetch receipts automatically
-- [ ] Cloud storage integration (Google Drive, Dropbox)
-- [ ] Receipt validation rules and anomaly detection
-- [ ] Multi-year organization and annual reports
+- [ ] Watch folders for automatic processing
+- [ ] iOS companion app
+- [ ] Shortcuts integration
 
 ## License
 
-This project is provided as-is for personal and commercial use.
+This project is provided as-is for personal and commercial use under the MIT License.
 
 ## Support
 
 For issues or questions:
 
 1. Check the Troubleshooting section above
-2. Review the logs in `receipt_sorter.log`
-3. Check `processing_log.txt` for file operation details
+2. Open an issue on [GitHub](https://github.com/ojdavis/ReceiptSorter/issues)
+3. Check the macOS Console.app for detailed error logs
 
 ## Acknowledgments
 
 - Built with [Google Gemini](https://aistudio.google.com/)
-- PDF processing powered by [pdfplumber](https://github.com/jsvine/pdfplumber)
-- OCR powered by [Tesseract](https://github.com/tesseract-ocr/tesseract)
+- OCR powered by Apple Vision Framework
+- UI built with SwiftUI

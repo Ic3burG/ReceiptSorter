@@ -2,7 +2,42 @@
 
 **IMPORTANT:** This file must be updated with a summary of changes after every session or significant code modification. These updates must be committed and pushed to the GitHub repository immediately.
 
-## Session: January 9, 2026
+## Session: January 9, 2026 (Afternoon)
+
+### 🗑️ Python Removal - Transition to macOS-Only App
+
+- **Major Architectural Change**: Removed all Python code and infrastructure
+  - Deleted Python source files: `categorizer.py`, `config.py`, `data_extractor.py`, `file_organizer.py`, `main.py`, `pdf_processor.py`, `spreadsheet_manager.py`, and others
+  - Removed `src/receipt_sorter/` package (web app and all modules)
+  - Removed `tests/` directory (Python test suite)
+- **Configuration Cleanup**: Removed Python-specific configuration
+  - Deleted `requirements.txt`, `requirements-dev.txt`, `pyproject.toml`
+  - Removed `pytest.ini`, `.pre-commit-config.yaml`
+- **Docker Removal**: Eliminated Docker support (no longer needed for macOS-only app)
+  - Deleted `Dockerfile`, `docker-compose.yml`, `.dockerignore`
+- **CI/CD Simplification**: Streamlined GitHub Actions workflows
+  - Removed `ci-python.yml` (Python linting, testing, security scans)
+  - Removed `ci-docker.yml` (Docker builds)
+  - Updated `release.yml` to only build macOS app
+- **Documentation Overhaul**: Completely rewrote documentation for macOS focus
+  - Rewrote `README.md` to focus exclusively on macOS app
+  - Updated `ROADMAP.md` to mark Python phase as deprecated
+  - Removed `QUICKSTART.md`, `CONTRIBUTING.md`, and `docs/` directory
+  - Deleted setup scripts: `setup.sh`, `start_app.command`
+- **Repository Cleanup**: Removed Python artifacts
+  - Deleted `venv/` directory
+  - Removed `Format_Preview.xlsx` (Python implementation sample)
+
+### 📊 Project Status
+
+- **Platform**: macOS-only (Swift + SwiftUI)
+- **CI/CD**: Simplified to macOS builds only
+- **Distribution**: Ready for code signing and notarization
+- **Codebase**: 100% Swift, no Python dependencies
+
+---
+
+## Session: January 9, 2026 (Morning)
 
 ### 🔄 CI/CD Pipeline Implementation
 
@@ -26,13 +61,6 @@
   - Updated Python requirement from 3.8 to 3.9 (pandas compatibility)
   - Fixed Docker tag generation for pull requests
   - Improved macOS workflow compatibility (macos-14 runner)
-
-### 📊 Project Status
-
-- **CI/CD**: Fully automated testing, building, and deployment pipeline
-- **Code Quality**: Enforced via pre-commit hooks and GitHub Actions
-- **Docker**: Multi-platform images published to ghcr.io/ic3burg/receiptsort
-- **Releases**: Automated on version tags with all artifacts
 
 ---
 

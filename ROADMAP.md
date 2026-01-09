@@ -1,63 +1,107 @@
 # Product Roadmap
 
-This document outlines the development trajectory for Receipt Sorter, focusing on its evolution from a local Python web tool to a native macOS application.
+This document outlines the development trajectory for Receipt Sorter, a native macOS application for automated receipt processing and expense categorization.
 
 ## 🏁 Current Status
-- **Core Engine**: Python-based (Gemini AI + Tesseract OCR).
-- **Interface**: Local Web App (FastAPI + Tailwind CSS).
-- **Storage**: Local Files + Google Sheets.
 
-## 📅 Phase 1: Web App Refinement (Immediate)
-*Goal: Polish the current Python implementation.*
-- [x] **Docker Support**: Containerize the application for easy deployment without managing Python environments.
-- [x] **Settings UI**: Allow users to configure API keys and target Google Sheets directly from the web interface.
-- [x] **Batch Editing**: Allow users to manually correct categories or amounts before syncing to Google Sheets.
-- [x] **Visual Feedback**: Add progress bars for uploading and processing large batches.
-- [x] **User Onboarding**: Added a Setup Wizard and `start_app.command` for one-click installation and configuration.
+- **Platform**: Native macOS Application (Swift + SwiftUI)
+- **OCR Engine**: Apple Vision Framework
+- **AI Engine**: Google Gemini Swift SDK
+- **Storage**: Google Sheets (via REST API)
 
-## 🍎 Phase 2: Native macOS App (The Swift Transition)
-*Goal: Rebuild the application as a high-performance, native macOS utility.*
+## ✅ Completed Phases
 
-We will migrate from **Python** to **Swift**, replacing external dependencies with native macOS frameworks for better performance and user experience.
+### Phase 1: Python Prototype (Deprecated)
 
-### Architecture Shift
+_The original Python web application has been removed in favor of the native macOS app._
 
-| Feature | Current (Python) | Future (Swift) | Key Advantage |
-| :--- | :--- | :--- | :--- |
-| **Language** | Python 3 | Swift 6 | Native performance, type safety |
-| **OCR Engine** | Tesseract (Requires Install) | **Apple Vision Framework** | Built-in to macOS (no setup), faster, higher accuracy |
-| **AI Engine** | Gemini Python SDK | **Gemini Swift SDK** | Direct integration |
-| **Spreadsheets**| gspread Library | Google Sheets REST API | Standard OAuth 2.0 flow |
-| **UI** | Browser (HTML/CSS) | **SwiftUI** | Native Drag & Drop, System Integration, Dark Mode |
+- ✅ Python-based proof of concept with Tesseract OCR
+- ✅ FastAPI web interface
+- ✅ Docker containerization
+- ✅ Google Sheets integration
+- **Status**: Removed January 2026 - Replaced by native Swift implementation
 
-### 🛠️ Technical Plan (Using Swift CLI & SPM)
+### Phase 2: Native macOS App (Complete)
 
-We will structure the project using **Swift Package Manager (SPM)** to modularize the code, allowing us to build both a CLI tool and a GUI app from the same core logic.
+_Successfully migrated to Swift with superior performance and user experience._
 
-#### Step 1: Core Logic Package (`ReceiptSorterCore`)
-- [x] **Initialize Package**: Created `ReceiptSorterCore` library via SPM.
-- [x] **OCRService**: Implemented native text recognition using Apple Vision Framework (handles Images and PDFs).
-- [x] **GeminiService**: Integrated Google Generative AI Swift SDK for data extraction.
-- [x] **SheetService**: Implemented Service Account auth via SwiftJWT and Google Sheets API calls.
+#### Core Logic Package (`ReceiptSorterCore`)
 
-#### Step 2: Swift CLI Tool
-- [x] **Implementation**: Created `receipt-cli` executable for direct testing.
-- [x] **Functionality**: `swift run receipt-cli <path-to-file>` extracts and prints text.
-- [x] **Goal**: Verify OCR connectivity in isolation.
+- ✅ **OCRService**: Native text recognition using Apple Vision Framework (handles Images and PDFs)
+- ✅ **GeminiService**: Google Generative AI Swift SDK for data extraction
+- ✅ **SheetService**: Service Account auth via SwiftJWT and Google Sheets API
+- ✅ **AuthService**: OAuth 2.0 implementation for Google services
 
-#### Step 3: macOS UI (SwiftUI)
-- [x] **Setup**: Added `ReceiptSorterApp` executable target with `Info.plist`.
-- [x] **Drop Zone**: Implemented Native drag-and-drop target in `ContentView`.
-- [x] **Live Preview**: PDF/Image viewer using `PDFKit` and SwiftUI.
-- [x] **Menu Bar**: (Skipped for now in favor of Settings Window)
-- [x] **Native Notifications**: Implemented using UserNotifications framework.
+#### Swift CLI Tool
 
-### 📦 Phase 3: Distribution
-- [x] **Packaging**: Created `bundle.sh` to compile and build the `.app` file.
-- [ ] **Signing**: Code sign with Apple Developer ID.
-- [ ] **Notarization**: Submit to Apple Notary Service.
+- ✅ Command-line executable for testing and automation
+- ✅ Standalone receipt processing without GUI
+
+#### macOS UI (SwiftUI)
+
+- ✅ Native drag-and-drop interface
+- ✅ Live PDF/Image preview using PDFKit
+- ✅ Settings window with API key management
+- ✅ Native notifications for processing status
+- ✅ Batch processing support
+- ✅ Professional spreadsheet formatting
+
+### Phase 3: Distribution (In Progress)
+
+- ✅ **Packaging**: Build script (`bundle.sh`) for `.app` creation
+- ✅ **CI/CD**: GitHub Actions workflow for automated builds
+- ✅ **App Icon**: Professional macOS app icon
+- 🔄 **Code Signing**: Apple Developer ID signing (pending)
+- 🔄 **Notarization**: Apple Notary Service submission (pending)
+
+## 📅 Upcoming Features
+
+### Phase 4: Enhanced Distribution
+
+_Goal: Make installation seamless for end users._
+
+- [ ] **Code Signing**: Sign with Apple Developer ID certificate
+- [ ] **Notarization**: Submit to Apple for notarization
+- [ ] **DMG Installer**: Create professional disk image installer
+- [ ] **Auto-Updates**: Implement Sparkle framework for automatic updates
+- [ ] **Mac App Store**: Investigate App Store distribution
+
+### Phase 5: Advanced Features
+
+_Goal: Add power-user features and automation._
+
+- [ ] **Watch Folders**: Background daemon that monitors folders and auto-processes new receipts
+- [ ] **Duplicate Detection**: Identify and flag duplicate receipts
+- [ ] **Currency Conversion**: Automatic conversion to CAD with historical exchange rates
+- [ ] **Receipt Validation**: Anomaly detection and validation rules
+- [ ] **Multi-Year Organization**: Annual reports and year-over-year comparisons
+- [ ] **Shortcuts Integration**: macOS Shortcuts app support for automation
+- [ ] **Export Formats**: QuickBooks, Xero, and other accounting software formats
+
+### Phase 6: Platform Expansion
+
+_Goal: Extend to other Apple platforms._
+
+- [ ] **iOS App**: iPhone/iPad companion app sharing `ReceiptSorterCore`
+- [ ] **iCloud Sync**: Sync receipts and settings across devices
+- [ ] **Handoff Support**: Start on iPhone, finish on Mac
+- [ ] **Widget Support**: Quick stats widget for macOS and iOS
 
 ## 🔮 Future Ideas
-- **Mobile Companion**: iOS App sharing the same `ReceiptSorterCore`.
-- **Shortcuts Support**: Integation with macOS Shortcuts app for automation.
-- **Watch Folders**: Background daemon that watches a folder and auto-processes new files.
+
+- **Apple Watch**: Quick receipt capture with camera
+- **Email Integration**: Fetch receipts from email automatically
+- **Cloud Storage**: Google Drive, Dropbox integration
+- **Receipt Scanner**: Optimize for document scanner workflows
+- **Team Features**: Multi-user support for businesses
+- **Custom Categories**: User-defined tax categories beyond Canadian defaults
+
+## Architecture Philosophy
+
+The project follows these principles:
+
+1. **Native First**: Use Apple frameworks whenever possible for best performance
+2. **Modular Design**: Core logic separated from UI for reusability
+3. **Privacy Focused**: All processing happens locally; only final data syncs to cloud
+4. **User Experience**: Prioritize simplicity and intuitive design
+5. **Open Source**: Maintain transparency and community contributions

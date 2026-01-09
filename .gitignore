@@ -1,34 +1,20 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
+# macOS
+.DS_Store
 
-# Virtual Environment
-venv/
-env/
+# Environment
 .env
 
-# Distribution / Packaging
-build/
-dist/
-*.egg-info/
+# Swift / Xcode
+.build/
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
 
-# PyCharm / IDEs
+# IDEs
 .idea/
 .vscode/
 *.swp
-
-# Mac
-.DS_Store
-
-# Testing and Coverage
-.pytest_cache/
-.coverage
-coverage.xml
-htmlcov/
-.mypy_cache/
-.ruff_cache/
-bandit-report.json
 
 # Project specific
 *.log
@@ -36,4 +22,4 @@ processing_log.txt
 receipts/sorted/
 receipts/source/
 macos/*.app
-
+service_account.json

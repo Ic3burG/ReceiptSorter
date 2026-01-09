@@ -11,9 +11,7 @@ on:
         required: true
         type: string
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+
 
 jobs:
   create-release:
@@ -21,7 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: write
 
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
@@ -74,100 +71,12 @@ jobs:
 
             ## Installation
 
-            ### Docker
-            ```bash
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.version }}
-            ```
-
-            ### Python Package
-            Download the wheel file below and install with:
-            ```bash
-            pip install receipt_sorter-*.whl
-            ```
-
             ### macOS App
-            Download the `.app` bundle or DMG file below.
+            Download the `.app` bundle below and extract it to your Applications folder.
+            
+            **Requirements:** macOS 13.0 or later
           draft: false
           prerelease: ${{ contains(steps.get_version.outputs.version, 'alpha') || contains(steps.get_version.outputs.version, 'beta') || contains(steps.get_version.outputs.version, 'rc') }}
-
-  build-python:
-    name: Build Python Package
-    needs: create-release
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install build tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
-
-      - name: Build package
-        run: python -m build
-
-      - name: Upload wheel to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./dist/receipt_sorter-${{ needs.create-release.outputs.version }}-py3-none-any.whl
-          asset_name: receipt_sorter-${{ needs.create-release.outputs.version }}-py3-none-any.whl
-          asset_content_type: application/zip
-        continue-on-error: true
-
-      - name: Upload source to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./dist/receipt_sorter-${{ needs.create-release.outputs.version }}.tar.gz
-          asset_name: receipt_sorter-${{ needs.create-release.outputs.version }}.tar.gz
-          asset_content_type: application/gzip
-        continue-on-error: true
-
-  build-docker:
-    name: Build & Push Docker Image
-    needs: create-release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.create-release.outputs.version }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   build-macos:
     name: Build macOS App
