@@ -81,15 +81,13 @@ jobs:
   build-macos:
     name: Build macOS App
     needs: create-release
-    runs-on: macos-latest
+    runs-on: macos-14
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Swift
-        uses: swift-actions/setup-swift@v2
-        with:
-          swift-version: "5.9"
+      - name: Check Swift version
+        run: swift --version
 
       - name: Build Swift package
         working-directory: macos

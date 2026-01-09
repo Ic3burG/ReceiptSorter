@@ -2,15 +2,9 @@ name: macOS App Build
 
 on:
   push:
-    branches: [main]
-    paths:
-      - "macos/**"
-      - ".github/workflows/ci-macos.yml"
+    branches: [main, develop]
   pull_request:
-    branches: [main]
-    paths:
-      - "macos/**"
-      - ".github/workflows/ci-macos.yml"
+    branches: [main, develop]
   workflow_dispatch:
 
 jobs:
