@@ -51,7 +51,7 @@ The app classifies receipts into these categories:
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.9 or higher
 - Tesseract OCR (for scanned documents)
 - Google Gemini API key
 - Docker & Docker Compose (optional, for containerized setup)
