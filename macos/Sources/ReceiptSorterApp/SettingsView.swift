@@ -1,4 +1,5 @@
 import SwiftUI
+import ReceiptSorterCore
 
 struct SettingsView: View {
     private enum Tabs: Hashable {
