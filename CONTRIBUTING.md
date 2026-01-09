@@ -61,22 +61,66 @@ Thank you for your interest in contributing to Receipt Sorter! This document pro
 
 Before submitting changes:
 
-1. Run the test setup:
+1. **Install development dependencies**:
+
    ```bash
-   python test_setup.py
+   pip install -r requirements-dev.txt
    ```
 
-2. Test with sample receipts:
+2. **Set up pre-commit hooks** (recommended):
+
+   ```bash
+   pre-commit install
+   ```
+
+   This will automatically run code quality checks before each commit.
+
+3. **Run the test suite**:
+
+   ```bash
+   pytest
+   ```
+
+4. **Run code quality checks**:
+
+   ```bash
+   # Linting
+   ruff check .
+
+   # Formatting
+   black --check .
+
+   # Type checking
+   mypy .
+
+   # Security scanning
+   bandit -r .
+   ```
+
+5. **Test with sample receipts**:
+
    ```bash
    python main.py --source test_receipts --output test_output
    ```
 
-3. Verify:
+6. **Verify**:
    - PDFs are processed correctly
    - Data extraction is accurate
    - Categorization makes sense
    - Spreadsheets are formatted properly
    - Error handling works
+
+### CI/CD Checks
+
+When you open a pull request, GitHub Actions will automatically:
+
+- Run linting and formatting checks (ruff, black, mypy)
+- Run the test suite on Python 3.8, 3.9, 3.10, and 3.11
+- Run security scans (bandit, safety)
+- Build Docker images
+- Build macOS app (if changes affect `macos/` directory)
+
+All checks must pass before your PR can be merged. You can run these same checks locally using the commands above.
 
 ## Logging
 
@@ -88,6 +132,7 @@ Before submitting changes:
   - `ERROR` - Error messages (serious issues)
 
 Example:
+
 ```python
 logger.info(f"Processing receipt: {filename}")
 logger.warning(f"Low confidence categorization: {confidence}%")
@@ -129,6 +174,7 @@ logger.error(f"Failed to extract data: {str(e)}")
 ```
 
 Types:
+
 - `feat` - New feature
 - `fix` - Bug fix
 - `docs` - Documentation changes
@@ -138,6 +184,7 @@ Types:
 - `chore` - Maintenance tasks
 
 Example:
+
 ```
 feat: Add support for JPY currency
 
@@ -151,18 +198,21 @@ feat: Add support for JPY currency
 Here are some areas where contributions would be welcome:
 
 ### High Priority
+
 - [ ] Duplicate receipt detection
 - [ ] Currency conversion with exchange rates
 - [ ] Batch processing improvements
 - [ ] Better error recovery
 
 ### Medium Priority
+
 - [ ] Web interface
 - [ ] Email integration
 - [ ] Cloud storage integration
 - [ ] Export to accounting software formats
 
 ### Low Priority
+
 - [ ] Receipt validation rules
 - [ ] Annual reports
 - [ ] Multi-language support
@@ -179,6 +229,7 @@ Here are some areas where contributions would be welcome:
 ## Questions?
 
 If you have questions about contributing:
+
 1. Check existing documentation
 2. Review existing code for examples
 3. Open an issue for discussion

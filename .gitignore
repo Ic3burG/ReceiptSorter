@@ -21,9 +21,19 @@ dist/
 # Mac
 .DS_Store
 
+# Testing and Coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+bandit-report.json
+
 # Project specific
 *.log
 processing_log.txt
 receipts/sorted/
 receipts/source/
 macos/*.app
+

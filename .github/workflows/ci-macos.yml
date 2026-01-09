@@ -1,0 +1,91 @@
+name: macOS App Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "macos/**"
+      - ".github/workflows/ci-macos.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "macos/**"
+      - ".github/workflows/ci-macos.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Swift macOS App
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "5.9"
+
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            macos/.build
+            ~/Library/Caches/org.swift.swiftpm
+          key: ${{ runner.os }}-spm-${{ hashFiles('macos/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Build Swift package
+        working-directory: macos
+        run: swift build -c release
+
+      - name: Run Swift tests
+        working-directory: macos
+        run: swift test
+        continue-on-error: true
+
+      - name: Build .app bundle
+        working-directory: macos
+        run: |
+          if [ -f scripts/bundle.sh ]; then
+            chmod +x scripts/bundle.sh
+            ./scripts/bundle.sh
+          else
+            echo "bundle.sh not found, skipping app bundle creation"
+          fi
+        continue-on-error: true
+
+      - name: Upload .app artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: Receipt-Sorter-macOS
+          path: macos/Receipt Sorter.app
+          retention-days: 30
+
+      - name: Create DMG (optional)
+        if: success() && github.ref == 'refs/heads/main'
+        run: |
+          if command -v create-dmg &> /dev/null; then
+            create-dmg \
+              --volname "Receipt Sorter" \
+              --window-pos 200 120 \
+              --window-size 600 400 \
+              --icon-size 100 \
+              --app-drop-link 425 120 \
+              "Receipt-Sorter.dmg" \
+              "macos/Receipt Sorter.app"
+          else
+            echo "create-dmg not installed, skipping DMG creation"
+          fi
+        continue-on-error: true
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: Receipt-Sorter-DMG
+          path: Receipt-Sorter.dmg
+          retention-days: 30
+        continue-on-error: true
