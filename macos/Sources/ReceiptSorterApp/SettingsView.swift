@@ -3,7 +3,7 @@ import ReceiptSorterCore
 
 struct SettingsView: View {
     private enum Tabs: Hashable {
-        case general, sync
+        case general, export, fileOrganization, cloudSync
     }
     
     var body: some View {
@@ -15,15 +15,183 @@ struct SettingsView: View {
                 .tag(Tabs.general)
             
             ScrollView {
+                ExportSettingsView()
+            }
+            .tabItem {
+                Label("Export", systemImage: "doc.badge.arrow.up")
+            }
+            .tag(Tabs.export)
+            
+            ScrollView {
+                FileOrganizationSettingsView()
+            }
+            .tabItem {
+                Label("Organization", systemImage: "folder.badge.gearshape")
+            }
+            .tag(Tabs.fileOrganization)
+            
+            ScrollView {
                 SyncSettingsView()
             }
             .tabItem {
-                Label("Sync", systemImage: "arrow.triangle.2.circlepath")
+                Label("Cloud Sync", systemImage: "cloud")
             }
-            .tag(Tabs.sync)
+            .tag(Tabs.cloudSync)
         }
         .padding(20)
-        .frame(width: 500, height: 450)
+        .frame(width: 550, height: 500)
+    }
+}
+
+struct ExportSettingsView: View {
+    @AppStorage("excelFilePath") private var excelFilePath: String = ""
+    @State private var showFilePicker = false
+    
+    var body: some View {
+        Form {
+            Section(header: Text("Excel Export")) {
+                HStack {
+                    TextField("Excel File", text: $excelFilePath)
+                        .textFieldStyle(.roundedBorder)
+                        .disabled(true)
+                    
+                    Button("Choose...") {
+                        showFilePicker = true
+                    }
+                }
+                
+                if excelFilePath.isEmpty {
+                    Label("No file selected", systemImage: "exclamationmark.triangle")
+                        .foregroundColor(.orange)
+                        .font(.caption)
+                } else {
+                    Label("File configured", systemImage: "checkmark.circle")
+                        .foregroundColor(.green)
+                        .font(.caption)
+                }
+                
+                Text("Select an existing Excel file to update, or a new location to create one.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Section(header: Text("Tips")) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Duplicate Detection", systemImage: "doc.on.doc")
+                    Text("Receipts with the same date, vendor, and amount will not be added twice.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Label("Column Structure", systemImage: "tablecells")
+                    Text("Date, Vendor, Description, Category (manual), Amount, Currency, Notes")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding()
+        .fileImporter(
+            isPresented: $showFilePicker,
+            allowedContentTypes: [.init(filenameExtension: "xlsx")!, .data],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    _ = url.startAccessingSecurityScopedResource()
+                    excelFilePath = url.path
+                }
+            case .failure(let error):
+                print("File picker error: \(error)")
+            }
+        }
+    }
+}
+
+struct FileOrganizationSettingsView: View {
+    @AppStorage("organizationBasePath") private var organizationBasePath: String = ""
+    @AppStorage("autoOrganize") private var autoOrganize: Bool = true
+    @State private var showFolderPicker = false
+    
+    var body: some View {
+        Form {
+            Section(header: Text("File Organization")) {
+                Toggle("Auto-organize after export", isOn: $autoOrganize)
+                
+                Text("When enabled, receipts are automatically moved into a folder structure based on their date after export.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Divider().padding(.vertical, 5)
+                
+                HStack {
+                    TextField("Base Folder", text: $organizationBasePath)
+                        .textFieldStyle(.roundedBorder)
+                        .disabled(true)
+                    
+                    Button("Choose...") {
+                        showFolderPicker = true
+                    }
+                }
+                
+                if organizationBasePath.isEmpty {
+                    Label("No folder selected", systemImage: "exclamationmark.triangle")
+                        .foregroundColor(.orange)
+                        .font(.caption)
+                } else {
+                    Label("Folder configured", systemImage: "checkmark.circle")
+                        .foregroundColor(.green)
+                        .font(.caption)
+                }
+                
+                Text("Select the base folder where organized receipts will be stored.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Section(header: Text("Folder Structure")) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Year/Month Organization", systemImage: "folder")
+                    Text("Receipts are organized into: **BaseFolder/YYYY/MM/**")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Text("Example: A receipt dated 2025-06-15 would be moved to:")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Text("    BaseFolder/2025/06/receipt.pdf")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                        .fontDesign(.monospaced)
+                }
+                
+                Divider().padding(.vertical, 5)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Missing Dates", systemImage: "calendar.badge.exclamationmark")
+                    Text("If a receipt's date cannot be extracted, it will not be moved. You'll be notified so you can organize it manually.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding()
+        .fileImporter(
+            isPresented: $showFolderPicker,
+            allowedContentTypes: [.folder],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    _ = url.startAccessingSecurityScopedResource()
+                    organizationBasePath = url.path
+                }
+            case .failure(let error):
+                print("Folder picker error: \(error)")
+            }
+        }
     }
 }
 

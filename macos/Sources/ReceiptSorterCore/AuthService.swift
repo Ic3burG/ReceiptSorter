@@ -10,17 +10,16 @@ public final class AuthService: NSObject {
     private let kIssuer = "https://accounts.google.com"
     private let kClientID: String
     private let kClientSecret: String?
+    private let kRedirectURI = "http://127.0.0.1"
     private let kAuthStateKey = "authState"
     
     private var authState: OIDAuthState?
     
-    public nonisolated init(clientID: String, clientSecret: String? = nil) {
+    public init(clientID: String, clientSecret: String? = nil) {
         self.kClientID = clientID
         self.kClientSecret = clientSecret
         super.init()
-        Task { @MainActor in
-            self.loadState()
-        }
+        self.loadState()
     }
     
     public var isAuthorized: Bool {
@@ -28,20 +27,28 @@ public final class AuthService: NSObject {
     }
     
     public func signIn(presenting window: NSWindow) async throws {
-        // 1. Start the Loopback Listener
-        let handler = OIDRedirectHTTPHandler(successURL: nil)
-        // startHTTPListener returns a URL, not Optional<URL> in newer versions
-        let redirectURI = handler.startHTTPListener(nil)
-        self.redirectHTTPHandler = handler
-        
-        // 2. Configure Google Endpoints
         let authEndpoint = URL(string: "https://accounts.google.com/o/oauth2/v2/auth")!
         let tokenEndpoint = URL(string: "https://oauth2.googleapis.com/token")!
         let config = OIDServiceConfiguration(authorizationEndpoint: authEndpoint, tokenEndpoint: tokenEndpoint)
 
-        // 3. Perform Auth Request
         return try await withCheckedThrowingContinuation { continuation in
             let request = OIDAuthorizationRequest(
+                configuration: config,
+                clientId: self.kClientID,
+                clientSecret: self.kClientSecret,
+                scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+                redirectURL: URL(string: self.kRedirectURI)!,
+                responseType: OIDResponseTypeCode,
+                additionalParameters: nil
+            )
+            
+            // Start Loopback Listener
+            let handler = OIDRedirectHTTPHandler(successURL: nil)
+            let redirectURI = handler.startHTTPListener(nil)
+            self.redirectHTTPHandler = handler
+            
+            // Update request with dynamic port
+            let requestWithPort = OIDAuthorizationRequest(
                 configuration: config,
                 clientId: self.kClientID,
                 clientSecret: self.kClientSecret,
@@ -51,10 +58,8 @@ public final class AuthService: NSObject {
                 additionalParameters: nil
             )
             
-            self.currentAuthorizationFlow = OIDAuthState.authState(byPresenting: request, presenting: window) { authState, error in
-                // Stop listener
+            self.currentAuthorizationFlow = OIDAuthState.authState(byPresenting: requestWithPort, presenting: window) { authState, error in
                 self.redirectHTTPHandler?.cancelHTTPListener()
-                self.redirectHTTPHandler = nil
                 
                 if let authState = authState {
                     self.setAuthState(authState)
@@ -64,7 +69,6 @@ public final class AuthService: NSObject {
                 }
             }
             
-            // Link flow to handler
             handler.currentAuthorizationFlow = self.currentAuthorizationFlow
         }
     }
@@ -111,12 +115,4 @@ public final class AuthService: NSObject {
         self.authState = state
         self.saveState()
     }
-}
-
-public enum AuthError: Error {
-    case invalidIssuer
-    case discoveryFailed(String)
-    case authFailed(String)
-    case notAuthorized
-    case tokenRefreshFailed(String)
 }

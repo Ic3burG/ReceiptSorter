@@ -5,10 +5,11 @@ import UserNotifications
 
 struct ProcessingItem: Identifiable, Equatable {
     let id = UUID()
-    let url: URL
+    var url: URL  // Mutable to update after file organization
     var status: ItemStatus = .pending
     var data: ReceiptData?
     var error: String?
+    var organized: Bool = false  // Track if file has been organized
     
     enum ItemStatus: Equatable {
         case pending
@@ -27,6 +28,8 @@ struct ContentView: View {
     @AppStorage("googleSheetId") private var googleSheetId: String = ""
     @AppStorage("googleClientID") private var clientID: String = ""
     @AppStorage("googleClientSecret") private var clientSecret: String = ""
+    @AppStorage("organizationBasePath") private var organizationBasePath: String = ""
+    @AppStorage("autoOrganize") private var autoOrganize: Bool = true
     
     // State
     @State private var items: [ProcessingItem] = []
@@ -175,6 +178,7 @@ struct ContentView: View {
             .onChange(of: clientID) { _ in initializeCore() }
             .onChange(of: clientSecret) { _ in initializeCore() }
             .onChange(of: googleSheetId) { _ in initializeCore() }
+            .onChange(of: organizationBasePath) { _ in initializeCore() }
             
         } detail: {
             // DETAIL: Preview & Data
@@ -302,7 +306,7 @@ struct ContentView: View {
     // MARK: - Logic
     
     private func initializeCore() {
-        self.core = ReceiptSorterCore(apiKey: apiKey, clientID: clientID, clientSecret: clientSecret, sheetID: googleSheetId)
+        self.core = ReceiptSorterCore(apiKey: apiKey, clientID: clientID, clientSecret: clientSecret, sheetID: googleSheetId, excelFilePath: excelFilePath, organizationBasePath: organizationBasePath)
         Task { @MainActor in
             if let auth = core?.authService {
                 self.isAuthorized = auth.isAuthorized
@@ -434,6 +438,23 @@ struct ContentView: View {
         await MainActor.run { items[index].status = .syncing }
         do {
             try await core.exportToExcel(data: data)
+            
+            // Auto-organize file after successful export
+            if autoOrganize && !organizationBasePath.isEmpty {
+                if let dateString = data.date, !dateString.isEmpty {
+                    do {
+                        let newURL = try await core.organizeFile(items[index].url, date: dateString)
+                        await MainActor.run {
+                            items[index].url = newURL
+                            items[index].organized = true
+                        }
+                    } catch {
+                        // File organization failed, but export succeeded - just log it
+                        print("File organization failed: \(error.localizedDescription)")
+                    }
+                }
+            }
+            
             await MainActor.run { items[index].status = .done }
         } catch {
             await MainActor.run {
@@ -446,6 +467,9 @@ struct ContentView: View {
     // MARK: - Helpers
     
     private func icon(for item: ProcessingItem) -> String {
+        if item.organized && item.status == .done {
+            return "folder.circle.fill"  // Show folder icon for organized files
+        }
         switch item.status {
         case .pending: return "clock"
         case .processing: return "gear"
@@ -471,7 +495,7 @@ struct ContentView: View {
         case .processing: return "Processing..."
         case .extracted: return "Ready to Export"
         case .syncing: return "Exporting..."
-        case .done: return "Exported"
+        case .done: return item.organized ? "Organized" : "Exported"
         case .error: return "Failed"
         }
     }

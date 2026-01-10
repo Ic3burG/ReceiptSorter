@@ -3,7 +3,7 @@
 [![macOS Build](https://github.com/ojdavis/ReceiptSorter/workflows/macOS%20App%20Build/badge.svg)](https://github.com/ojdavis/ReceiptSorter/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A native macOS application that automatically processes PDF receipts, extracts financial data, categorizes expenses for Canadian tax purposes, handles multiple currencies, and syncs everything to Google Sheets.
+A native macOS application that automatically processes PDF receipts, extracts financial data, categorizes expenses for Canadian tax purposes, handles multiple currencies, and exports to Excel with optional Google Sheets cloud sync.
 
 ## Features
 
@@ -12,7 +12,8 @@ A native macOS application that automatically processes PDF receipts, extracts f
 - 🤖 **AI-Powered Extraction**: Uses Google Gemini AI to intelligently extract receipt data (amount, date, vendor, currency)
 - 🏷️ **Smart Categorization**: Automatically categorizes receipts into Canadian tax deduction categories
 - 💰 **Multi-Currency Support**: Handles CAD, USD, EUR, GBP, JPY, AUD, CHF
-- ☁️ **Google Sheets Integration**: Automatically syncs receipt data to Google Sheets with professional formatting
+- 📊 **Excel Export**: Primary export to local Excel files with duplicate detection and append support
+- ☁️ **Google Sheets Sync**: Optional cloud backup to Google Sheets with professional formatting
 - 🔔 **Native Notifications**: macOS notifications for processing status
 - ⚡ **High Performance**: Native Swift implementation using Apple frameworks
 
@@ -74,7 +75,8 @@ The app classifies receipts into these categories:
    - Categorize the expense
    - Display the results in the preview pane
 4. Review the extracted data
-5. Click "Sync to Sheets" to upload to Google Sheets
+5. Click "Export to Excel" to save to your local spreadsheet
+6. Optionally, click "Sync to Google Sheets" for cloud backup
 
 ### Batch Processing
 

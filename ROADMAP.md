@@ -7,7 +7,7 @@ This document outlines the development trajectory for Receipt Sorter, a native m
 - **Platform**: Native macOS Application (Swift + SwiftUI)
 - **OCR Engine**: Apple Vision Framework
 - **AI Engine**: Google Gemini Swift SDK
-- **Storage**: Google Sheets (via REST API)
+- **Storage**: Local Excel files (primary) + Google Sheets (secondary cloud sync)
 
 ## ✅ Completed Phases
 
@@ -29,7 +29,8 @@ _Successfully migrated to Swift with superior performance and user experience._
 
 - ✅ **OCRService**: Native text recognition using Apple Vision Framework (handles Images and PDFs)
 - ✅ **GeminiService**: Google Generative AI Swift SDK for data extraction
-- ✅ **SheetService**: Service Account auth via SwiftJWT and Google Sheets API
+- ✅ **ExcelService**: Local Excel export with duplicate detection and append support
+- ✅ **SheetService**: Google Sheets API for cloud sync (secondary)
 - ✅ **AuthService**: OAuth 2.0 implementation for Google services
 
 #### Swift CLI Tool
