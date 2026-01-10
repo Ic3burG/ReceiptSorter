@@ -53,22 +53,12 @@ struct ContentView: View {
             // SIDEBAR: File List
             VStack {
                 if items.isEmpty {
-                    VStack(spacing: 15) {
-                        Image(systemName: "square.stack.3d.down.right")
-                            .font(.system(size: 40))
-                            .foregroundColor(.secondary)
-                        Text("Drop Receipts Here")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        
-                        if !isAuthorized {
-                            Button("Sign In to Google") {
-                                signIn()
-                            }
-                            .padding(.top, 10)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    WelcomeView(
+                        excelFilePath: $excelFilePath,
+                        organizationBasePath: $organizationBasePath,
+                        isAuthorized: isAuthorized,
+                        onSignIn: signIn
+                    )
                 } else {
                     List(selection: $selectedItemId) {
                         ForEach($items) { $item in
@@ -616,5 +606,253 @@ struct DataCard: View {
         .padding()
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(8)
+    }
+}
+
+// MARK: - Welcome View
+
+struct WelcomeView: View {
+    @Binding var excelFilePath: String
+    @Binding var organizationBasePath: String
+    let isAuthorized: Bool
+    let onSignIn: () -> Void
+    
+    @State private var showExcelFilePicker = false
+    @State private var showFolderPicker = false
+    @State private var isHovering = false
+    
+    private var isFullyConfigured: Bool {
+        !excelFilePath.isEmpty && !organizationBasePath.isEmpty
+    }
+    
+    private var configuredCount: Int {
+        var count = 0
+        if !excelFilePath.isEmpty { count += 1 }
+        if !organizationBasePath.isEmpty { count += 1 }
+        return count
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header Section with Gradient
+            VStack(spacing: 12) {
+                // App Icon with Glow Effect
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.2)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 80, height: 80)
+                        .blur(radius: 15)
+                    
+                    Image(systemName: "doc.text.viewfinder")
+                        .font(.system(size: 44, weight: .light))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.blue, .purple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                }
+                
+                Text("Welcome to Receipt Sorter")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Text("Extract, organize, and export your receipts with AI")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.top, 30)
+            .padding(.bottom, 20)
+            
+            // Setup Status Section
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Setup")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Text("\(configuredCount)/2 configured")
+                        .font(.caption)
+                        .foregroundColor(isFullyConfigured ? .green : .orange)
+                }
+                .padding(.horizontal, 16)
+                
+                // Excel File Setup Card
+                SetupCard(
+                    icon: "doc.badge.arrow.up",
+                    title: "Spreadsheet",
+                    subtitle: excelFilePath.isEmpty ? "No file selected" : URL(fileURLWithPath: excelFilePath).lastPathComponent,
+                    isConfigured: !excelFilePath.isEmpty,
+                    actionLabel: excelFilePath.isEmpty ? "Choose File" : "Change",
+                    action: { showExcelFilePicker = true }
+                )
+                
+                // Organization Folder Setup Card
+                SetupCard(
+                    icon: "folder.badge.gearshape",
+                    title: "Organization Folder",
+                    subtitle: organizationBasePath.isEmpty ? "No folder selected" : URL(fileURLWithPath: organizationBasePath).lastPathComponent,
+                    isConfigured: !organizationBasePath.isEmpty,
+                    actionLabel: organizationBasePath.isEmpty ? "Choose Folder" : "Change",
+                    action: { showFolderPicker = true }
+                )
+            }
+            .padding(.horizontal, 12)
+            
+            Spacer()
+            
+            // Drop Zone
+            VStack(spacing: 12) {
+                Divider().padding(.horizontal, 16)
+                
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(
+                            style: StrokeStyle(lineWidth: 2, dash: [8, 4])
+                        )
+                        .foregroundColor(isHovering ? .blue : Color.secondary.opacity(0.3))
+                    
+                    VStack(spacing: 8) {
+                        Image(systemName: "arrow.down.doc")
+                            .font(.system(size: 28))
+                            .foregroundColor(isHovering ? .blue : .secondary)
+                        
+                        Text("Drop receipts here")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(isHovering ? .blue : .secondary)
+                        
+                        if !isFullyConfigured {
+                            Text("Complete setup above for best experience")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
+                    }
+                }
+                .frame(height: 100)
+                .padding(.horizontal, 16)
+                .animation(.easeInOut(duration: 0.15), value: isHovering)
+                .onHover { hovering in
+                    isHovering = hovering
+                }
+            }
+            .padding(.bottom, 16)
+            
+            // Optional: Google Sign In for cloud sync
+            if !isAuthorized {
+                VStack(spacing: 8) {
+                    Divider()
+                    
+                    Button(action: onSignIn) {
+                        HStack {
+                            Image(systemName: "cloud")
+                            Text("Sign in for Cloud Sync")
+                        }
+                        .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.blue)
+                    .padding(.vertical, 8)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(NSColor.controlBackgroundColor))
+        .fileImporter(
+            isPresented: $showExcelFilePicker,
+            allowedContentTypes: [.init(filenameExtension: "xlsx")!, .data],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    _ = url.startAccessingSecurityScopedResource()
+                    excelFilePath = url.path
+                }
+            case .failure(let error):
+                print("File picker error: \(error)")
+            }
+        }
+        .fileImporter(
+            isPresented: $showFolderPicker,
+            allowedContentTypes: [.folder],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    _ = url.startAccessingSecurityScopedResource()
+                    organizationBasePath = url.path
+                }
+            case .failure(let error):
+                print("Folder picker error: \(error)")
+            }
+        }
+    }
+}
+
+// MARK: - Setup Card Component
+
+struct SetupCard: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let isConfigured: Bool
+    let actionLabel: String
+    let action: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Status Icon
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isConfigured ? Color.green.opacity(0.15) : Color.orange.opacity(0.15))
+                    .frame(width: 40, height: 40)
+                
+                Image(systemName: isConfigured ? "checkmark.circle.fill" : icon)
+                    .font(.system(size: 18))
+                    .foregroundColor(isConfigured ? .green : .orange)
+            }
+            
+            // Text Content
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            
+            Spacer()
+            
+            // Action Button
+            Button(action: action) {
+                Text(actionLabel)
+                    .font(.caption)
+                    .fontWeight(.medium)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .padding(12)
+        .background(Color(NSColor.windowBackgroundColor))
+        .cornerRadius(10)
     }
 }
