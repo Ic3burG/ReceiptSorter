@@ -47,6 +47,8 @@ _Successfully migrated to Swift with superior performance and user experience._
 - ✅ Batch processing support
 - ✅ Professional spreadsheet formatting
 - ✅ Polished onboarding experience with setup status
+- ✅ File Organization: Automatic sorting into Year/Month folders
+- ✅ Duplicate Detection: Conflict resolution for existing files
 
 ### Phase 3: Distribution (In Progress)
 
@@ -73,7 +75,6 @@ _Goal: Make installation seamless for end users._
 _Goal: Add power-user features and automation._
 
 - [ ] **Watch Folders**: Background daemon that monitors folders and auto-processes new receipts
-- [ ] **Duplicate Detection**: Identify and flag duplicate receipts
 - [ ] **Currency Conversion**: Automatic conversion to CAD with historical exchange rates
 - [ ] **Receipt Validation**: Anomaly detection and validation rules
 - [ ] **Multi-Year Organization**: Annual reports and year-over-year comparisons
