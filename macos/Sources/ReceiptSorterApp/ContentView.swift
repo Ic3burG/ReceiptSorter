@@ -42,6 +42,12 @@ struct ContentView: View {
     @State private var core: ReceiptSorterCore?
     @State private var isAuthorized = false
     
+    // Duplicate Review State
+    @State private var showDuplicateReview = false
+    @State private var duplicateConflict: DuplicateConflict?
+    @State private var existingMetadata: FileMetadata?
+    @State private var newMetadata: FileMetadata?
+    
     var body: some View {
         NavigationSplitView {
             // SIDEBAR: File List
@@ -301,6 +307,18 @@ struct ContentView: View {
         } message: {
             Text(signInError ?? "Unknown error")
         }
+        .sheet(isPresented: $showDuplicateReview) {
+            if let conflict = duplicateConflict {
+                DuplicateReviewView(
+                    conflict: conflict,
+                    existingMetadata: existingMetadata,
+                    newMetadata: newMetadata,
+                    onResolution: { resolution in
+                        handleDuplicateResolution(resolution, for: conflict)
+                    }
+                )
+            }
+        }
     }
     
     // MARK: - Logic
@@ -442,16 +460,7 @@ struct ContentView: View {
             // Auto-organize file after successful export
             if autoOrganize && !organizationBasePath.isEmpty {
                 if let dateString = data.date, !dateString.isEmpty {
-                    do {
-                        let newURL = try await core.organizeFile(items[index].url, date: dateString)
-                        await MainActor.run {
-                            items[index].url = newURL
-                            items[index].organized = true
-                        }
-                    } catch {
-                        // File organization failed, but export succeeded - just log it
-                        print("File organization failed: \(error.localizedDescription)")
-                    }
+                    await organizeFileWithConflictDetection(at: index, date: dateString)
                 }
             }
             
@@ -460,6 +469,80 @@ struct ContentView: View {
             await MainActor.run {
                 items[index].error = "Export Failed: \(error.localizedDescription)"
                 items[index].status = .error
+            }
+        }
+    }
+    
+    // MARK: - File Organization with Conflict Detection
+    
+    private func organizeFileWithConflictDetection(at index: Int, date: String) async {
+        guard let core = self.core,
+              let service = core.fileOrganizationService else { return }
+        
+        do {
+            let result = try await service.organizeReceiptWithConflictDetection(items[index].url, date: date)
+            
+            switch result {
+            case .success(let newURL):
+                await MainActor.run {
+                    items[index].url = newURL
+                    items[index].organized = true
+                }
+                
+            case .conflict(let existingURL, let proposedURL):
+                // Get metadata for both files
+                let existingMeta = await service.getFileMetadata(existingURL)
+                let newMeta = await service.getFileMetadata(items[index].url)
+                
+                // Show duplicate review dialog
+                await MainActor.run {
+                    self.duplicateConflict = DuplicateConflict(
+                        existingURL: existingURL,
+                        newFileURL: items[index].url,
+                        proposedURL: proposedURL,
+                        itemIndex: index
+                    )
+                    self.existingMetadata = existingMeta
+                    self.newMetadata = newMeta
+                    self.showDuplicateReview = true
+                }
+                
+            case .skipped(let reason):
+                print("File organization skipped: \(reason)")
+            }
+        } catch {
+            print("File organization failed: \(error.localizedDescription)")
+        }
+    }
+    
+    private func handleDuplicateResolution(_ resolution: ConflictResolution, for conflict: DuplicateConflict) {
+        guard let core = self.core,
+              let service = core.fileOrganizationService else { return }
+        
+        let index = conflict.itemIndex
+        
+        Task {
+            do {
+                let newURL = try await service.resolveConflict(
+                    sourceURL: conflict.newFileURL,
+                    existingURL: conflict.existingURL,
+                    resolution: resolution
+                )
+                
+                await MainActor.run {
+                    if let newURL = newURL {
+                        items[index].url = newURL
+                        items[index].organized = true
+                    }
+                    // Clear conflict state
+                    duplicateConflict = nil
+                    existingMetadata = nil
+                    newMetadata = nil
+                }
+            } catch {
+                await MainActor.run {
+                    items[index].error = "Resolution failed: \(error.localizedDescription)"
+                }
             }
         }
     }
