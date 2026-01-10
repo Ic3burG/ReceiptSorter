@@ -2,6 +2,8 @@ import SwiftUI
 import ReceiptSorterCore
 import QuickLookUI
 import UserNotifications
+import UniformTypeIdentifiers
+import AppKit
 
 struct ProcessingItem: Identifiable, Equatable {
     let id = UUID()
@@ -619,10 +621,71 @@ struct WelcomeView: View {
     let isAuthorized: Bool
     let onSignIn: () -> Void
     
-    @State private var showExcelFilePicker = false
-    @State private var showFolderPicker = false
-    @State private var isHovering = false
     @State private var showApiKeySheet = false
+    @State private var isHovering = false
+    
+    // Logic for panels
+    private func openSpreadsheetPicker() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.init(filenameExtension: "xlsx")!]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.message = "Select an existing Excel spreadsheet"
+        
+        panel.begin { response in
+            if response == .OK, let url = panel.url {
+                 // Access security scoped resource if needed (App Sandbox), 
+                 // though NSOpenPanel usually handles this for the session.
+                 // Ideally store bookmark data for persistence, but for now path is fine.
+                 DispatchQueue.main.async {
+                     self.excelFilePath = url.path
+                 }
+            }
+        }
+    }
+    
+    private func createNewSpreadsheet() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.init(filenameExtension: "xlsx")!]
+        panel.nameFieldStringValue = "Receipts.xlsx"
+        panel.message = "Create a new spreadsheet"
+        panel.prompt = "Create"
+        
+        panel.begin { response in
+            if response == .OK, let url = panel.url {
+                Task {
+                    // Use ExcelService to create a template
+                    let service = ExcelService(fileURL: url)
+                    do {
+                        try await service.createNewSheet(with: [])
+                        await MainActor.run {
+                             self.excelFilePath = url.path
+                        }
+                    } catch {
+                        print("Failed to create spreadsheet: \(error)")
+                    }
+                }
+            }
+        }
+    }
+    
+    private func openFolderPicker() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.folder]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.message = "Select base folder for organization"
+        
+        panel.begin { response in
+            if response == .OK, let url = panel.url {
+                 DispatchQueue.main.async {
+                     self.organizationBasePath = url.path
+                 }
+            }
+        }
+    }
     
     private var isFullyConfigured: Bool {
         !apiKey.isEmpty && !excelFilePath.isEmpty && !organizationBasePath.isEmpty
@@ -707,13 +770,15 @@ struct WelcomeView: View {
                 SetupCard(
                     icon: "doc.badge.arrow.up",
                     title: "Spreadsheet",
-                    subtitle: excelFilePath.isEmpty ? "No file selected" : URL(fileURLWithPath: excelFilePath).lastPathComponent,
+                    subtitle: excelFilePath.isEmpty ? "No file selected - Create or Choose one" : URL(fileURLWithPath: excelFilePath).lastPathComponent,
                     isConfigured: !excelFilePath.isEmpty,
                     actionLabel: excelFilePath.isEmpty ? "Choose File" : "Change",
-                    action: { showExcelFilePicker = true },
+                    action: openSpreadsheetPicker,
                     revealAction: excelFilePath.isEmpty ? nil : {
                         NSWorkspace.shared.open(URL(fileURLWithPath: excelFilePath))
-                    }
+                    },
+                    secondaryActionLabel: excelFilePath.isEmpty ? "Create New" : nil,
+                    secondaryAction: excelFilePath.isEmpty ? createNewSpreadsheet : nil
                 )
                 
                 // Organization Folder Setup Card
@@ -723,7 +788,7 @@ struct WelcomeView: View {
                     subtitle: organizationBasePath.isEmpty ? "No folder selected" : URL(fileURLWithPath: organizationBasePath).lastPathComponent,
                     isConfigured: !organizationBasePath.isEmpty,
                     actionLabel: organizationBasePath.isEmpty ? "Choose Folder" : "Change",
-                    action: { showFolderPicker = true },
+                    action: openFolderPicker,
                     revealAction: organizationBasePath.isEmpty ? nil : {
                         NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: organizationBasePath)
                     }
@@ -790,36 +855,6 @@ struct WelcomeView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(NSColor.controlBackgroundColor))
-        .fileImporter(
-            isPresented: $showExcelFilePicker,
-            allowedContentTypes: [.init(filenameExtension: "xlsx")!, .data],
-            allowsMultipleSelection: false
-        ) { result in
-            switch result {
-            case .success(let urls):
-                if let url = urls.first {
-                    _ = url.startAccessingSecurityScopedResource()
-                    excelFilePath = url.path
-                }
-            case .failure(let error):
-                print("File picker error: \(error)")
-            }
-        }
-        .fileImporter(
-            isPresented: $showFolderPicker,
-            allowedContentTypes: [.folder],
-            allowsMultipleSelection: false
-        ) { result in
-            switch result {
-            case .success(let urls):
-                if let url = urls.first {
-                    _ = url.startAccessingSecurityScopedResource()
-                    organizationBasePath = url.path
-                }
-            case .failure(let error):
-                print("Folder picker error: \(error)")
-            }
-        }
         .sheet(isPresented: $showApiKeySheet) {
             VStack(spacing: 20) {
                 Text("Gemini API Key")
@@ -857,6 +892,8 @@ struct SetupCard: View {
     let actionLabel: String
     let action: () -> Void
     var revealAction: (() -> Void)? = nil
+    var secondaryActionLabel: String? = nil
+    var secondaryAction: (() -> Void)? = nil
     
     var body: some View {
         HStack(spacing: 12) {
@@ -897,14 +934,26 @@ struct SetupCard: View {
             
             Spacer()
             
-            // Action Button
-            Button(action: action) {
-                Text(actionLabel)
-                    .font(.caption)
-                    .fontWeight(.medium)
+            // Action Buttons
+            HStack(spacing: 8) {
+                if let secondaryLabel = secondaryActionLabel, let secondaryAction = secondaryAction {
+                    Button(action: secondaryAction) {
+                        Text(secondaryLabel)
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+                
+                Button(action: action) {
+                    Text(actionLabel)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
         }
         .padding(12)
         .background(Color(NSColor.windowBackgroundColor))
