@@ -54,6 +54,7 @@ struct ContentView: View {
             VStack {
                 if items.isEmpty {
                     WelcomeView(
+                        apiKey: $apiKey,
                         excelFilePath: $excelFilePath,
                         organizationBasePath: $organizationBasePath,
                         isAuthorized: isAuthorized,
@@ -612,6 +613,7 @@ struct DataCard: View {
 // MARK: - Welcome View
 
 struct WelcomeView: View {
+    @Binding var apiKey: String
     @Binding var excelFilePath: String
     @Binding var organizationBasePath: String
     let isAuthorized: Bool
@@ -620,13 +622,15 @@ struct WelcomeView: View {
     @State private var showExcelFilePicker = false
     @State private var showFolderPicker = false
     @State private var isHovering = false
+    @State private var showApiKeySheet = false
     
     private var isFullyConfigured: Bool {
-        !excelFilePath.isEmpty && !organizationBasePath.isEmpty
+        !apiKey.isEmpty && !excelFilePath.isEmpty && !organizationBasePath.isEmpty
     }
     
     private var configuredCount: Int {
         var count = 0
+        if !apiKey.isEmpty { count += 1 }
         if !excelFilePath.isEmpty { count += 1 }
         if !organizationBasePath.isEmpty { count += 1 }
         return count
@@ -683,11 +687,21 @@ struct WelcomeView: View {
                     
                     Spacer()
                     
-                    Text("\(configuredCount)/2 configured")
+                    Text("\(configuredCount)/3 configured")
                         .font(.caption)
                         .foregroundColor(isFullyConfigured ? .green : .orange)
                 }
                 .padding(.horizontal, 16)
+                
+                // API Key Setup Card
+                SetupCard(
+                    icon: "key",
+                    title: "Gemini API Key",
+                    subtitle: apiKey.isEmpty ? "Required for extraction" : "Key configured",
+                    isConfigured: !apiKey.isEmpty,
+                    actionLabel: apiKey.isEmpty ? "Set Key" : "Change",
+                    action: { showApiKeySheet = true }
+                )
                 
                 // Excel File Setup Card
                 SetupCard(
@@ -696,7 +710,10 @@ struct WelcomeView: View {
                     subtitle: excelFilePath.isEmpty ? "No file selected" : URL(fileURLWithPath: excelFilePath).lastPathComponent,
                     isConfigured: !excelFilePath.isEmpty,
                     actionLabel: excelFilePath.isEmpty ? "Choose File" : "Change",
-                    action: { showExcelFilePicker = true }
+                    action: { showExcelFilePicker = true },
+                    revealAction: excelFilePath.isEmpty ? nil : {
+                        NSWorkspace.shared.open(URL(fileURLWithPath: excelFilePath))
+                    }
                 )
                 
                 // Organization Folder Setup Card
@@ -706,7 +723,10 @@ struct WelcomeView: View {
                     subtitle: organizationBasePath.isEmpty ? "No folder selected" : URL(fileURLWithPath: organizationBasePath).lastPathComponent,
                     isConfigured: !organizationBasePath.isEmpty,
                     actionLabel: organizationBasePath.isEmpty ? "Choose Folder" : "Change",
-                    action: { showFolderPicker = true }
+                    action: { showFolderPicker = true },
+                    revealAction: organizationBasePath.isEmpty ? nil : {
+                        NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: organizationBasePath)
+                    }
                 )
             }
             .padding(.horizontal, 12)
@@ -800,6 +820,30 @@ struct WelcomeView: View {
                 print("Folder picker error: \(error)")
             }
         }
+        .sheet(isPresented: $showApiKeySheet) {
+            VStack(spacing: 20) {
+                Text("Gemini API Key")
+                    .font(.headline)
+                
+                Text("Required for AI-powered receipt extraction.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                SecureField("Enter API Key", text: $apiKey)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 300)
+                
+                HStack {
+                    Link("Get API Key", destination: URL(string: "https://aistudio.google.com/")!)
+                        .font(.caption)
+                    Spacer()
+                    Button("Done") { showApiKeySheet = false }
+                        .buttonStyle(.borderedProminent)
+                }
+                .frame(width: 300)
+            }
+            .padding(25)
+        }
     }
 }
 
@@ -812,6 +856,7 @@ struct SetupCard: View {
     let isConfigured: Bool
     let actionLabel: String
     let action: () -> Void
+    var revealAction: (() -> Void)? = nil
     
     var body: some View {
         HStack(spacing: 12) {
@@ -828,10 +873,20 @@ struct SetupCard: View {
             
             // Text Content
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
+                HStack(spacing: 4) {
+                    Text(title)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                    
+                    if let revealAction = revealAction {
+                        Button(action: revealAction) {
+                            Image(systemName: "magnifyingglass.circle")
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
                 
                 Text(subtitle)
                     .font(.caption)

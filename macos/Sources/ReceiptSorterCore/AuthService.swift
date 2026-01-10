@@ -32,16 +32,6 @@ public final class AuthService: NSObject {
         let config = OIDServiceConfiguration(authorizationEndpoint: authEndpoint, tokenEndpoint: tokenEndpoint)
 
         return try await withCheckedThrowingContinuation { continuation in
-            let request = OIDAuthorizationRequest(
-                configuration: config,
-                clientId: self.kClientID,
-                clientSecret: self.kClientSecret,
-                scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-                redirectURL: URL(string: self.kRedirectURI)!,
-                responseType: OIDResponseTypeCode,
-                additionalParameters: nil
-            )
-            
             // Start Loopback Listener
             let handler = OIDRedirectHTTPHandler(successURL: nil)
             let redirectURI = handler.startHTTPListener(nil)

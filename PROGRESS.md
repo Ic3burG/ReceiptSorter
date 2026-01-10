@@ -10,10 +10,11 @@
   - Added a welcoming header with gradient icon, "Welcome to Receipt Sorter" title, and descriptive subtitle.
   - Created `WelcomeView` and `SetupCard` SwiftUI components in `ContentView.swift`.
 - **Quick Setup Cards**: Added inline configuration options directly on the welcome screen.
-  - **Spreadsheet Setup Card**: Shows current Excel file status with a "Choose File" button for quick configuration.
+  - **API Key Setup**: Added a card to configure the Gemini API key directly from the onboarding flow.
+  - **Spreadsheet Setup Card**: Shows current Excel file status with a "Choose File" button.
   - **Organization Folder Card**: Shows current folder status with a "Choose Folder" button.
-  - Visual status indicators (green checkmark when configured, orange icon when pending).
-  - "X/2 configured" progress indicator.
+  - **Quick Access**: Added "Reveal" buttons (magnifying glass) to instantly open the selected spreadsheet or folder.
+  - Visual status indicators and a "X/3 configured" progress indicator.
 - **Enhanced Drop Zone**: Redesigned the receipt drop area with:
   - Dashed border styling with animated hover states.
   - Helpful reminder text when setup is incomplete.

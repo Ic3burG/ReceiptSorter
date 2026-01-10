@@ -421,7 +421,7 @@ struct SyncSettingsView: View {
 
                     // Ensure we are signed in first
 
-                    if let auth = core.authService, await !auth.isAuthorized {
+                    if let auth = core.authService, !auth.isAuthorized {
 
                         if let window = NSApp.windows.first {
 
