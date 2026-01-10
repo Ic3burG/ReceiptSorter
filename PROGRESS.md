@@ -5,6 +5,7 @@
 ## Session: January 6, 2026
 
 ### 🛠️ CI/CD Improvements
+- **Swift Tools Downgrade**: Lowered `swift-tools-version` in `Package.swift` from `6.0` to `5.9`. This ensures compatibility with the standard GitHub Actions `macos-14` runner (which uses Swift 5.10).
 - **GitHub Actions Fix**: Downgraded macOS runner from `macos-15` (beta) to `macos-14` (stable) to ensure reliable Swift builds.
 - **Build Script Robustness**: Added dynamic build path discovery to `bundle.sh` to handle varying Swift Package Manager output layouts in CI environments.
 - **Dependency Installation**: Added `create-dmg` installation step to the CI workflow.
