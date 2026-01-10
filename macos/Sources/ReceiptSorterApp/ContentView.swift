@@ -23,6 +23,7 @@ struct ProcessingItem: Identifiable, Equatable {
 struct ContentView: View {
     // Persistent Settings
     @AppStorage("geminiApiKey") private var apiKey: String = ""
+    @AppStorage("excelFilePath") private var excelFilePath: String = ""
     @AppStorage("googleSheetId") private var googleSheetId: String = ""
     @AppStorage("googleClientID") private var clientID: String = ""
     @AppStorage("googleClientSecret") private var clientSecret: String = ""
@@ -131,16 +132,33 @@ struct ContentView: View {
                         }
                         .padding([.top, .horizontal])
                         
-                        if isAuthorized && items.contains(where: { $0.status == .extracted }) {
-                            Button(action: syncAll) {
+                        if items.contains(where: { $0.status == .extracted }) {
+                            // Primary: Export to Excel
+                            Button(action: exportAllToExcel) {
                                 HStack {
-                                    Image(systemName: "arrow.triangle.2.circlepath")
-                                    Text("Sync All Completed")
+                                    Image(systemName: "doc.badge.arrow.up")
+                                    Text("Export to Excel")
                                 }
                                 .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.borderedProminent)
-                            .padding([.horizontal, .bottom])
+                            .disabled(excelFilePath.isEmpty)
+                            .padding(.horizontal)
+                            
+                            // Secondary: Sync to Google Sheets
+                            if isAuthorized {
+                                Button(action: syncAll) {
+                                    HStack {
+                                        Image(systemName: "arrow.triangle.2.circlepath")
+                                        Text("Sync to Google Sheets")
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(.bordered)
+                                .padding([.horizontal, .bottom])
+                            } else {
+                                Spacer().frame(height: 8)
+                            }
                         }
                     }
                 }
@@ -153,6 +171,7 @@ struct ContentView: View {
             }
             .onAppear { initializeCore() }
             .onChange(of: apiKey) { _ in initializeCore() }
+            .onChange(of: excelFilePath) { _ in initializeCore() }
             .onChange(of: clientID) { _ in initializeCore() }
             .onChange(of: clientSecret) { _ in initializeCore() }
             .onChange(of: googleSheetId) { _ in initializeCore() }
@@ -189,9 +208,16 @@ struct ContentView: View {
                             
                             // Action Buttons
                             if item.status == .extracted {
-                                if isAuthorized {
-                                    Button("Sync This") { syncSingle(index) }
+                                Menu {
+                                    Button("Export to Excel") { exportSingleToExcel(index) }
+                                    if isAuthorized {
+                                        Divider()
+                                        Button("Sync to Google Sheets") { syncSingle(index) }
+                                    }
+                                } label: {
+                                    Text("Export")
                                 }
+                                .menuStyle(.borderlessButton)
                             } else if item.status == .error {
                                 Button("Retry") {
                                     // Reset status and try processing again
@@ -385,6 +411,38 @@ struct ContentView: View {
         }
     }
     
+    // MARK: - Excel Export
+    
+    private func exportAllToExcel() {
+        Task {
+            for index in items.indices {
+                if items[index].status == .extracted {
+                    await exportItem(at: index)
+                }
+            }
+            await MainActor.run { notify(title: "Export Complete", body: "Receipts exported to Excel.") }
+        }
+    }
+    
+    private func exportSingleToExcel(_ index: Int) {
+        Task { await exportItem(at: index) }
+    }
+    
+    private func exportItem(at index: Int) async {
+        guard let data = items[index].data else { return }
+        guard let core = self.core else { return }
+        await MainActor.run { items[index].status = .syncing }
+        do {
+            try await core.exportToExcel(data: data)
+            await MainActor.run { items[index].status = .done }
+        } catch {
+            await MainActor.run {
+                items[index].error = "Export Failed: \(error.localizedDescription)"
+                items[index].status = .error
+            }
+        }
+    }
+    
     // MARK: - Helpers
     
     private func icon(for item: ProcessingItem) -> String {
@@ -411,9 +469,9 @@ struct ContentView: View {
         switch item.status {
         case .pending: return "Queued"
         case .processing: return "Processing..."
-        case .extracted: return "Ready to Sync"
-        case .syncing: return "Syncing..."
-        case .done: return "Synced"
+        case .extracted: return "Ready to Export"
+        case .syncing: return "Exporting..."
+        case .done: return "Exported"
         case .error: return "Failed"
         }
     }
