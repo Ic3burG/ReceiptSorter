@@ -19,6 +19,9 @@
   - Dashed border styling with animated hover states.
   - Helpful reminder text when setup is incomplete.
 - **Cloud Sync Prompt**: Optional "Sign in for Cloud Sync" button for Google Sheets integration.
+- **App Icon Refresh**: Designed and implemented a new modern, 3D-style app icon using a "squircle" shape and receipt motif.
+  - Created utility script `macos/scripts/update_icon.sh` for easier icon generation.
+  - Removed obsolete Python icon generation script.
 
 ---
 
