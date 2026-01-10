@@ -1,70 +1,62 @@
 #!/bin/bash
-
-# Exit on error
 set -e
 
+# Configuration
 APP_NAME="Receipt Sorter"
 EXECUTABLE_NAME="ReceiptSorterApp"
 BUNDLE_NAME="$APP_NAME.app"
-SOURCES_DIR="Sources/ReceiptSorterApp"
 
-echo "🚀 Starting Build for $APP_NAME..."
+# Navigate to project root (macos directory)
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR/.."
 
-# Ensure we are in the macos directory
-if [ -f "Package.swift" ]; then
-    echo "✅ Found Package.swift"
-else
-    if [ -d "macos" ]; then
-        cd macos
-        echo "📂 Changed directory to macos/"
-    else
-        echo "❌ Error: Could not find Package.swift or macos directory."
-        exit 1
-    fi
-fi
+echo "📍 Working in: $(pwd)"
 
-# 1. Clean previous build (optional, good for release)
-# swift package clean
+# Clean previous build artifacts to ensure a fresh build
+# echo "🧹 Cleaning..."
+# rm -rf .build "$BUNDLE_NAME"
 
-# 2. Build Release Binary
-echo "🛠️  Compiling Swift sources (Release)..."
+# Build Universal Binary (arm64 + x86_64)
+echo "🛠️  Building Universal Binary..."
 swift build -c release --product "$EXECUTABLE_NAME" --arch arm64 --arch x86_64
 
-# Define Build Path (Binaries location)
-BUILD_PATH=".build/apple/Products/Release"
-if [ ! -d "$BUILD_PATH" ]; then
-    echo "⚠️  Standard build path not found: $BUILD_PATH"
-    echo "🔍 Searching for executable..."
-    FOUND_PATH=$(find .build -name "$EXECUTABLE_NAME" -type f | grep "Release" | head -n 1)
-    if [ -n "$FOUND_PATH" ]; then
-        BUILD_PATH=$(dirname "$FOUND_PATH")
-        echo "✅ Found executable at: $BUILD_PATH"
-    else
-        # Fallback for older Swift versions or different layouts
-        BUILD_PATH=".build/release"
-        echo "⚠️  Falling back to: $BUILD_PATH"
-    fi
+# Locate the binary
+echo "🔍 Locating binary..."
+
+# 1. Check Standard Apple Products Path (Most likely for macOS)
+if [ -f ".build/apple/Products/Release/$EXECUTABLE_NAME" ]; then
+    BIN_PATH=".build/apple/Products/Release/$EXECUTABLE_NAME"
+# 2. Check Standard Release Path (Older Swift / Linux style)
+elif [ -f ".build/release/$EXECUTABLE_NAME" ]; then
+    BIN_PATH=".build/release/$EXECUTABLE_NAME"
+else
+    # 3. Search as fallback, but exclude Intermediates and DWARF symbols
+    BIN_PATH=$(find .build -name "$EXECUTABLE_NAME" -type f ! -path "*Intermediates*" ! -path "*DWARF*" -path "*/Release/*" | head -n 1)
 fi
 
-if [ ! -d "$BUILD_PATH" ]; then
-    echo "❌ Error: Build path $BUILD_PATH does not exist."
-    echo "📂 Listing .build directory:"
-    ls -R .build
+if [ -z "$BIN_PATH" ]; then
+    echo "❌ Error: Could not find compiled binary '$EXECUTABLE_NAME' in .build directory."
     exit 1
 fi
 
-# 3. Create .app Bundle Structure
-echo "📦 Creating App Bundle..."
+echo "✅ Found binary at: $BIN_PATH"
+
+# Create Bundle Structure
+echo "📦 Creating App Bundle Structure..."
 rm -rf "$BUNDLE_NAME"
 mkdir -p "$BUNDLE_NAME/Contents/MacOS"
 mkdir -p "$BUNDLE_NAME/Contents/Resources"
 
-# 4. Copy Assets
+# Copy Binary
+echo "dg Copying Binary..."
+cp "$BIN_PATH" "$BUNDLE_NAME/Contents/MacOS/$EXECUTABLE_NAME"
+
+# Copy Resources
 echo "📄 Copying Info.plist..."
-if [ -f "$SOURCES_DIR/Info.plist" ]; then
-    cp "$SOURCES_DIR/Info.plist" "$BUNDLE_NAME/Contents/Info.plist"
+if [ -f "Sources/$EXECUTABLE_NAME/Info.plist" ]; then
+    cp "Sources/$EXECUTABLE_NAME/Info.plist" "$BUNDLE_NAME/Contents/Info.plist"
 else
-    echo "⚠️  Warning: Info.plist not found at $SOURCES_DIR/Info.plist"
+    echo "⚠️  Warning: Info.plist not found in Sources/$EXECUTABLE_NAME/"
 fi
 
 echo "🖼️  Copying App Icon..."
@@ -74,27 +66,13 @@ else
     echo "⚠️  Warning: AppIcon.icns not found in Resources/"
 fi
 
-# 5. Copy Binary
-echo "💿 Copying Executable..."
-cp "$BUILD_PATH/$EXECUTABLE_NAME" "$BUNDLE_NAME/Contents/MacOS/$EXECUTABLE_NAME"
-
-# Update Info.plist executable name if it differs (safety check)
-# PlistBuddy is a built-in Mac tool for editing plists
-/usr/libexec/PlistBuddy -c "Set :CFBundleExecutable $EXECUTABLE_NAME" "$BUNDLE_NAME/Contents/Info.plist"
-
-# 6. Ad-hoc Code Signing
-echo "✍️  Signing Application..."
-if [ -f "$SOURCES_DIR/ReceiptSorterApp.entitlements" ]; then
-    echo "   Using entitlements..."
-    codesign --force --deep --sign - --entitlements "$SOURCES_DIR/ReceiptSorterApp.entitlements" "$BUNDLE_NAME"
-else
-    echo "   No entitlements found (Network access might fail)..."
-    codesign --force --deep --sign - "$BUNDLE_NAME"
+# Set Executable Name in Info.plist (ensure it matches)
+if [ -f "$BUNDLE_NAME/Contents/Info.plist" ]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable $EXECUTABLE_NAME" "$BUNDLE_NAME/Contents/Info.plist"
 fi
 
-echo ""
-echo "✅ Build Complete!"
-echo "👉 Application is ready at: $(pwd)/$BUNDLE_NAME"
+# Ad-hoc Code Signing (Required for local run on ARM Macs)
+echo "✍️  Signing Bundle..."
+codesign --force --deep --sign - "$BUNDLE_NAME"
 
-echo ""
-echo "To run it, type: open \"$BUNDLE_NAME\""
+echo "✅ Bundle created: $(pwd)/$BUNDLE_NAME"

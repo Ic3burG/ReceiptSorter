@@ -4,117 +4,50 @@ on:
   push:
     tags:
       - "v*.*.*"
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag to release"
-        required: true
-        type: string
 
-
+permissions:
+  contents: write
 
 jobs:
-  create-release:
-    name: Create GitHub Release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      version: ${{ steps.get_version.outputs.version }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get version
-        id: get_version
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION=${{ inputs.tag }}
-          else
-            VERSION=${GITHUB_REF#refs/tags/}
-          fi
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Version: ${VERSION}"
-
-      - name: Generate release notes
-        id: release_notes
-        run: |
-          # Get the previous tag
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-
-          if [ -z "$PREV_TAG" ]; then
-            echo "notes=Initial release" >> $GITHUB_OUTPUT
-          else
-            # Generate changelog
-            CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
-            echo "notes<<EOF" >> $GITHUB_OUTPUT
-            echo "$CHANGELOG" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.get_version.outputs.version }}
-          release_name: Release ${{ steps.get_version.outputs.version }}
-          body: |
-            ## What's Changed
-
-            ${{ steps.release_notes.outputs.notes }}
-
-            ## Installation
-
-            ### macOS App
-            Download the `.app` bundle below and extract it to your Applications folder.
-            
-            **Requirements:** macOS 13.0 or later
-          draft: false
-          prerelease: ${{ contains(steps.get_version.outputs.version, 'alpha') || contains(steps.get_version.outputs.version, 'beta') || contains(steps.get_version.outputs.version, 'rc') }}
-
-  build-macos:
-    name: Build macOS App
-    needs: create-release
+  build-and-release:
+    name: Build & Release
     runs-on: macos-14
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Check Swift version
-        run: swift --version
-
-      - name: Build Swift package
-        working-directory: macos
-        run: swift build -c release
-
-      - name: Build .app bundle
+      - name: Build Application
         working-directory: macos
         run: |
-          if [ -f scripts/bundle.sh ]; then
-            chmod +x scripts/bundle.sh
-            ./scripts/bundle.sh
-          fi
-        continue-on-error: true
+          chmod +x scripts/bundle.sh
+          ./scripts/bundle.sh
 
-      - name: Create ZIP archive
-        if: success()
+      - name: Create DMG
+        working-directory: macos
         run: |
-          cd macos
-          zip -r ../Receipt-Sorter-macOS.zip "Receipt Sorter.app"
+          brew install create-dmg
+          create-dmg \
+            --volname "Receipt Sorter" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --app-drop-link 425 120 \
+            "Receipt-Sorter.dmg" \
+            "Receipt Sorter.app"
 
-      - name: Upload macOS app to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Zip Application (Backup)
+        working-directory: macos
+        run: |
+          zip -r Receipt-Sorter-App.zip "Receipt Sorter.app"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./Receipt-Sorter-macOS.zip
-          asset_name: Receipt-Sorter-macOS-${{ needs.create-release.outputs.version }}.zip
-          asset_content_type: application/zip
-        continue-on-error: true
+          files: |
+            macos/Receipt-Sorter.dmg
+            macos/Receipt-Sorter-App.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true

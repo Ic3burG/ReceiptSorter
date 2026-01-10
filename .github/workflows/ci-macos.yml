@@ -1,85 +1,65 @@
-name: macOS App Build
+name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ "main", "develop" ]
   pull_request:
-    branches: [main, develop]
+    branches: [ "main", "develop" ]
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build Swift macOS App
+  test-and-build:
+    name: Test & Build
     runs-on: macos-14
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          brew install create-dmg
-          swift --version
+      - name: Set up Swift
+        run: swift --version
 
-      - name: Cache Swift packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            macos/.build
-            ~/Library/Caches/org.swift.swiftpm
-          key: ${{ runner.os }}-spm-${{ hashFiles('macos/Package.resolved') }}
-          restore-keys: |
-            ${{ runner.os }}-spm-
-
-      - name: Build Swift package
+      - name: Resolve Dependencies
         working-directory: macos
-        run: swift build -c release
+        run: swift package resolve
 
-      - name: Run Swift tests
+      - name: Run Tests
         working-directory: macos
         run: swift test
-        continue-on-error: true
 
-      - name: Build .app bundle
+      - name: Build Application
         working-directory: macos
         run: |
-          if [ -f scripts/bundle.sh ]; then
-            chmod +x scripts/bundle.sh
-            ./scripts/bundle.sh
-          else
-            echo "bundle.sh not found, skipping app bundle creation"
-          fi
-        continue-on-error: true
+          chmod +x scripts/bundle.sh
+          ./scripts/bundle.sh
 
-      - name: Upload .app artifact
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: Receipt-Sorter-macOS
-          path: macos/Receipt Sorter.app
-          retention-days: 30
-
-      - name: Create DMG (optional)
-        if: success() && github.ref == 'refs/heads/main'
+      - name: Create DMG (Optional Check)
+        working-directory: macos
         run: |
+          brew install create-dmg || true
           if command -v create-dmg &> /dev/null; then
-            create-dmg \
+             create-dmg \
               --volname "Receipt Sorter" \
               --window-pos 200 120 \
               --window-size 600 400 \
               --icon-size 100 \
               --app-drop-link 425 120 \
               "Receipt-Sorter.dmg" \
-              "macos/Receipt Sorter.app"
+              "Receipt Sorter.app"
           else
-            echo "create-dmg not installed, skipping DMG creation"
+            echo "create-dmg failed to install or run, skipping."
           fi
-        continue-on-error: true
 
-      - name: Upload DMG artifact
+      - name: Upload App Artifact
         uses: actions/upload-artifact@v4
-        if: success()
+        with:
+          name: Receipt-Sorter-App
+          path: macos/Receipt Sorter.app
+          if-no-files-found: error
+
+      - name: Upload DMG Artifact
+        if: hashFiles('macos/Receipt-Sorter.dmg') != ''
+        uses: actions/upload-artifact@v4
         with:
           name: Receipt-Sorter-DMG
-          path: Receipt-Sorter.dmg
-          retention-days: 30
-        continue-on-error: true
+          path: macos/Receipt-Sorter.dmg
