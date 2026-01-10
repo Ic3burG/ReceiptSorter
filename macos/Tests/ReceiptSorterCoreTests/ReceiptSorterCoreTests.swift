@@ -1,6 +1,9 @@
-import Testing
+import XCTest
 @testable import ReceiptSorterCore
 
-@Test func example() async throws {
-    // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+final class ReceiptSorterCoreTests: XCTestCase {
+    func testExample() throws {
+        // This is an example of a functional test case.
+        // Use XCTAssert and related functions to verify your tests produce the correct results.
+    }
 }
