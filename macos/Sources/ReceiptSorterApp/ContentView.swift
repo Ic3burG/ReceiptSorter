@@ -5,6 +5,11 @@ import UserNotifications
 import UniformTypeIdentifiers
 import AppKit
 
+// Wrapper to workaround NSItemProvider not being Sendable
+struct UnsafeSendableWrapper<T>: @unchecked Sendable {
+    let value: T
+}
+
 struct ProcessingItem: Identifiable, Equatable {
     let id = UUID()
     var url: URL  // Mutable to update after file organization
@@ -316,9 +321,10 @@ struct ContentView: View {
     
     // MARK: - Logic
     
+    @MainActor
     private func initializeCore() {
         self.core = ReceiptSorterCore(apiKey: apiKey, clientID: clientID, clientSecret: clientSecret, sheetID: googleSheetId, excelFilePath: excelFilePath, organizationBasePath: organizationBasePath)
-        Task { @MainActor in
+        Task {
             if let auth = core?.authService {
                 self.isAuthorized = auth.isAuthorized
             }
@@ -327,11 +333,11 @@ struct ContentView: View {
     
     private func signIn() {
         guard let core = core, let auth = core.authService else { return }
-        Task {
+        Task { @MainActor in
             do {
                 if let window = NSApp.windows.first {
                     try await auth.signIn(presenting: window)
-                    await MainActor.run { self.isAuthorized = true }
+                    self.isAuthorized = true
                 }
             } catch {
                 print("Sign In Failed: \(error)")
@@ -339,6 +345,7 @@ struct ContentView: View {
         }
     }
     
+    @MainActor
     private func signOut() {
         guard let core = core, let auth = core.authService else { return }
         auth.signOut()
@@ -346,44 +353,55 @@ struct ContentView: View {
     }
     
     private func loadFiles(from providers: [NSItemProvider]) {
-        Task {
-            for provider in providers {
+        // Workaround for NSItemProvider not being Sendable in strict concurrency checks
+        // We wrap it to pass into the Task safely
+        let safeProviders = UnsafeSendableWrapper(value: providers)
+        
+        Task { @MainActor in
+            for provider in safeProviders.value {
                 if let urlData = try? await provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) as? Data,
                    let url = URL(dataRepresentation: urlData, relativeTo: nil) {
                     
                     let newItem = ProcessingItem(url: url)
-                    await MainActor.run {
-                        items.append(newItem)
-                        if items.count == 1 { selectedItemId = newItem.id }
-                    }
+                    items.append(newItem)
+                    if items.count == 1 { selectedItemId = newItem.id }
                 }
             }
             processBatch()
         }
     }
     
+    @MainActor
     private func processBatch() {
         guard !isBatchProcessing else { return }
         isBatchProcessing = true
         Task {
-            while let index = items.firstIndex(where: { $0.status == .pending }) {
+            while let index = await MainActor.run(body: { items.firstIndex(where: { $0.status == .pending }) }) {
                 await processItem(at: index)
             }
-            isBatchProcessing = false
-            await MainActor.run { notify(title: "Batch Complete", body: "Finished processing receipts.") }
+            await MainActor.run { 
+                isBatchProcessing = false
+                notify(title: "Batch Complete", body: "Finished processing receipts.") 
+            }
         }
     }
     
     private func processItem(at index: Int) async {
+        let item = await MainActor.run { items[index] }
+        
         guard !apiKey.isEmpty else {
             await MainActor.run { items[index].error = "Missing API Key" }
             return
         }
-        guard let core = self.core else { return }
+        
+        // Securely capture core on MainActor
+        let core = await MainActor.run { self.core }
+        guard let core = core else { return }
+        
         await MainActor.run { items[index].status = .processing }
         
         do {
-            let text = try await core.extractText(from: items[index].url)
+            let text = try await core.extractText(from: item.url)
             let data = try await core.extractReceiptData(from: text)
             await MainActor.run {
                 items[index].data = data
@@ -399,10 +417,9 @@ struct ContentView: View {
     
     private func syncAll() {
         Task {
-            for index in items.indices {
-                if items[index].status == .extracted {
-                    await syncItem(at: index)
-                }
+            let indices = await MainActor.run { items.indices.filter { items[$0].status == .extracted } }
+            for index in indices {
+                await syncItem(at: index)
             }
         }
     }
@@ -412,8 +429,12 @@ struct ContentView: View {
     }
     
     private func syncItem(at index: Int) async {
-        guard let data = items[index].data else { return }
-        guard let core = self.core else { return }
+        let item = await MainActor.run { items[index] }
+        guard let data = item.data else { return }
+        
+        let core = await MainActor.run { self.core }
+        guard let core = core else { return }
+        
         await MainActor.run { items[index].status = .syncing }
         do {
             try await core.uploadToSheets(data: data)
@@ -430,10 +451,9 @@ struct ContentView: View {
     
     private func exportAllToExcel() {
         Task {
-            for index in items.indices {
-                if items[index].status == .extracted {
-                    await exportItem(at: index)
-                }
+            let indices = await MainActor.run { items.indices.filter { items[$0].status == .extracted } }
+            for index in indices {
+                await exportItem(at: index)
             }
             await MainActor.run { notify(title: "Export Complete", body: "Receipts exported to Excel.") }
         }
@@ -444,14 +464,18 @@ struct ContentView: View {
     }
     
     private func exportItem(at index: Int) async {
-        guard let data = items[index].data else { return }
-        guard let core = self.core else { return }
+        let item = await MainActor.run { items[index] }
+        guard let data = item.data else { return }
+        
+        let core = await MainActor.run { self.core }
+        guard let core = core else { return }
+        
         await MainActor.run { items[index].status = .syncing }
         do {
             try await core.exportToExcel(data: data)
             
             // Auto-organize file after successful export
-            if autoOrganize && !organizationBasePath.isEmpty {
+            if await MainActor.run(body: { autoOrganize && !organizationBasePath.isEmpty }) {
                 if let dateString = data.date, !dateString.isEmpty {
                     await organizeFileWithConflictDetection(at: index, date: dateString)
                 }
@@ -469,11 +493,14 @@ struct ContentView: View {
     // MARK: - File Organization with Conflict Detection
     
     private func organizeFileWithConflictDetection(at index: Int, date: String) async {
-        guard let core = self.core,
+        let core = await MainActor.run { self.core }
+        guard let core = core,
               let service = core.fileOrganizationService else { return }
         
+        let fileURL = await MainActor.run { items[index].url }
+        
         do {
-            let result = try await service.organizeReceiptWithConflictDetection(items[index].url, date: date)
+            let result = try await service.organizeReceiptWithConflictDetection(fileURL, date: date)
             
             switch result {
             case .success(let newURL):
@@ -485,13 +512,13 @@ struct ContentView: View {
             case .conflict(let existingURL, let proposedURL):
                 // Get metadata for both files
                 let existingMeta = await service.getFileMetadata(existingURL)
-                let newMeta = await service.getFileMetadata(items[index].url)
+                let newMeta = await service.getFileMetadata(fileURL)
                 
                 // Show duplicate review dialog
                 await MainActor.run {
                     self.duplicateConflict = DuplicateConflict(
                         existingURL: existingURL,
-                        newFileURL: items[index].url,
+                        newFileURL: fileURL,
                         proposedURL: proposedURL,
                         itemIndex: index
                     )

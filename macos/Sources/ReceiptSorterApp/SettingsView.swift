@@ -401,52 +401,36 @@ struct SyncSettingsView: View {
 
         
 
+        @MainActor
         private func formatSheet() {
-
             guard !googleSheetId.isEmpty else { return }
-
             isFormatting = true
-
             
-
             // Initialize core temporarily to use its services
-
+            // ReceiptSorterCore init is @MainActor, so this is now safe
             let core = ReceiptSorterCore(clientID: clientID, sheetID: googleSheetId)
-
             
-
             Task {
-
                 do {
-
                     // Ensure we are signed in first
-
-                    if let auth = core.authService, !auth.isAuthorized {
-
-                        if let window = NSApp.windows.first {
-
-                            try await auth.signIn(presenting: window)
-
+                    // Access authService safely
+                    if let auth = core.authService {
+                        // isAuthorized is non-isolated property or actor-isolated? 
+                        // AuthService is @MainActor class. So accessing .isAuthorized on MainActor is sync.
+                        if !auth.isAuthorized {
+                             if let window = NSApp.windows.first {
+                                try await auth.signIn(presenting: window)
+                             }
                         }
-
                     }
-
                     
-
                     try await core.formatSheet()
-
                     isFormatting = false
-
                 } catch {
-
                     print("Formatting failed: \(error)") // Simple log for settings
-
                     isFormatting = false
-
                 }
-
             }
-
         }
 
         
