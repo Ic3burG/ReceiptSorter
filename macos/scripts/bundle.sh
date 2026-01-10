@@ -33,8 +33,24 @@ swift build -c release --product "$EXECUTABLE_NAME" --arch arm64 --arch x86_64
 # Define Build Path (Binaries location)
 BUILD_PATH=".build/apple/Products/Release"
 if [ ! -d "$BUILD_PATH" ]; then
-    # Fallback for older Swift versions or different layouts
-    BUILD_PATH=".build/release"
+    echo "⚠️  Standard build path not found: $BUILD_PATH"
+    echo "🔍 Searching for executable..."
+    FOUND_PATH=$(find .build -name "$EXECUTABLE_NAME" -type f | grep "Release" | head -n 1)
+    if [ -n "$FOUND_PATH" ]; then
+        BUILD_PATH=$(dirname "$FOUND_PATH")
+        echo "✅ Found executable at: $BUILD_PATH"
+    else
+        # Fallback for older Swift versions or different layouts
+        BUILD_PATH=".build/release"
+        echo "⚠️  Falling back to: $BUILD_PATH"
+    fi
+fi
+
+if [ ! -d "$BUILD_PATH" ]; then
+    echo "❌ Error: Build path $BUILD_PATH does not exist."
+    echo "📂 Listing .build directory:"
+    ls -R .build
+    exit 1
 fi
 
 # 3. Create .app Bundle Structure

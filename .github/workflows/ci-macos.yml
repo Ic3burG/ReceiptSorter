@@ -10,13 +10,15 @@ on:
 jobs:
   build:
     name: Build Swift macOS App
-    runs-on: macos-15
+    runs-on: macos-14
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check Swift version
-        run: swift --version
+      - name: Install dependencies
+        run: |
+          brew install create-dmg
+          swift --version
 
       - name: Cache Swift packages
         uses: actions/cache@v4
