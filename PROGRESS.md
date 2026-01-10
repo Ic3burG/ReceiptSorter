@@ -22,6 +22,9 @@
 - **App Icon Refresh**: Designed and implemented a new modern, 3D-style app icon using a "squircle" shape and receipt motif.
   - Created utility script `macos/scripts/update_icon.sh` for easier icon generation.
   - Removed obsolete Python icon generation script.
+- **Functionality Improvements (File Selection)**:
+  - **Native File Pickers**: Replaced SwiftUI `fileImporter` with `NSOpenPanel` and `NSSavePanel` for robust file and folder selection.
+  - **Create Spreadsheet Feature**: Added "Create New" functionality to the Welcome screen, allowing users to generate a formatted Excel template instantly.
 
 ---
 
