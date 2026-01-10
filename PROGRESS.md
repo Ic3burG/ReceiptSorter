@@ -2,52 +2,25 @@
 
 **IMPORTANT:** This file must be updated with a summary of changes after every session or significant code modification. These updates must be committed and pushed to the GitHub repository immediately.
 
-## Session: January 10, 2026
-
-### 📁 File Organization Feature
-
-- **FileOrganizationService**: New service that automatically organizes receipts into `YYYY/MM/` folder structure based on receipt date.
-- **Organization Settings Tab**: Added settings UI with folder picker, auto-organize toggle, and help text explaining the folder structure.
-- **Auto-organize after export**: Files are automatically moved to year/month folders after successful Excel export.
-
-### 🔍 Duplicate Receipt Review Feature
-
-- **Conflict Detection**: `organizeReceiptWithConflictDetection()` method detects filename collisions instead of auto-renaming.
-- **Side-by-Side Comparison UI**: New `DuplicateReviewView` shows existing and new files with PDF/image previews and file metadata.
-- **User Resolution Options**: Three choices when duplicates are detected:
-  - Keep Existing (don't move new file)
-  - Keep Both (move with unique suffix)
-  - Replace (delete existing, move new file)
-- **FileMetadata struct**: Displays filename, modification date, and file size in comparison UI.
-
----
-
 ## Session: January 6, 2026
 
-### 🛠️ CI/CD Improvements
+### 🚀 Major macOS Milestones
+- **Batch Processing Dashboard**: Transformed the macOS app from a single-file viewer into a high-capacity processing engine.
+    - Implemented a `NavigationSplitView` with a sidebar queue.
+    - Added background queuing to process multiple receipts sequentially.
+    - Created a "Sync All" workflow for bulk uploading extracted data.
+- **Google OAuth 2.0 Integration**: Migrated to a user-friendly "Sign In with Google" flow.
+    - Integrated `AppAuth-iOS` for standard browser-based authentication.
+    - Implemented a dynamic Loopback HTTP listener to capture authentication tokens securely.
+    - Added support for Client ID and Client Secret configuration via the UI.
+- **Automated Spreadsheet Design**: Added a feature to programmatically "Format" Google Sheets.
+    - Clicking "Apply Professional Formatting" in Settings now sets up blue headers, white bold text, frozen rows, and automatic currency formatting for the Amount column.
+- **Smart Spreadsheet Link Parsing**: Enhanced the Settings UI to automatically extract the Spreadsheet ID from pasted full URLs, reducing configuration errors.
 
-- **CI Stability Fix**: Downgraded `swift-tools-version` to `5.10` and reverted GitHub Actions runners to `macos-14`. This ensures the CI environment (Xcode 15.4) matches the package requirements, eliminating "tools version mismatch" errors while maintaining concurrency safety.
-
-### 🛠️ UX Improvements
-
-- **Spreadsheet Formatting**: Added a "Apply Professional Formatting" button to the Settings window.
-- **Robust Spreadsheet Link Parsing**: Updated `SettingsView` to accept full Google Sheets URLs.
-- **Authentication Visibility**: Added a persistent status indicator at the bottom of the sidebar.
-- **Sign Out Capability**: Added a "Sign Out" button.
-
-### 🚀 Phase 3 Progress (Distribution)
-
-- **App Icon Generation**: Designed and implemented a professional macOS app icon.
-- **Build Script**: Created `macos/scripts/bundle.sh` for automated packaging.
-
-### 🚀 Phase 2 Progress (Native macOS App)
-
-- **Batch Processing**: Implemented robust multi-file queuing and processing.
-- **Completed Sync Pipeline**: Wired up the "Sync to Sheets" button.
-- **Google Sheets Integration**: Implemented `SheetService`.
-- **Gemini Swift Integration**: Implemented `GeminiService`.
-- **Full macOS Pipeline**: Drop -> OCR -> AI -> UI -> Sync.
-- **Native SwiftUI App**: Implemented `ReceiptSorterApp`.
-- **Native OCR**: Implemented `OCRService` using Vision.
+### 🛠️ CI/CD & Fixes
+- **GitHub Actions Resolution**: Standardized the build environment on `macos-14` with `swift-tools-version: 5.10` to ensure a "Green" CI status.
+- **Swift 6 Concurrency Fixes**: Resolved complex `Sendable` and `MainActor` isolation issues across `AuthService`, `SheetService`, and `ReceiptSorterCore`.
+- **Network Entitlements**: Finalized the `.entitlements` configuration to allow the sandboxed app to communicate with Gemini and Google APIs.
+- **App Icon**: Designed and integrated a native macOS icon into the production bundle.
 
 ---
