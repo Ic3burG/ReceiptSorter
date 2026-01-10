@@ -5,9 +5,9 @@
 ## Session: January 6, 2026
 
 ### 🛠️ CI/CD Improvements
-- **Build Stability**: Removed `unsafeFlags` from `Package.swift`. The build script `bundle.sh` already handles `Info.plist` placement correctly, so embedding it via linker flags was redundant and caused CI failures.
-- **Swift Tools Downgrade**: Lowered `swift-tools-version` in `Package.swift` from `6.0` to `5.9`.
-- **GitHub Actions Fix**: Downgraded macOS runner from `macos-15` (beta) to `macos-14` (stable).
+- **Swift 6 Restoration**: Reverted `Package.swift` to `swift-tools-version: 6.0` to support modern concurrency features used in the codebase.
+- **GitHub Actions Update**: Switched CI runners to `macos-15` (Sequoia) to ensure access to the Swift 6 toolchain.
+- **Build Stability**: Removed `unsafeFlags` from `Package.swift`.
 
 ### 🛠️ UX Improvements
 - **Spreadsheet Formatting**: Added a "Apply Professional Formatting" button to the Settings window.
