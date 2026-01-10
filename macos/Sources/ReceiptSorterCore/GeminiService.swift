@@ -8,29 +8,29 @@ public struct ReceiptData: Codable, Sendable, Equatable {
     public let description: String?
 }
 
-struct GeminiRequest: Codable {
+struct GeminiRequest: Codable, Sendable {
     let contents: [GeminiContent]
 }
 
-struct GeminiContent: Codable {
+struct GeminiContent: Codable, Sendable {
     let parts: [GeminiPart]
 }
 
-struct GeminiPart: Codable {
+struct GeminiPart: Codable, Sendable {
     let text: String
 }
 
-struct GeminiResponse: Codable {
+struct GeminiResponse: Codable, Sendable {
     let candidates: [GeminiCandidate]?
     let error: GeminiAPIError?
 }
 
-struct GeminiCandidate: Codable {
+struct GeminiCandidate: Codable, Sendable {
     let content: GeminiContent
     let finishReason: String?
 }
 
-struct GeminiAPIError: Codable {
+struct GeminiAPIError: Codable, Sendable {
     let code: Int
     let message: String
     let status: String
