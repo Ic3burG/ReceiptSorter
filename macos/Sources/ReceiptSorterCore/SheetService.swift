@@ -18,21 +18,21 @@ public actor SheetService {
             request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             
-            let rowValues: [Any] = [
-                data.date ?? "",
-                data.vendor ?? "",
-                data.description ?? "",
-                "", // Category
-                data.total_amount ?? 0,
-                data.currency ?? "",
-                "Uploaded via macOS (OAuth)"
+            // Construct row values as an array of JSON-compatible values
+            // We use a custom Encodable wrapper to handle mixed types (String and Double)
+            let rowValues: [SheetValue] = [
+                .string(data.date ?? ""),
+                .string(data.vendor ?? ""),
+                .string(data.description ?? ""),
+                .string(""), // Category
+                .number(data.total_amount ?? 0),
+                .string(data.currency ?? ""),
+                .string("Uploaded via macOS (OAuth)")
             ]
             
-            let body: [String: Any] = [
-                "values": [rowValues]
-            ]
+            let body = SheetAppendRequest(values: [rowValues])
             
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            request.httpBody = try JSONEncoder().encode(body)
             
             let (responseData, response) = try await URLSession.shared.data(for: request)
             
@@ -54,12 +54,10 @@ public actor SheetService {
             metaRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
             
             let (metaData, _) = try await URLSession.shared.data(for: metaRequest)
-            // Parse Sheet ID 0 (usually the first tab)
-            guard let json = try? JSONSerialization.jsonObject(with: metaData) as? [String: Any],
-                  let sheets = json["sheets"] as? [[String: Any]],
-                  let firstSheet = sheets.first,
-                  let props = firstSheet["properties"] as? [String: Any],
-                  let sheetId = props["sheetId"] as? Int else {
+            let spreadsheet = try JSONDecoder().decode(Spreadsheet.self, from: metaData)
+            
+            guard let firstSheet = spreadsheet.sheets.first,
+                  let sheetId = firstSheet.properties.sheetId else {
                 throw SheetError.apiError("Could not find Sheet GID")
             }
             
@@ -70,63 +68,36 @@ public actor SheetService {
             request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             
-            let requests: [[String: Any]] = [
+            let batchUpdate = BatchUpdateRequest(requests: [
                 // Freeze Row 1
-                [
-                    "updateSheetProperties": [
-                        "properties": [
-                            "sheetId": sheetId,
-                            "gridProperties": ["frozenRowCount": 1]
-                        ],
-                        "fields": "gridProperties.frozenRowCount"
-                    ]
-                ],
+                Request(updateSheetProperties: UpdateSheetPropertiesRequest(
+                    properties: SheetProperties(
+                        sheetId: sheetId,
+                        gridProperties: GridProperties(frozenRowCount: 1)
+                    ),
+                    fields: "gridProperties.frozenRowCount"
+                )),
                 // Format Header Row (Blue BG, White Bold Text)
-                [
-                    "repeatCell": [
-                        "range": [
-                            "sheetId": sheetId,
-                            "startRowIndex": 0,
-                            "endRowIndex": 1
-                        ],
-                        "cell": [
-                            "userEnteredFormat": [
-                                "backgroundColor": ["red": 0.2, "green": 0.4, "blue": 0.8],
-                                "textFormat": [
-                                    "foregroundColor": ["red": 1, "green": 1, "blue": 1],
-                                    "bold": true,
-                                    "fontSize": 11
-                                ],
-                                "horizontalAlignment": "CENTER"
-                            ]
-                        ],
-                        "fields": "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
-                    ]
-                ],
+                Request(repeatCell: RepeatCellRequest(
+                    range: GridRange(sheetId: sheetId, startRowIndex: 0, endRowIndex: 1),
+                    cell: CellData(userEnteredFormat: CellFormat(
+                        backgroundColor: Color(red: 0.2, green: 0.4, blue: 0.8),
+                        textFormat: TextFormat(foregroundColor: Color(red: 1, green: 1, blue: 1), bold: true, fontSize: 11),
+                        horizontalAlignment: "CENTER"
+                    )),
+                    fields: "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
+                )),
                 // Set Currency Format for Column E (Index 4)
-                [
-                    "repeatCell": [
-                        "range": [
-                            "sheetId": sheetId,
-                            "startRowIndex": 1, // Skip header
-                            "startColumnIndex": 4,
-                            "endColumnIndex": 5
-                        ],
-                        "cell": [
-                            "userEnteredFormat": [
-                                "numberFormat": [
-                                    "type": "CURRENCY",
-                                    "pattern": "$#,##0.00"
-                                ]
-                            ]
-                        ],
-                        "fields": "userEnteredFormat.numberFormat"
-                    ]
-                ]
-            ]
+                Request(repeatCell: RepeatCellRequest(
+                    range: GridRange(sheetId: sheetId, startRowIndex: 1, startColumnIndex: 4, endColumnIndex: 5),
+                    cell: CellData(userEnteredFormat: CellFormat(
+                        numberFormat: NumberFormat(type: "CURRENCY", pattern: "$#,##0.00")
+                    )),
+                    fields: "userEnteredFormat.numberFormat"
+                ))
+            ])
             
-            let body = ["requests": requests]
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            request.httpBody = try JSONEncoder().encode(batchUpdate)
             
             let (data, response) = try await URLSession.shared.data(for: request)
             
@@ -152,4 +123,129 @@ public enum SheetError: LocalizedError {
             return "Google Sheets API Error: \(message)"
         }
     }
+}
+
+// MARK: - Private Codable Structs for Sheets API
+
+private struct SheetAppendRequest: Encodable {
+    let values: [[SheetValue]]
+}
+
+private enum SheetValue: Encodable {
+    case string(String)
+    case number(Double)
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .string(let s): try container.encode(s)
+        case .number(let n): try container.encode(n)
+        }
+    }
+}
+
+private struct Spreadsheet: Decodable {
+    let sheets: [Sheet]
+}
+
+private struct Sheet: Decodable {
+    let properties: SheetProperties
+}
+
+private struct SheetProperties: Codable {
+    let sheetId: Int?
+    let gridProperties: GridProperties?
+    
+    // For update requests where we only send part of the data
+    init(sheetId: Int, gridProperties: GridProperties? = nil) {
+        self.sheetId = sheetId
+        self.gridProperties = gridProperties
+    }
+    
+    // For decoding
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sheetId = try container.decodeIfPresent(Int.self, forKey: .sheetId)
+        gridProperties = try container.decodeIfPresent(GridProperties.self, forKey: .gridProperties)
+    }
+}
+
+private struct GridProperties: Codable {
+    let frozenRowCount: Int?
+}
+
+private struct BatchUpdateRequest: Encodable {
+    let requests: [Request]
+}
+
+private struct Request: Encodable {
+    let updateSheetProperties: UpdateSheetPropertiesRequest?
+    let repeatCell: RepeatCellRequest?
+    
+    init(updateSheetProperties: UpdateSheetPropertiesRequest? = nil, repeatCell: RepeatCellRequest? = nil) {
+        self.updateSheetProperties = updateSheetProperties
+        self.repeatCell = repeatCell
+    }
+}
+
+private struct UpdateSheetPropertiesRequest: Encodable {
+    let properties: SheetProperties
+    let fields: String
+}
+
+private struct RepeatCellRequest: Encodable {
+    let range: GridRange
+    let cell: CellData
+    let fields: String
+}
+
+private struct GridRange: Encodable {
+    let sheetId: Int
+    let startRowIndex: Int?
+    let endRowIndex: Int?
+    let startColumnIndex: Int?
+    let endColumnIndex: Int?
+    
+    init(sheetId: Int, startRowIndex: Int? = nil, endRowIndex: Int? = nil, startColumnIndex: Int? = nil, endColumnIndex: Int? = nil) {
+        self.sheetId = sheetId
+        self.startRowIndex = startRowIndex
+        self.endRowIndex = endRowIndex
+        self.startColumnIndex = startColumnIndex
+        self.endColumnIndex = endColumnIndex
+    }
+}
+
+private struct CellData: Encodable {
+    let userEnteredFormat: CellFormat
+}
+
+private struct CellFormat: Encodable {
+    let backgroundColor: Color?
+    let textFormat: TextFormat?
+    let horizontalAlignment: String?
+    let numberFormat: NumberFormat?
+    
+    init(backgroundColor: Color? = nil, textFormat: TextFormat? = nil, horizontalAlignment: String? = nil, numberFormat: NumberFormat? = nil) {
+        self.backgroundColor = backgroundColor
+        self.textFormat = textFormat
+        self.horizontalAlignment = horizontalAlignment
+        self.numberFormat = numberFormat
+    }
+}
+
+private struct Color: Encodable {
+    let red: Double
+    let green: Double
+    let blue: Double
+}
+
+private struct TextFormat: Encodable {
+    let foregroundColor: Color
+    let bold: Bool
+    let fontSize: Int
+}
+
+private struct NumberFormat: Encodable {
+    let type: String
+    let pattern: String
 }
