@@ -12,13 +12,15 @@ let package = Package(
         .executable(name: "ReceiptSorterApp", targets: ["ReceiptSorterApp"])
     ],
     dependencies: [
-        .package(url: "https://github.com/openid/AppAuth-iOS.git", from: "1.6.2")
+        .package(url: "https://github.com/openid/AppAuth-iOS.git", from: "1.6.2"),
+        .package(url: "https://github.com/CoreOffice/CoreXLSX.git", from: "0.14.0")
     ],
     targets: [
         .target(
             name: "ReceiptSorterCore",
             dependencies: [
-                .product(name: "AppAuth", package: "AppAuth-iOS")
+                .product(name: "AppAuth", package: "AppAuth-iOS"),
+                .product(name: "CoreXLSX", package: "CoreXLSX")
             ]
         ),
         .executableTarget(
@@ -27,10 +29,7 @@ let package = Package(
         ),
         .executableTarget(
             name: "ReceiptSorterApp",
-            dependencies: ["ReceiptSorterCore"],
-            linkerSettings: [
-                .unsafeFlags(["-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist", "-Xlinker", "Sources/ReceiptSorterApp/Info.plist"])
-            ]
+            dependencies: ["ReceiptSorterCore"]
         ),
         .testTarget(
             name: "ReceiptSorterCoreTests",
