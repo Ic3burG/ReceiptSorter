@@ -1,6 +1,6 @@
 # Receipt Sorter - macOS App
 
-[![macOS Build](https://github.com/ojdavis/ReceiptSorter/workflows/macOS%20App%20Build/badge.svg)](https://github.com/ojdavis/ReceiptSorter/actions)
+[![macOS Build](https://github.com/Ic3burG/ReceiptSorter/workflows/macOS%20App%20Build/badge.svg)](https://github.com/Ic3burG/ReceiptSorter/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A native macOS application that automatically processes PDF receipts, extracts financial data, categorizes expenses for Canadian tax purposes, handles multiple currencies, and exports to Excel with optional Google Sheets cloud sync.
@@ -42,7 +42,7 @@ The app classifies receipts into these categories:
 
 ### Download
 
-1. Download the latest release from the [Releases page](https://github.com/ojdavis/ReceiptSorter/releases)
+1. Download the latest release from the [Releases page](https://github.com/Ic3burG/ReceiptSorter/releases)
 2. Extract the `.zip` file
 3. Move `Receipt Sorter.app` to your Applications folder
 4. Double-click to launch
@@ -113,7 +113,7 @@ The app also applies professional formatting:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/ojdavis/ReceiptSorter.git
+   git clone https://github.com/Ic3burG/ReceiptSorter.git
    cd ReceiptSorter/macos
    ```
 
@@ -221,7 +221,7 @@ This project is provided as-is for personal and commercial use under the MIT Lic
 For issues or questions:
 
 1. Check the Troubleshooting section above
-2. Open an issue on [GitHub](https://github.com/ojdavis/ReceiptSorter/issues)
+2. Open an issue on [GitHub](https://github.com/Ic3burG/ReceiptSorter/issues)
 3. Check the macOS Console.app for detailed error logs
 
 ## Acknowledgments
