@@ -51,7 +51,7 @@ jobs:
           fi
 
       - name: Upload App Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Receipt-Sorter-App
           path: macos/Receipt Sorter.app
@@ -59,7 +59,7 @@ jobs:
 
       - name: Upload DMG Artifact
         if: hashFiles('macos/Receipt-Sorter.dmg') != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Receipt-Sorter-DMG
           path: macos/Receipt-Sorter.dmg
