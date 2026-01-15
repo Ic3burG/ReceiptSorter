@@ -1,6 +1,6 @@
 # Receipt Sorter - macOS App
 
-[![CI](https://github.com/Ic3burG/ReceiptSorter/actions/workflows/ci-macos.yml/badge.svg)](https://github.com/Ic3burG/ReceiptSorter/actions/workflows/ci-macos.yml)
+[![macOS Build](https://github.com/Ic3burG/ReceiptSorter/actions/workflows/ci-macos.yml/badge.svg)](https://github.com/Ic3burG/ReceiptSorter/actions/workflows/ci-macos.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A native macOS application that automatically processes PDF receipts, extracts financial data, categorizes expenses for Canadian tax purposes, handles multiple currencies, and exports to Excel with optional Google Sheets cloud sync.
