@@ -51,7 +51,7 @@ public actor FileOrganizationService {
         self.baseDirectoryURL = baseDirectory
     }
     
-    /// Organizes a receipt file into YYYY/MM folder structure, auto-resolving conflicts.
+    /// Organizes a receipt file into YYYY/mm - MMM yyyy folder structure, auto-resolving conflicts.
     /// - Parameters:
     ///   - fileURL: The URL of the file to organize
     ///   - date: The receipt date in YYYY-MM-DD format
@@ -68,7 +68,7 @@ public actor FileOrganizationService {
             throw FileOrganizationError.invalidDate(date)
         }
         
-        // Create destination folder structure: baseDir/YYYY/MM/
+        // Create destination folder structure: baseDir/YYYY/mm - MMM yyyy/
         let destinationFolder = baseDirectoryURL
             .appendingPathComponent(year, isDirectory: true)
             .appendingPathComponent(month, isDirectory: true)
@@ -107,7 +107,7 @@ public actor FileOrganizationService {
             return .skipped(reason: "Invalid or missing date: \(date)")
         }
         
-        // Create destination folder structure: baseDir/YYYY/MM/
+        // Create destination folder structure: baseDir/YYYY/mm - MMM yyyy/
         let destinationFolder = baseDirectoryURL
             .appendingPathComponent(year, isDirectory: true)
             .appendingPathComponent(month, isDirectory: true)
@@ -182,16 +182,18 @@ public actor FileOrganizationService {
     
     // MARK: - Private Helpers
     
-    /// Parses a date string in YYYY-MM-DD format and returns (year, month) tuple
-    private func parseDate(_ dateString: String) -> (year: String, month: String)? {
+    /// Parses a date string in YYYY-MM-DD format and returns (year, monthFolder) tuple
+    /// Month folder is formatted as "mm - MMM yyyy" (e.g., "01 - January 2026")
+    private func parseDate(_ dateString: String) -> (year: String, monthFolder: String)? {
         let trimmed = dateString.trimmingCharacters(in: .whitespacesAndNewlines)
         
         // Expected format: YYYY-MM-DD
         let components = trimmed.split(separator: "-")
-        guard components.count >= 2 else { return nil }
+        guard components.count >= 3 else { return nil }
         
         let year = String(components[0])
         let month = String(components[1])
+        let day = String(components[2])
         
         // Validate year (4 digits, reasonable range)
         guard year.count == 4,
@@ -206,10 +208,19 @@ public actor FileOrganizationService {
             return nil
         }
         
-        // Format month with leading zero
-        let formattedMonth = String(format: "%02d", monthInt)
+        // Create a Date object from the components
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        guard let date = dateFormatter.date(from: "\(year)-\(month)-\(day)") else {
+            return nil
+        }
         
-        return (year, formattedMonth)
+        // Format month folder as "mm - MMM yyyy"
+        let monthFormatter = DateFormatter()
+        monthFormatter.dateFormat = "MM - MMMM yyyy"
+        let monthFolder = monthFormatter.string(from: date)
+        
+        return (year, monthFolder)
     }
     
     /// Creates directory at the specified URL if it doesn't exist

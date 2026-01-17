@@ -150,18 +150,19 @@ struct FileOrganizationSettingsView: View {
             }
             
             Section(header: Text("Folder Structure")) {
-                VStack(alignment: .leading, spacing: 8) {
+                HStack {
                     Label("Year/Month Organization", systemImage: "folder")
-                    Text("Receipts are organized into: **BaseFolder/YYYY/MM/**")
+                    Text("Receipts are organized into: **BaseFolder/YYYY/mm - MMM yyyy/**")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    
-                    Text("Example: A receipt dated 2025-06-15 would be moved to:")
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Example:")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    
-                    Text("    BaseFolder/2025/06/receipt.pdf")
-                        .font(.caption)
+                    Text("    BaseFolder/2025/06 - June 2025/receipt.pdf")
+                        .font(.caption.monospaced())
                         .foregroundColor(.blue)
                         .fontDesign(.monospaced)
                 }
