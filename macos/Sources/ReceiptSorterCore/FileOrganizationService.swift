@@ -263,6 +263,13 @@ public struct FileMetadata: Sendable {
     public let size: Int64
     public let modificationDate: Date?
     
+    public init(url: URL, filename: String, size: Int64, modificationDate: Date?) {
+        self.url = url
+        self.filename = filename
+        self.size = size
+        self.modificationDate = modificationDate
+    }
+    
     /// Formatted file size string (e.g., "245 KB")
     public var formattedSize: String {
         let formatter = ByteCountFormatter()

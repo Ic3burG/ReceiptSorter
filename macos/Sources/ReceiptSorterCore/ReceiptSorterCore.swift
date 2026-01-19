@@ -1,11 +1,11 @@
 import Foundation
 
-@available(macOS 13.0, *)
+@available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *)
 public struct ReceiptSorterCore: Sendable {
     public let ocrService: OCRService
     public let geminiService: GeminiService?
     public let sheetService: SheetService?
-    public let authService: AuthService?
+    nonisolated(unsafe) public let authService: AuthService?
     public let excelService: ExcelService?
     public let fileOrganizationService: FileOrganizationService?
 

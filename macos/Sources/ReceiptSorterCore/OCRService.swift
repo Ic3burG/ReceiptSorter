@@ -84,8 +84,19 @@ public final class OCRService: Sendable {
     }
 }
 
-public enum OCRError: Error {
+public enum OCRError: LocalizedError {
     case invalidImage
     case invalidPDF
     case recognitionFailed(String)
+    
+    public var errorDescription: String? {
+        switch self {
+        case .invalidImage:
+            return "Invalid image file"
+        case .invalidPDF:
+            return "Invalid PDF file"
+        case .recognitionFailed(let message):
+            return "OCR recognition failed: \(message)"
+        }
+    }
 }

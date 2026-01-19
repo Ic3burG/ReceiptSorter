@@ -6,6 +6,14 @@ public struct ReceiptData: Codable, Sendable, Equatable {
     public let date: String?
     public let vendor: String?
     public let description: String?
+    
+    public init(total_amount: Double?, currency: String?, date: String?, vendor: String?, description: String?) {
+        self.total_amount = total_amount
+        self.currency = currency
+        self.date = date
+        self.vendor = vendor
+        self.description = description
+    }
 }
 
 struct GeminiRequest: Codable, Sendable {

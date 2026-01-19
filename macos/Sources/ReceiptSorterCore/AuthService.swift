@@ -1,11 +1,18 @@
 import Foundation
 @preconcurrency import AppAuth
 import AuthenticationServices
+#if canImport(AppKit)
+import AppKit
+@preconcurrency import AppAuthCore
+#endif
 
-@MainActor
-public final class AuthService: NSObject {
+@available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *)
+public final class AuthService: NSObject, @unchecked Sendable {
+    private let lock = NSLock()
     private var currentAuthorizationFlow: OIDExternalUserAgentSession?
+    #if canImport(AppKit)
     private var redirectHTTPHandler: OIDRedirectHTTPHandler?
+    #endif
     
     private let kIssuer = "https://accounts.google.com"
     private let kClientID: String
@@ -13,7 +20,19 @@ public final class AuthService: NSObject {
     private let kRedirectURI = "http://127.0.0.1"
     private let kAuthStateKey = "authState"
     
-    private var authState: OIDAuthState?
+    private var _authState: OIDAuthState?
+    private var authState: OIDAuthState? {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return _authState
+        }
+        set {
+            lock.lock()
+            defer { lock.unlock() }
+            _authState = newValue
+        }
+    }
     
     public init(clientID: String, clientSecret: String? = nil) {
         self.kClientID = clientID
@@ -26,6 +45,7 @@ public final class AuthService: NSObject {
         return authState?.isAuthorized ?? false
     }
     
+    #if canImport(AppKit)
     public func signIn(presenting window: NSWindow) async throws {
         let authEndpoint = URL(string: "https://accounts.google.com/o/oauth2/v2/auth")!
         let tokenEndpoint = URL(string: "https://oauth2.googleapis.com/token")!
@@ -62,6 +82,7 @@ public final class AuthService: NSObject {
             handler.currentAuthorizationFlow = self.currentAuthorizationFlow
         }
     }
+    #endif
     
     public func signOut() {
         self.authState = nil
