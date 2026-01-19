@@ -221,6 +221,15 @@ This app uses the Google Gemini API for intelligent extraction and categorizatio
 
 Gemini 1.5 Flash is highly cost-effective and often has a generous free tier for developers.
 
+## Planned AI Integrations
+
+We are exploring support for additional AI providers to offer more choice in accuracy, privacy, and cost:
+
+- **OpenAI (GPT-4o)**: Industry-leading multimodal capabilities for high-precision extraction.
+- **Anthropic (Claude 3.5 Sonnet)**: Excellent reasoning for handling complex or non-standard receipt layouts.
+- **Local LLMs (via Ollama/MLX)**: Privacy-focused, offline processing using models like Llama 3 or Mistral running locally on Apple Silicon.
+- **Specialized APIs**: Integration with dedicated OCR platforms like Mindee, Veryfi, or AWS Textract for enterprise-grade document parsing.
+
 ## Future Enhancements
 
 - [ ] Code signing and notarization for easier installation
