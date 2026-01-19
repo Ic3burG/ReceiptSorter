@@ -76,6 +76,7 @@ _Goal: Add power-user features and automation._
 
 - [ ] **Watch Folders**: Background daemon that monitors folders and auto-processes new receipts
 - [ ] **Currency Conversion**: Automatic conversion to CAD with historical exchange rates
+- [ ] **Add additional currencies**: Expand currency support and regional tax categorization
 - [ ] **Receipt Validation**: Anomaly detection and validation rules
 - [ ] **Multi-Year Organization**: Annual reports and year-over-year comparisons
 - [ ] **Shortcuts Integration**: macOS Shortcuts app support for automation

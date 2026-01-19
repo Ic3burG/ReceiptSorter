@@ -21,7 +21,7 @@ A native macOS application that automatically processes PDF receipts, extracts f
 
 The app intelligently selects tax categories based on the receipt's currency.
 
-### Canadian Categories (CAD/Other)
+### Canadian Categories (CAD)
 1. **Office Expenses** - Office supplies, software, equipment, subscriptions
 2. **Meals & Entertainment** - Restaurant meals, client entertainment (50% deductible)
 3. **Travel** - Airfare, hotels, accommodation, transportation
@@ -34,22 +34,22 @@ The app intelligently selects tax categories based on the receipt's currency.
 10. **Other** - Miscellaneous expenses
 
 ### US Categories (USD)
-1. **Advertising**
-2. **Vehicle Expenses**
-3. **Commissions & Fees**
-4. **Contract Labor**
-5. **Insurance**
-6. **Interest**
-7. **Legal & Professional Services**
-8. **Office Expenses**
-9. **Rent & Lease**
-10. **Repairs & Maintenance**
-11. **Supplies**
-12. **Taxes & Licenses**
-13. **Travel**
-14. **Meals**
-15. **Utilities**
-16. **Other**
+1. **Advertising** - Online ads, business cards, promotional items
+2. **Vehicle Expenses** - Fuel, maintenance, repairs, parking
+3. **Commissions & Fees** - Sales commissions, transaction fees, bank fees
+4. **Contract Labor** - Payments to independent contractors (1099-NEC)
+5. **Insurance** - Business liability, property, and professional insurance
+6. **Interest** - Business loan and credit card interest
+7. **Legal & Professional Services** - Accounting fees, legal advice, consulting
+8. **Office Expenses** - Software subscriptions, postage, office supplies
+9. **Rent & Lease** - Equipment rental, vehicle leasing, office space
+10. **Repairs & Maintenance** - Office repairs, equipment maintenance
+11. **Supplies** - Consumables and small tools
+12. **Taxes & Licenses** - Business licenses, permits, local taxes
+13. **Travel** - Airfare, hotels, lodging for business trips
+14. **Meals** - Business-related meals (usually 50% deductible)
+15. **Utilities** - Electricity, water, phone, internet services
+16. **Other** - Miscellaneous business-related expenses
 
 ## Installation
 
