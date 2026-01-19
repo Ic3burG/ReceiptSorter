@@ -3,24 +3,25 @@
 [![macOS Build](https://github.com/Ic3burG/ReceiptSorter/actions/workflows/ci-macos.yml/badge.svg)](https://github.com/Ic3burG/ReceiptSorter/actions/workflows/ci-macos.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A native macOS application that automatically processes PDF receipts, extracts financial data, categorizes expenses for Canadian tax purposes, handles multiple currencies, and exports to Excel with optional Google Sheets cloud sync.
+A native macOS application that automatically processes PDF receipts, extracts financial data, categorizes expenses for Canadian and US tax purposes, handles multiple currencies, and exports to Excel with optional Google Sheets cloud sync.
 
 ## Features
 
 - 🖱️ **Native macOS Interface**: Beautiful SwiftUI interface with drag-and-drop support
 - 📄 **Document Processing**: Extracts text from native PDFs and images (JPG, PNG, etc.) using Apple Vision Framework
 - 🤖 **AI-Powered Extraction**: Uses Google Gemini AI to intelligently extract receipt data (amount, date, vendor, currency)
-- 🏷️ **Smart Categorization**: Automatically categorizes receipts into Canadian tax deduction categories
+- 🏷️ **Smart Categorization**: Automatically categorizes receipts into Canadian or US tax deduction categories based on currency
 - 💰 **Multi-Currency Support**: Handles CAD, USD, EUR, GBP, JPY, AUD, CHF
 - 📊 **Excel Export**: Primary export to local Excel files with duplicate detection and append support
 - ☁️ **Google Sheets Sync**: Optional cloud backup to Google Sheets with professional formatting
 - 🔔 **Native Notifications**: macOS notifications for processing status
 - ⚡ **High Performance**: Native Swift implementation using Apple frameworks
 
-## Canadian Tax Categories
+## Tax Categories
 
-The app classifies receipts into these categories:
+The app intelligently selects tax categories based on the receipt's currency.
 
+### Canadian Categories (CAD/Other)
 1. **Office Expenses** - Office supplies, software, equipment, subscriptions
 2. **Meals & Entertainment** - Restaurant meals, client entertainment (50% deductible)
 3. **Travel** - Airfare, hotels, accommodation, transportation
@@ -31,6 +32,24 @@ The app classifies receipts into these categories:
 8. **Insurance** - Business insurance premiums
 9. **Education & Training** - Courses, seminars, professional development
 10. **Other** - Miscellaneous expenses
+
+### US Categories (USD)
+1. **Advertising**
+2. **Vehicle Expenses**
+3. **Commissions & Fees**
+4. **Contract Labor**
+5. **Insurance**
+6. **Interest**
+7. **Legal & Professional Services**
+8. **Office Expenses**
+9. **Rent & Lease**
+10. **Repairs & Maintenance**
+11. **Supplies**
+12. **Taxes & Licenses**
+13. **Travel**
+14. **Meals**
+15. **Utilities**
+16. **Other**
 
 ## Installation
 
