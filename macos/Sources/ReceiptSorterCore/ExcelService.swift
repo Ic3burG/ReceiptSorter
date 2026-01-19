@@ -155,7 +155,7 @@ public actor ExcelService {
             data.date ?? "",
             data.vendor ?? "",
             data.description ?? "",
-            "", // Category (manual)
+            data.category ?? "",
             data.total_amount.map { String(format: "%.2f", $0) } ?? "",
             data.currency ?? "",
             "Exported from Receipt Sorter"

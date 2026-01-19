@@ -6,13 +6,15 @@ public struct ReceiptData: Codable, Sendable, Equatable {
     public let date: String?
     public let vendor: String?
     public let description: String?
+    public let category: String?
     
-    public init(total_amount: Double?, currency: String?, date: String?, vendor: String?, description: String?) {
+    public init(total_amount: Double?, currency: String?, date: String?, vendor: String?, description: String?, category: String? = nil) {
         self.total_amount = total_amount
         self.currency = currency
         self.date = date
         self.vendor = vendor
         self.description = description
+        self.category = category
     }
 }
 
@@ -64,6 +66,9 @@ public actor GeminiService {
             throw GeminiError.apiError("Invalid API URL")
         }
         
+        let canadianCategories = TaxCategories.canadian.joined(separator: ", ")
+        let usCategories = TaxCategories.us.joined(separator: ", ")
+        
         let promptText = """
         Extract the following information from this receipt text and return it as a JSON object:
         
@@ -73,9 +78,14 @@ public actor GeminiService {
         - date: Transaction date in YYYY-MM-DD format
         - vendor: Name of the merchant/vendor
         - description: Brief description of items/services purchased (1-2 sentences max)
+        - category: The best matching tax category from the provided lists
         
         Receipt text:
         \(text)
+        
+        Tax Categories:
+        - Canadian Categories: \(canadianCategories)
+        - US Categories: \(usCategories)
         
         Important instructions:
         1. For currency detection, look for currency symbols ($, €, £, ¥), currency codes, or infer from vendor location/language
@@ -83,6 +93,9 @@ public actor GeminiService {
         3. For the date, try multiple formats and convert to YYYY-MM-DD
         4. For total amount, use the final total after all taxes and fees
         5. If any field cannot be determined, use null.
+        6. Determine the currency first.
+        7. If the currency is USD, choose the category from the "US Categories" list.
+        8. If the currency is CAD or anything else, choose the category from the "Canadian Categories" list.
         
         Return ONLY a valid JSON object. Do not include markdown formatting or explanations.
         """

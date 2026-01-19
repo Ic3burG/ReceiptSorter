@@ -24,7 +24,7 @@ public actor SheetService {
                 .string(data.date ?? ""),
                 .string(data.vendor ?? ""),
                 .string(data.description ?? ""),
-                .string(""), // Category
+                .string(data.category ?? ""),
                 .number(data.total_amount ?? 0),
                 .string(data.currency ?? ""),
                 .string("Uploaded via macOS (OAuth)")

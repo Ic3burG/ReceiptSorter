@@ -245,6 +245,7 @@ struct ContentView: View {
                                     DataCard(title: "Vendor", icon: "building.2", value: data.vendor)
                                     DataCard(title: "Date", icon: "calendar", value: data.date)
                                     DataCard(title: "Amount", icon: "dollarsign.circle", value: "\(String(format: "%.2f", data.total_amount ?? 0.0)) \(data.currency ?? "")")
+                                    DataCard(title: "Category", icon: "tag", value: data.category)
                                     DataCard(title: "Description", icon: "text.alignleft", value: data.description)
                                     
                                     if item.status == .done {

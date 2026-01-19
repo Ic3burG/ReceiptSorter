@@ -9,7 +9,7 @@ struct ReceiptSorterApp: App {
         }
         
         Settings {
-            SettingsView()
+            ModernSettingsView()
         }
     }
 }
