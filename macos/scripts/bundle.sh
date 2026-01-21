@@ -71,8 +71,21 @@ if [ -f "$BUNDLE_NAME/Contents/Info.plist" ]; then
     /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable $EXECUTABLE_NAME" "$BUNDLE_NAME/Contents/Info.plist"
 fi
 
-# Ad-hoc Code Signing (Required for local run on ARM Macs)
-echo "✍️  Signing Bundle..."
-codesign --force --deep --sign - "$BUNDLE_NAME"
+# Code Signing
+ENTITLEMENTS_PATH="Sources/$EXECUTABLE_NAME/$EXECUTABLE_NAME.entitlements"
+SIGNING_IDENTITY="${CODE_SIGN_IDENTITY:-"-"}" # Default to ad-hoc ("-") if not set
+
+echo "✍️  Signing Bundle with identity: '$SIGNING_IDENTITY'..."
+
+if [ -f "$ENTITLEMENTS_PATH" ]; then
+    echo "📜 Applying Entitlements from $ENTITLEMENTS_PATH..."
+    codesign --force --deep --options runtime --entitlements "$ENTITLEMENTS_PATH" --sign "$SIGNING_IDENTITY" "$BUNDLE_NAME"
+else
+    echo "⚠️  Warning: Entitlements file not found at $ENTITLEMENTS_PATH"
+    codesign --force --deep --options runtime --sign "$SIGNING_IDENTITY" "$BUNDLE_NAME"
+fi
 
 echo "✅ Bundle created: $(pwd)/$BUNDLE_NAME"
+# Verify signature
+echo "🔍 Verifying signature..."
+codesign --verify --verbose "$BUNDLE_NAME"
