@@ -31,6 +31,8 @@ struct ProcessingItem: Identifiable, Equatable {
 struct ContentView: View {
     // Persistent Settings
     @AppStorage("geminiApiKey") private var apiKey: String = ""
+    @AppStorage("useLocalLLM") private var useLocalLLM: Bool = false
+    @AppStorage("localModelId") private var localModelId: String = "mlx-community/Llama-3.2-3B-Instruct-4bit"
     @AppStorage("excelFilePath") private var excelFilePath: String = ""
     @AppStorage("googleSheetId") private var googleSheetId: String = ""
     @AppStorage("googleClientID") private var clientID: String = ""
@@ -62,6 +64,7 @@ struct ContentView: View {
                 if items.isEmpty {
                     WelcomeView(
                         apiKey: $apiKey,
+                        useLocalLLM: $useLocalLLM,
                         excelFilePath: $excelFilePath,
                         organizationBasePath: $organizationBasePath,
                         isAuthorized: isAuthorized,
@@ -178,6 +181,8 @@ struct ContentView: View {
             }
             .onAppear { initializeCore() }
             .onChange(of: apiKey) { _ in initializeCore() }
+            .onChange(of: useLocalLLM) { _ in initializeCore() }
+            .onChange(of: localModelId) { _ in initializeCore() }
             .onChange(of: excelFilePath) { _ in initializeCore() }
             .onChange(of: clientID) { _ in initializeCore() }
             .onChange(of: clientSecret) { _ in initializeCore() }
@@ -324,7 +329,18 @@ struct ContentView: View {
     
     @MainActor
     private func initializeCore() {
-        self.core = ReceiptSorterCore(apiKey: apiKey, clientID: clientID, clientSecret: clientSecret, sheetID: googleSheetId, excelFilePath: excelFilePath, organizationBasePath: organizationBasePath)
+        let localService = useLocalLLM ? LocalLLMService(modelId: localModelId) : nil
+        
+        self.core = ReceiptSorterCore(
+            apiKey: apiKey, 
+            clientID: clientID, 
+            clientSecret: clientSecret, 
+            sheetID: googleSheetId, 
+            excelFilePath: excelFilePath, 
+            organizationBasePath: organizationBasePath,
+            localLLMService: localService
+        )
+        
         Task {
             if let auth = core?.authService {
                 self.isAuthorized = auth.isAuthorized
@@ -390,7 +406,8 @@ struct ContentView: View {
     private func processItem(at index: Int) async {
         let item = await MainActor.run { items[index] }
         
-        guard !apiKey.isEmpty else {
+        // Check configuration: Either API Key OR Local LLM must be enabled
+        if !useLocalLLM && apiKey.isEmpty {
             await MainActor.run { items[index].error = "Missing API Key" }
             return
         }
@@ -644,6 +661,7 @@ struct DataCard: View {
 
 struct WelcomeView: View {
     @Binding var apiKey: String
+    @Binding var useLocalLLM: Bool
     @Binding var excelFilePath: String
     @Binding var organizationBasePath: String
     let isAuthorized: Bool
@@ -716,12 +734,12 @@ struct WelcomeView: View {
     }
     
     private var isFullyConfigured: Bool {
-        !apiKey.isEmpty && !excelFilePath.isEmpty && !organizationBasePath.isEmpty
+        (!apiKey.isEmpty || useLocalLLM) && !excelFilePath.isEmpty && !organizationBasePath.isEmpty
     }
     
     private var configuredCount: Int {
         var count = 0
-        if !apiKey.isEmpty { count += 1 }
+        if !apiKey.isEmpty || useLocalLLM { count += 1 }
         if !excelFilePath.isEmpty { count += 1 }
         if !organizationBasePath.isEmpty { count += 1 }
         return count
@@ -786,12 +804,19 @@ struct WelcomeView: View {
                 
                 // API Key Setup Card
                 SetupCard(
-                    icon: "key",
-                    title: "Gemini API Key",
-                    subtitle: apiKey.isEmpty ? "Required for extraction" : "Key configured",
-                    isConfigured: !apiKey.isEmpty,
-                    actionLabel: apiKey.isEmpty ? "Set Key" : "Change",
-                    action: { showApiKeySheet = true }
+                    icon: useLocalLLM ? "cpu" : "key",
+                    title: useLocalLLM ? "Local AI (MLX)" : "Gemini API Key",
+                    subtitle: useLocalLLM ? "Running locally on device" : (apiKey.isEmpty ? "Required for extraction" : "Key configured"),
+                    isConfigured: useLocalLLM || !apiKey.isEmpty,
+                    actionLabel: useLocalLLM ? "Settings" : (apiKey.isEmpty ? "Set Key" : "Change"),
+                    action: { 
+                        if useLocalLLM {
+                            // Ideally open settings, but for now just show sheet to switch back if needed
+                            showApiKeySheet = true 
+                        } else {
+                            showApiKeySheet = true 
+                        }
+                    }
                 )
                 
                 // Excel File Setup Card
@@ -885,20 +910,33 @@ struct WelcomeView: View {
         .background(Color(NSColor.controlBackgroundColor))
         .sheet(isPresented: $showApiKeySheet) {
             VStack(spacing: 20) {
-                Text("Gemini API Key")
+                Text("AI Configuration")
                     .font(.headline)
                 
-                Text("Required for AI-powered receipt extraction.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                Toggle("Use Local LLM (Privacy Focused)", isOn: $useLocalLLM)
+                    .toggleStyle(.switch)
+                    .padding(.horizontal)
                 
-                SecureField("Enter API Key", text: $apiKey)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 300)
-                
-                HStack {
+                if !useLocalLLM {
+                    Text("Gemini API Key")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    SecureField("Enter API Key", text: $apiKey)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 300)
+                    
                     Link("Get API Key", destination: URL(string: "https://aistudio.google.com/")!)
                         .font(.caption)
+                } else {
+                    Text("Local LLM enabled. Models will be downloaded on first use.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .frame(width: 300)
+                }
+                
+                HStack {
                     Spacer()
                     Button("Done") { showApiKeySheet = false }
                         .buttonStyle(.borderedProminent)

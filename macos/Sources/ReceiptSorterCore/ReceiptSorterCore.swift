@@ -3,7 +3,7 @@ import Foundation
 @available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *)
 public struct ReceiptSorterCore: Sendable {
     public let ocrService: OCRService
-    public let geminiService: GeminiService?
+    public let dataExtractor: ReceiptDataExtractor?
     public let sheetService: SheetService?
     nonisolated(unsafe) public let authService: AuthService?
     public let excelService: ExcelService?
@@ -12,13 +12,16 @@ public struct ReceiptSorterCore: Sendable {
     /// Convenience init that creates AuthService internally
     /// Must be called from MainActor context due to AuthService requirements
     @MainActor
-    public init(apiKey: String? = nil, clientID: String? = nil, clientSecret: String? = nil, sheetID: String? = nil, excelFilePath: String? = nil, organizationBasePath: String? = nil) {
+    public init(apiKey: String? = nil, clientID: String? = nil, clientSecret: String? = nil, sheetID: String? = nil, excelFilePath: String? = nil, organizationBasePath: String? = nil, localLLMService: ReceiptDataExtractor? = nil) {
         self.ocrService = OCRService()
         
-        if let apiKey = apiKey, !apiKey.isEmpty {
-            self.geminiService = GeminiService(apiKey: apiKey)
+        // Prefer local LLM if provided, otherwise fallback to Gemini if API key exists
+        if let localLLMService = localLLMService {
+            self.dataExtractor = localLLMService
+        } else if let apiKey = apiKey, !apiKey.isEmpty {
+            self.dataExtractor = GeminiService(apiKey: apiKey)
         } else {
-            self.geminiService = nil
+            self.dataExtractor = nil
         }
         
         if let clientID = clientID, !clientID.isEmpty {
@@ -52,10 +55,10 @@ public struct ReceiptSorterCore: Sendable {
     }
     
     public func extractReceiptData(from text: String) async throws -> ReceiptData {
-        guard let geminiService = geminiService else {
+        guard let dataExtractor = dataExtractor else {
             throw GeminiError.notConfigured
         }
-        return try await geminiService.extractData(from: text)
+        return try await dataExtractor.extractData(from: text)
     }
     
     // MARK: - Export Methods

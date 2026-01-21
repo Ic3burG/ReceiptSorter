@@ -76,6 +76,8 @@ struct ModernSettingsView: View {
 
 struct GeneralSettingsDetailView: View {
     @AppStorage("geminiApiKey") private var geminiApiKey: String = ""
+    @AppStorage("useLocalLLM") private var useLocalLLM: Bool = false
+    @AppStorage("localModelId") private var localModelId: String = "mlx-community/Llama-3.2-3B-Instruct-4bit"
     
     var body: some View {
         ScrollView {
@@ -85,15 +87,42 @@ struct GeneralSettingsDetailView: View {
                         Text("Artificial Intelligence")
                             .font(.headline)
                         
-                        SecureField("Gemini API Key", text: $geminiApiKey)
-                            .textFieldStyle(.roundedBorder)
+                        Toggle("Use Local LLM (Privacy Focused)", isOn: $useLocalLLM)
+                            .toggleStyle(.switch)
                         
-                        Text("Required for data extraction.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Link("Get API Key", destination: URL(string: "https://aistudio.google.com/")!)
-                            .font(.caption)
+                        if useLocalLLM {
+                            Text("Processing happens entirely on your device using MLX. No data leaves your Mac.")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                            
+                            Divider()
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Model Selection")
+                                    .font(.subheadline)
+                                TextField("HuggingFace Model ID", text: $localModelId)
+                                    .textFieldStyle(.roundedBorder)
+                                Text("Default: mlx-community/Llama-3.2-3B-Instruct-4bit")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Label("Large Download (~2GB)", systemImage: "arrow.down.circle")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                                .padding(.top, 4)
+                            
+                        } else {
+                            SecureField("Gemini API Key", text: $geminiApiKey)
+                                .textFieldStyle(.roundedBorder)
+                            
+                            Text("Required for data extraction.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Link("Get API Key", destination: URL(string: "https://aistudio.google.com/")!)
+                                .font(.caption)
+                        }
                     }
                     .padding()
                 }

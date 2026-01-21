@@ -47,7 +47,7 @@ struct GeminiAPIError: Codable, Sendable {
 }
 
 @available(macOS 13.0, *)
-public actor GeminiService {
+public actor GeminiService: ReceiptDataExtractor {
     private let apiKey: String
     private let modelName = "gemini-2.0-flash"
     
