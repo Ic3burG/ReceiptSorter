@@ -95,7 +95,7 @@ _Goal: Offer flexibility in AI providers for accuracy, privacy, and cost._
 
 - [ ] **OpenAI (GPT-4o)**: Industry-leading multimodal capabilities for high-precision extraction
 - [ ] **Anthropic (Claude 3.5 Sonnet)**: Excellent reasoning for handling complex or non-standard receipt layouts
-- [ ] **Local LLMs (via Ollama/MLX)**: Privacy-focused, offline processing using models like Llama 3 or Mistral running locally on Apple Silicon
+- [x] **Local LLMs (via Ollama/MLX)**: Privacy-focused, offline processing using models like Llama 3 or Mistral running locally on Apple Silicon
 - [ ] **Specialized APIs**: Integration with dedicated OCR platforms like Mindee, Veryfi, or AWS Textract for enterprise-grade document parsing
 
 ## 🔮 Future Ideas
