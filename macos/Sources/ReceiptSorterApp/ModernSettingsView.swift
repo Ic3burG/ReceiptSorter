@@ -76,7 +76,7 @@ struct ModernSettingsView: View {
 
 struct GeneralSettingsDetailView: View {
     @AppStorage("geminiApiKey") private var geminiApiKey: String = ""
-    @AppStorage("useLocalLLM") private var useLocalLLM: Bool = false
+    @AppStorage("useLocalLLM") private var useLocalLLM: Bool = true
     @AppStorage("localModelId") private var localModelId: String = "mlx-community/Llama-3.2-3B-Instruct-4bit"
     
     var body: some View {
@@ -345,7 +345,7 @@ struct CloudSyncSettingsDetailView: View {
                         
                         TextField("Spreadsheet Link", text: $sheetInput)
                             .textFieldStyle(.roundedBorder)
-                            .onChange(of: sheetInput) { newValue in
+                            .onChange(of: sheetInput) { _, newValue in
                                 extractSheetID(from: newValue)
                             }
                             .onAppear { sheetInput = googleSheetId }

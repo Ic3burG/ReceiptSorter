@@ -31,7 +31,7 @@ struct ProcessingItem: Identifiable, Equatable {
 struct ContentView: View {
     // Persistent Settings
     @AppStorage("geminiApiKey") private var apiKey: String = ""
-    @AppStorage("useLocalLLM") private var useLocalLLM: Bool = false
+    @AppStorage("useLocalLLM") private var useLocalLLM: Bool = true
     @AppStorage("localModelId") private var localModelId: String = "mlx-community/Llama-3.2-3B-Instruct-4bit"
     @AppStorage("excelFilePath") private var excelFilePath: String = ""
     @AppStorage("googleSheetId") private var googleSheetId: String = ""
@@ -180,14 +180,14 @@ struct ContentView: View {
                 return true
             }
             .onAppear { initializeCore() }
-            .onChange(of: apiKey) { _ in initializeCore() }
-            .onChange(of: useLocalLLM) { _ in initializeCore() }
-            .onChange(of: localModelId) { _ in initializeCore() }
-            .onChange(of: excelFilePath) { _ in initializeCore() }
-            .onChange(of: clientID) { _ in initializeCore() }
-            .onChange(of: clientSecret) { _ in initializeCore() }
-            .onChange(of: googleSheetId) { _ in initializeCore() }
-            .onChange(of: organizationBasePath) { _ in initializeCore() }
+            .onChange(of: apiKey) { _, _ in initializeCore() }
+            .onChange(of: useLocalLLM) { _, _ in initializeCore() }
+            .onChange(of: localModelId) { _, _ in initializeCore() }
+            .onChange(of: excelFilePath) { _, _ in initializeCore() }
+            .onChange(of: clientID) { _, _ in initializeCore() }
+            .onChange(of: clientSecret) { _, _ in initializeCore() }
+            .onChange(of: googleSheetId) { _, _ in initializeCore() }
+            .onChange(of: organizationBasePath) { _, _ in initializeCore() }
             
         } detail: {
             // DETAIL: Preview & Data
