@@ -39,6 +39,13 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
 
+          # Prevent UI prompts when accessing the keychain (Critical for CI)
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Debug: List available identities to confirm import
+          echo "Listing available identities:"
+          security find-identity -v -p codesigning
+
       - name: Build and Sign Application
         working-directory: macos
         env:
