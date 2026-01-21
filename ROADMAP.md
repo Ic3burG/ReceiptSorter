@@ -50,25 +50,23 @@ _Successfully migrated to Swift with superior performance and user experience._
 - ✅ File Organization: Automatic sorting into Year/Month folders
 - ✅ Duplicate Detection: Conflict resolution for existing files
 
-### Phase 3: Distribution (In Progress)
+### Phase 3: Distribution (Complete)
 
 - ✅ **Packaging**: Build script (`bundle.sh`) for `.app` creation
 - ✅ **CI/CD**: GitHub Actions workflow for automated builds
 - ✅ **App Icon**: Professional macOS app icon
-- 🔄 **Code Signing**: Apple Developer ID signing (pending)
-- 🔄 **Notarization**: Apple Notary Service submission (pending)
+- ✅ **Code Signing**: Apple Developer ID signing with Hardened Runtime
+- ✅ **Notarization**: Automatic Apple Notary Service submission and stapling
+- ✅ **DMG Installer**: Automated disk image creation via GitHub Actions
 
 ## 📅 Upcoming Features
 
 ### Phase 4: Enhanced Distribution
 
-_Goal: Make installation seamless for end users._
+_Goal: Make installation seamless for end users and automate updates._
 
-- [ ] **Code Signing**: Sign with Apple Developer ID certificate
-- [ ] **Notarization**: Submit to Apple for notarization
-- [ ] **DMG Installer**: Create professional disk image installer
 - [ ] **Auto-Updates**: Implement Sparkle framework for automatic updates
-- [ ] **Mac App Store**: Investigate App Store distribution
+- [ ] **Mac App Store**: Investigate App Store distribution limitations (Sandboxing vs. File System access)
 
 ### Phase 5: Advanced Features
 

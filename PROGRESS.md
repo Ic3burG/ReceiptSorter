@@ -2,6 +2,21 @@
 
 **IMPORTANT:** This file must be updated with a summary of changes after every session or significant code modification. These updates must be committed and pushed to the GitHub repository immediately.
 
+## Session: January 20, 2026
+
+### 🔐 Secure Distribution Pipeline
+
+- **Code Signing Architecture**: Upgraded the build system to support hardened runtime and secure code signing.
+  - Updated `bundle.sh` to dynamically handle "Developer ID Application" certificates.
+  - Configured strict entitlement checks for macOS Notarization compliance.
+- **Automated Notarization**: Implemented a robust `notarize.sh` script interacting with Apple's Notary Service.
+  - Handles secure credential management using App Store Connect API keys.
+  - Automatically zips, submits, waits for validation, and staples the ticket to the app bundle.
+- **CI/CD Mastery**: Established a fully automated release pipeline in GitHub Actions.
+  - **Keychain Management**: Solved complex CI issues with keychain partitioning to allow `codesign` access without UI prompts.
+  - **Secret Handling**: Securely integrated Base64-encoded certificates and API keys into the workflow.
+  - **Release Automation**: Pushing a tag now builds, signs, notarizes, staples, creates a DMG, and publishes a GitHub Release automatically.
+
 ## Session: January 10, 2026
 
 ### ✨ Welcome Screen & Onboarding Experience
