@@ -8,7 +8,6 @@ let package = Package(
     ],
     products: [
         .library(name: "ReceiptSorterCore", targets: ["ReceiptSorterCore"]),
-        .executable(name: "receipt-cli", targets: ["ReceiptCLI"]),
         .executable(name: "ReceiptSorterApp", targets: ["ReceiptSorterApp"])
     ],
     dependencies: [
@@ -29,10 +28,6 @@ let package = Package(
                 .product(name: "MLXLLM", package: "mlx-swift-lm"),
                 .product(name: "MLXLMCommon", package: "mlx-swift-lm")
             ]
-        ),
-        .executableTarget(
-            name: "ReceiptCLI",
-            dependencies: ["ReceiptSorterCore"]
         ),
         .executableTarget(
             name: "ReceiptSorterApp",
