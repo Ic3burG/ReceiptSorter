@@ -28,7 +28,7 @@ Receipt Sorter is designed with your privacy as the top priority.
 ## System Requirements
 
 - **macOS 14.0 (Sonoma)** or later
-- **Apple Silicon (M1/M2/M3)** recommended for Local AI performance
+- **Apple Silicon (M1/M2/M3/M4)** required for Local AI
 - **16GB RAM** recommended for optimal local model performance
 
 ## Tax Categories
