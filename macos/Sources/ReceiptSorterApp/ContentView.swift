@@ -748,106 +748,13 @@ struct WelcomeView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header Section with Gradient
-            VStack(spacing: 12) {
-                // App Icon with Glow Effect
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.2)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 80, height: 80)
-                        .blur(radius: 15)
-                    
-                    Image(systemName: "doc.text.viewfinder")
-                        .font(.system(size: 44, weight: .light))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.blue, .purple],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                }
-                
-                Text("Welcome to Receipt Sorter")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                
-                Text("Extract, organize, and export your receipts with AI")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.top, 30)
-            .padding(.bottom, 20)
+            headerSection
+                .padding(.top, 30)
+                .padding(.bottom, 20)
             
             // Setup Status Section
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("Setup")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
-                    Text("\(configuredCount)/3 configured")
-                        .font(.caption)
-                        .foregroundColor(isFullyConfigured ? .green : .orange)
-                }
-                .padding(.horizontal, 16)
-                
-                // API Key Setup Card
-                SetupCard(
-                    icon: useLocalLLM ? "cpu" : "key",
-                    title: useLocalLLM ? "Local AI (MLX)" : "Gemini API Key",
-                    subtitle: useLocalLLM ? "Running locally on device" : (apiKey.isEmpty ? "Required for extraction" : "Key configured"),
-                    isConfigured: useLocalLLM || !apiKey.isEmpty,
-                    actionLabel: useLocalLLM ? "Settings" : (apiKey.isEmpty ? "Set Key" : "Change"),
-                    action: { 
-                        if useLocalLLM {
-                            // Ideally open settings, but for now just show sheet to switch back if needed
-                            showApiKeySheet = true 
-                        } else {
-                            showApiKeySheet = true 
-                        }
-                    }
-                )
-                
-                // Excel File Setup Card
-                SetupCard(
-                    icon: "doc.badge.arrow.up",
-                    title: "Spreadsheet",
-                    subtitle: excelFilePath.isEmpty ? "No file selected - Create or Choose one" : URL(fileURLWithPath: excelFilePath).lastPathComponent,
-                    isConfigured: !excelFilePath.isEmpty,
-                    actionLabel: excelFilePath.isEmpty ? "Choose File" : "Change",
-                    action: openSpreadsheetPicker,
-                    revealAction: excelFilePath.isEmpty ? nil : {
-                        NSWorkspace.shared.open(URL(fileURLWithPath: excelFilePath))
-                    },
-                    secondaryActionLabel: excelFilePath.isEmpty ? "Create New" : nil,
-                    secondaryAction: excelFilePath.isEmpty ? createNewSpreadsheet : nil
-                )
-                
-                // Organization Folder Setup Card
-                SetupCard(
-                    icon: "folder.badge.gearshape",
-                    title: "Organization Folder",
-                    subtitle: organizationBasePath.isEmpty ? "No folder selected" : URL(fileURLWithPath: organizationBasePath).lastPathComponent,
-                    isConfigured: !organizationBasePath.isEmpty,
-                    actionLabel: organizationBasePath.isEmpty ? "Choose Folder" : "Change",
-                    action: openFolderPicker,
-                    revealAction: organizationBasePath.isEmpty ? nil : {
-                        NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: organizationBasePath)
-                    }
-                )
-            }
-            .padding(.horizontal, 12)
+            setupStatusSection
+                .padding(.horizontal, 12)
             
             Spacer()
             
@@ -909,42 +816,160 @@ struct WelcomeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(NSColor.controlBackgroundColor))
         .sheet(isPresented: $showApiKeySheet) {
-            VStack(spacing: 20) {
-                Text("AI Configuration")
-                    .font(.headline)
-                
-                Toggle("Use Local LLM (Privacy Focused)", isOn: $useLocalLLM)
-                    .toggleStyle(.switch)
-                    .padding(.horizontal)
-                
-                if !useLocalLLM {
-                    Text("Gemini API Key")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    SecureField("Enter API Key", text: $apiKey)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 300)
-                    
-                    Link("Get API Key", destination: URL(string: "https://aistudio.google.com/")!)
-                        .font(.caption)
-                } else {
-                    Text("Local LLM enabled. Models will be downloaded on first use.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .frame(width: 300)
-                }
-                
-                HStack {
-                    Spacer()
-                    Button("Done") { showApiKeySheet = false }
-                        .buttonStyle(.borderedProminent)
-                }
-                .frame(width: 300)
-            }
-            .padding(25)
+            apiKeySheetContent
         }
+    }
+    
+    private var headerSection: some View {
+        VStack(spacing: 12) {
+            // App Icon with Glow Effect
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.2)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 80, height: 80)
+                    .blur(radius: 15)
+                
+                Image(systemName: "doc.text.viewfinder")
+                    .font(.system(size: 44, weight: .light))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.blue, .purple],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
+            
+            Text("Welcome to Receipt Sorter")
+                .font(.title2)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
+            
+            Text("Extract, organize, and export your receipts with AI")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+    }
+    
+    private var setupStatusSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            setupHeader
+            apiKeyCard
+            excelCard
+            organizationCard
+        }
+    }
+    
+    private var setupHeader: some View {
+        HStack {
+            Text("Setup")
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(.secondary)
+            
+            Spacer()
+            
+            Text("\(configuredCount)/3 configured")
+                .font(.caption)
+                .foregroundColor(isFullyConfigured ? .green : .orange)
+        }
+        .padding(.horizontal, 16)
+    }
+    
+    private var apiKeyCard: some View {
+        SetupCard(
+            icon: useLocalLLM ? "cpu" : "key",
+            title: useLocalLLM ? "Local AI (MLX)" : "Gemini API Key",
+            subtitle: useLocalLLM ? "Running locally on device" : (apiKey.isEmpty ? "Required for extraction" : "Key configured"),
+            isConfigured: useLocalLLM || !apiKey.isEmpty,
+            actionLabel: useLocalLLM ? "Settings" : (apiKey.isEmpty ? "Set Key" : "Change"),
+            action: { 
+                if useLocalLLM {
+                    showApiKeySheet = true 
+                } else {
+                    showApiKeySheet = true 
+                }
+            }
+        )
+    }
+    
+    private var excelCard: some View {
+        let reveal: (() -> Void)? = excelFilePath.isEmpty ? nil : {
+            NSWorkspace.shared.open(URL(fileURLWithPath: excelFilePath))
+        }
+        
+        let createNew: (() -> Void)? = excelFilePath.isEmpty ? { self.createNewSpreadsheet() } : nil
+        
+        return SetupCard(
+            icon: "doc.badge.arrow.up",
+            title: "Spreadsheet",
+            subtitle: excelFilePath.isEmpty ? "No file selected - Create or Choose one" : URL(fileURLWithPath: excelFilePath).lastPathComponent,
+            isConfigured: !excelFilePath.isEmpty,
+            actionLabel: excelFilePath.isEmpty ? "Choose File" : "Change",
+            action: openSpreadsheetPicker,
+            revealAction: reveal,
+            secondaryActionLabel: excelFilePath.isEmpty ? "Create New" : nil,
+            secondaryAction: createNew
+        )
+    }
+    
+    private var organizationCard: some View {
+        SetupCard(
+            icon: "folder.badge.gearshape",
+            title: "Organization Folder",
+            subtitle: organizationBasePath.isEmpty ? "No folder selected" : URL(fileURLWithPath: organizationBasePath).lastPathComponent,
+            isConfigured: !organizationBasePath.isEmpty,
+            actionLabel: organizationBasePath.isEmpty ? "Choose Folder" : "Change",
+            action: openFolderPicker,
+            revealAction: organizationBasePath.isEmpty ? nil : {
+                NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: organizationBasePath)
+            }
+        )
+    }
+    
+    private var apiKeySheetContent: some View {
+        VStack(spacing: 20) {
+            Text("AI Configuration")
+                .font(.headline)
+            
+            Toggle("Use Local LLM (Privacy Focused)", isOn: $useLocalLLM)
+                .toggleStyle(.switch)
+                .padding(.horizontal)
+            
+            if !useLocalLLM {
+                Text("Gemini API Key")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                SecureField("Enter API Key", text: $apiKey)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 300)
+                
+                Link("Get API Key", destination: URL(string: "https://aistudio.google.com/")!)
+                    .font(.caption)
+            } else {
+                Text("Local LLM enabled. Models will be downloaded on first use.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(width: 300)
+            }
+            
+            HStack {
+                Spacer()
+                Button("Done") { showApiKeySheet = false }
+                    .buttonStyle(.borderedProminent)
+            }
+            .frame(width: 300)
+        }
+        .padding(25)
     }
 }
 

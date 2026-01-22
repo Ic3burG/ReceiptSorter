@@ -41,6 +41,7 @@ struct ModernSettingsView: View {
                     Image(systemName: section.icon)
                         .foregroundColor(section.color)
                 }
+                .tag(section)
             }
             .navigationTitle("Settings")
             .frame(minWidth: 200)
