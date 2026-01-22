@@ -240,17 +240,17 @@ struct SyncSettingsView: View {
 
                 Section(header: Text("Configuration")) {
 
-                    TextField("Spreadsheet Link", text: $sheetInput)
+                                            TextField("Spreadsheet Link", text: $sheetInput)
 
-                        .textFieldStyle(.roundedBorder)
+                                                .textFieldStyle(.roundedBorder)
 
-                        .onChange(of: sheetInput) { newValue in
+                                                .onChange(of: sheetInput) { _, newValue in
 
-                            extractSheetID(from: newValue)
+                                                    extractSheetID(from: newValue)
 
-                        }
+                                                }
 
-                        .onAppear { sheetInput = googleSheetId }
+                                                .onAppear { sheetInput = googleSheetId }
 
     
 

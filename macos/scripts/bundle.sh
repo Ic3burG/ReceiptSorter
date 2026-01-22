@@ -16,21 +16,18 @@ echo "📍 Working in: $(pwd)"
 # echo "🧹 Cleaning..."
 # rm -rf .build "$BUNDLE_NAME"
 
-# Build Universal Binary (arm64 + x86_64)
-echo "🛠️  Building Universal Binary..."
-swift build -c release --product "$EXECUTABLE_NAME" --arch arm64 --arch x86_64
+# Build Standard Binary (Native Arch)
+echo "🛠️  Building Binary..."
+swift build -c release --product "$EXECUTABLE_NAME"
 
 # Locate the binary
 echo "🔍 Locating binary..."
 
-# 1. Check Standard Apple Products Path (Most likely for macOS)
-if [ -f ".build/apple/Products/Release/$EXECUTABLE_NAME" ]; then
-    BIN_PATH=".build/apple/Products/Release/$EXECUTABLE_NAME"
-# 2. Check Standard Release Path (Older Swift / Linux style)
-elif [ -f ".build/release/$EXECUTABLE_NAME" ]; then
+if [ -f ".build/release/$EXECUTABLE_NAME" ]; then
     BIN_PATH=".build/release/$EXECUTABLE_NAME"
+elif [ -f ".build/apple/Products/Release/$EXECUTABLE_NAME" ]; then
+    BIN_PATH=".build/apple/Products/Release/$EXECUTABLE_NAME"
 else
-    # 3. Search as fallback, but exclude Intermediates and DWARF symbols
     BIN_PATH=$(find .build -name "$EXECUTABLE_NAME" -type f ! -path "*Intermediates*" ! -path "*DWARF*" -path "*/Release/*" | head -n 1)
 fi
 
