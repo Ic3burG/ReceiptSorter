@@ -1,7 +1,7 @@
 import Foundation
-import MLX
-import MLXLLM
-import MLXLMCommon
+@preconcurrency import MLX
+@preconcurrency import MLXLLM
+@preconcurrency import MLXLMCommon
 
 @available(macOS 14.0, *) 
 public actor LocalLLMService: ReceiptDataExtractor {

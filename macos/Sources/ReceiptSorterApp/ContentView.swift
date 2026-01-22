@@ -1,8 +1,8 @@
-import SwiftUI
+@preconcurrency import SwiftUI
 import ReceiptSorterCore
-import QuickLookUI
+@preconcurrency import QuickLookUI
 import UserNotifications
-import UniformTypeIdentifiers
+@preconcurrency import UniformTypeIdentifiers
 import AppKit
 
 // Wrapper to workaround NSItemProvider not being Sendable
