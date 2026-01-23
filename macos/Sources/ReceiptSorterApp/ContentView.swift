@@ -57,10 +57,21 @@ struct ContentView: View {
     @State private var existingMetadata: FileMetadata?
     @State private var newMetadata: FileMetadata?
     
+    // Download Service
+    @EnvironmentObject var modelDownloadService: ModelDownloadService
+    
     var body: some View {
-        NavigationSplitView {
-            // SIDEBAR: File List
-            VStack {
+        VStack(spacing: 0) {
+            // Model Download Banner
+            if case .downloading = modelDownloadService.state {
+                ModelDownloadBanner(downloadService: modelDownloadService)
+            } else if case .failed = modelDownloadService.state {
+                ModelDownloadBanner(downloadService: modelDownloadService)
+            }
+            
+            NavigationSplitView {
+                // SIDEBAR: File List
+                VStack {
                 if items.isEmpty {
                     WelcomeView(
                         apiKey: $apiKey,
@@ -310,6 +321,7 @@ struct ContentView: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text(signInError ?? "Unknown error")
+        }
         }
         .sheet(isPresented: $showDuplicateReview) {
             if let conflict = duplicateConflict {

@@ -3,13 +3,37 @@ import ReceiptSorterCore
 
 @main
 struct ReceiptSorterApp: App {
+    @StateObject private var modelDownloadService = ModelDownloadService()
+    @AppStorage("localLLMEnabled") private var localLLMEnabled = false
+    @AppStorage("hasCompletedModelDownload") private var hasCompletedDownload = false
+    @AppStorage("localModelId") private var localModelId: String = "mlx-community/Llama-3.2-3B-Instruct-4bit"
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(modelDownloadService)
+                .onAppear {
+                    Task {
+                        await checkAndDownloadModel()
+                    }
+                }
         }
         
         Settings {
             ModernSettingsView()
+                .environmentObject(modelDownloadService)
+        }
+    }
+    
+    private func checkAndDownloadModel() async {
+        // Only trigger if local LLM is enabled and we haven't completed download yet
+        // OR if the user switched models and we need to download the new one (handled by download service checks)
+        guard localLLMEnabled else { return }
+        
+        // We check if it's already downloaded in the service
+        // If not, we start the download
+        if !modelDownloadService.isModelDownloaded(modelId: localModelId) && !hasCompletedDownload {
+            modelDownloadService.downloadModel(modelId: localModelId)
         }
     }
 }

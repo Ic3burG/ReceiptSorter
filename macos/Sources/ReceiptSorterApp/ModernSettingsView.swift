@@ -80,6 +80,8 @@ struct GeneralSettingsDetailView: View {
     @AppStorage("useLocalLLM") private var useLocalLLM: Bool = true
     @AppStorage("localModelId") private var localModelId: String = "mlx-community/Llama-3.2-3B-Instruct-4bit"
     
+    @EnvironmentObject var modelDownloadService: ModelDownloadService
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -101,17 +103,57 @@ struct GeneralSettingsDetailView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Model Selection")
                                     .font(.subheadline)
-                                TextField("HuggingFace Model ID", text: $localModelId)
-                                    .textFieldStyle(.roundedBorder)
+                                HStack {
+                                    TextField("HuggingFace Model ID", text: $localModelId)
+                                        .textFieldStyle(.roundedBorder)
+                                        .onChange(of: localModelId) { _, newValue in
+                                            Task {
+                                                if !modelDownloadService.isModelDownloaded(modelId: newValue) {
+                                                    modelDownloadService.downloadModel(modelId: newValue)
+                                                }
+                                            }
+                                        }
+                                    
+                                    if case .downloading = modelDownloadService.state {
+                                        ProgressView()
+                                            .controlSize(.small)
+                                            .help("Downloading model...")
+                                    } else if case .failed = modelDownloadService.state {
+                                        Button {
+                                            modelDownloadService.retryDownload()
+                                        } label: {
+                                            Image(systemName: "arrow.clockwise.circle.fill")
+                                                .foregroundColor(.red)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .help("Retry download")
+                                    } else if modelDownloadService.isModelDownloaded(modelId: localModelId) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                            .help("Model ready")
+                                    }
+                                }
                                 Text("Default: mlx-community/Llama-3.2-3B-Instruct-4bit")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                             }
                             
-                            Label("Large Download (~2GB)", systemImage: "arrow.down.circle")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                                .padding(.top, 4)
+                            if case .downloading(let progress) = modelDownloadService.state {
+                                 Label("Downloading: \(Int(progress * 100))%", systemImage: "arrow.down.circle")
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                                    .padding(.top, 4)
+                            } else if modelDownloadService.isModelDownloaded(modelId: localModelId) {
+                                Label("Model Ready (~2GB)", systemImage: "checkmark.circle")
+                                    .font(.caption)
+                                    .foregroundColor(.green)
+                                    .padding(.top, 4)
+                            } else {
+                                Label("Model not downloaded (~2GB)", systemImage: "arrow.down.circle")
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
+                                    .padding(.top, 4)
+                            }
                             
                         } else {
                             SecureField("Gemini API Key", text: $geminiApiKey)
