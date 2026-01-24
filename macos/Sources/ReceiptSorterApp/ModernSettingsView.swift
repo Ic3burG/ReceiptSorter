@@ -78,40 +78,34 @@ struct ModernSettingsView: View {
 struct GeneralSettingsDetailView: View {
     @AppStorage("geminiApiKey") private var geminiApiKey: String = ""
     @AppStorage("useLocalLLM") private var useLocalLLM: Bool = true
-    @AppStorage("localModelId") private var localModelId: String = "mlx-community/Llama-3.2-1B-Instruct-4bit"
+    @AppStorage("localModelId") private var localModelId: String = "mlx-community/Llama-3.2-3B-Instruct-4bit"
     @AppStorage("hfToken") private var hfToken: String = ""
     
     @EnvironmentObject var modelDownloadService: ModelDownloadService
     
     // Curated model options
     enum ModelOption: String, CaseIterable, Identifiable {
-        case llama1B = "mlx-community/Llama-3.2-1B-Instruct-4bit"
         case llama3B = "mlx-community/Llama-3.2-3B-Instruct-4bit"
-        case qwen05B = "mlx-community/Qwen2.5-0.5B-Instruct-4bit"
         case custom = "custom"
         
         var id: String { rawValue }
         
         var displayName: String {
             switch self {
-            case .llama1B: return "Llama 3.2 1B"
             case .llama3B: return "Llama 3.2 3B"
-            case .qwen05B: return "Qwen 2.5 0.5B"
             case .custom: return "Custom Model"
             }
         }
         
         var description: String {
             switch self {
-            case .llama1B: return "Fastest • ~800MB • Recommended"
             case .llama3B: return "Balanced • ~2GB • High quality"
-            case .qwen05B: return "Lightest • ~300MB • Low memory"
             case .custom: return "Enter custom model ID"
             }
         }
     }
     
-    @State private var selectedModel: ModelOption = .llama1B
+    @State private var selectedModel: ModelOption = .llama3B
     @State private var customModelId: String = ""
     @State private var showCustomField: Bool = false
     

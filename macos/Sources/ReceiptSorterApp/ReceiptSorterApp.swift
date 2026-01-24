@@ -6,7 +6,7 @@ struct ReceiptSorterApp: App {
     @StateObject private var modelDownloadService = ModelDownloadService()
     @AppStorage("useLocalLLM") private var localLLMEnabled = false
     @AppStorage("hasCompletedModelDownload") private var hasCompletedDownload = false
-    @AppStorage("localModelId") private var localModelId: String = "mlx-community/Llama-3.2-1B-Instruct-4bit"
+    @AppStorage("localModelId") private var localModelId: String = "mlx-community/Llama-3.2-3B-Instruct-4bit"
     @AppStorage("hfToken") private var hfToken: String = ""
     
     init() {
