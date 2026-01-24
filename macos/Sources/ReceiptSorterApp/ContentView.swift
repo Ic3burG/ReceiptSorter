@@ -383,13 +383,15 @@ struct ContentView: View {
     
     private func loadFiles(from providers: [NSItemProvider]) {
         // Workaround for NSItemProvider not being Sendable in strict concurrency checks
-        // We wrap it to pass into the Task safely
         let safeProviders = UnsafeSendableWrapper(value: providers)
         
         Task { @MainActor in
             for provider in safeProviders.value {
                 if let urlData = try? await provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) as? Data,
                    let url = URL(dataRepresentation: urlData, relativeTo: nil) {
+                    
+                    // Essential for files dropped from outside or network volumes
+                    _ = url.startAccessingSecurityScopedResource()
                     
                     let newItem = ProcessingItem(url: url)
                     items.append(newItem)
@@ -405,44 +407,64 @@ struct ContentView: View {
         guard !isBatchProcessing else { return }
         isBatchProcessing = true
         Task {
-            while let index = await MainActor.run(body: { items.firstIndex(where: { $0.status == .pending }) }) {
+            // Process sequentially but avoid blocking
+            while let index = items.firstIndex(where: { $0.status == .pending }) {
                 await processItem(at: index)
+                
+                // Allow UI to breathe between files
+                await Task.yield()
             }
-            await MainActor.run { 
-                isBatchProcessing = false
-                notify(title: "Batch Complete", body: "Finished processing receipts.") 
-            }
+            isBatchProcessing = false
+            notify(title: "Batch Complete", body: "Finished processing receipts.") 
         }
     }
     
     private func processItem(at index: Int) async {
-        let item = await MainActor.run { items[index] }
-        
-        // Check configuration: Either API Key OR Local LLM must be enabled
-        if !useLocalLLM && apiKey.isEmpty {
-            await MainActor.run { items[index].error = "Missing API Key" }
-            return
-        }
-        
-        // Securely capture core on MainActor
-        let core = await MainActor.run { self.core }
-        guard let core = core else { return }
-        
-        await MainActor.run { items[index].status = .processing }
-        
-        do {
-            let text = try await core.extractText(from: item.url)
-            let data = try await core.extractReceiptData(from: text)
-            await MainActor.run {
-                items[index].data = data
-                items[index].status = .extracted
+        // Run on background thread to prevent UI hangs (especially during OCR/MLX load)
+        await Task.detached(priority: .userInitiated) {
+            let (item, useLocal, key) = await MainActor.run { 
+                (items[index], useLocalLLM, apiKey) 
             }
-        } catch {
-            await MainActor.run {
-                items[index].error = error.localizedDescription
-                items[index].status = .error
+            
+            // Re-access security scoped resource if needed (dropping files often requires this)
+            let accessGranted = item.url.startAccessingSecurityScopedResource()
+            defer {
+                if accessGranted {
+                    item.url.stopAccessingSecurityScopedResource()
+                }
             }
-        }
+            
+            if !useLocal && key.isEmpty {
+                await MainActor.run { items[index].error = "Missing API Key" }
+                return
+            }
+            
+            let core = await MainActor.run { self.core }
+            guard let core = core else { return }
+            
+            await MainActor.run { items[index].status = .processing }
+            
+            do {
+                NSLog("ReceiptSorter: Starting OCR for \(item.url.lastPathComponent)")
+                let text = try await core.extractText(from: item.url)
+                
+                NSLog("ReceiptSorter: Starting LLM extraction...")
+                let data = try await core.extractReceiptData(from: text)
+                
+                await MainActor.run {
+                    items[index].data = data
+                    items[index].status = .extracted
+                    NSLog("ReceiptSorter: Extraction complete for \(item.url.lastPathComponent)")
+                }
+            } catch {
+                let errorMessage = error.localizedDescription
+                await MainActor.run {
+                    items[index].error = errorMessage
+                    items[index].status = .error
+                    NSLog("ReceiptSorter: Extraction failed: \(errorMessage)")
+                }
+            }
+        }.value
     }
     
     private func syncAll() {

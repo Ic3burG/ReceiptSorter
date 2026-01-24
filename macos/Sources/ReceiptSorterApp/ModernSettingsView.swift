@@ -78,9 +78,42 @@ struct ModernSettingsView: View {
 struct GeneralSettingsDetailView: View {
     @AppStorage("geminiApiKey") private var geminiApiKey: String = ""
     @AppStorage("useLocalLLM") private var useLocalLLM: Bool = true
-    @AppStorage("localModelId") private var localModelId: String = "mlx-community/Llama-3.2-3B-Instruct-4bit"
+    @AppStorage("localModelId") private var localModelId: String = "mlx-community/Llama-3.2-1B-Instruct-4bit"
+    @AppStorage("hfToken") private var hfToken: String = ""
     
     @EnvironmentObject var modelDownloadService: ModelDownloadService
+    
+    // Curated model options
+    enum ModelOption: String, CaseIterable, Identifiable {
+        case llama1B = "mlx-community/Llama-3.2-1B-Instruct-4bit"
+        case llama3B = "mlx-community/Llama-3.2-3B-Instruct-4bit"
+        case qwen05B = "mlx-community/Qwen2.5-0.5B-Instruct-4bit"
+        case custom = "custom"
+        
+        var id: String { rawValue }
+        
+        var displayName: String {
+            switch self {
+            case .llama1B: return "Llama 3.2 1B"
+            case .llama3B: return "Llama 3.2 3B"
+            case .qwen05B: return "Qwen 2.5 0.5B"
+            case .custom: return "Custom Model"
+            }
+        }
+        
+        var description: String {
+            switch self {
+            case .llama1B: return "Fastest • ~800MB • Recommended"
+            case .llama3B: return "Balanced • ~2GB • High quality"
+            case .qwen05B: return "Lightest • ~300MB • Low memory"
+            case .custom: return "Enter custom model ID"
+            }
+        }
+    }
+    
+    @State private var selectedModel: ModelOption = .llama1B
+    @State private var customModelId: String = ""
+    @State private var showCustomField: Bool = false
     
     var body: some View {
         ScrollView {
@@ -100,59 +133,119 @@ struct GeneralSettingsDetailView: View {
                             
                             Divider()
                             
-                            VStack(alignment: .leading, spacing: 4) {
+                            // HF Token Section
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("Hugging Face Token")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                    
+                                    if !hfToken.isEmpty {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                            .font(.caption)
+                                    } else {
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .foregroundColor(.orange)
+                                            .font(.caption)
+                                    }
+                                }
+                                
+                                SecureField("Enter your HF token", text: $hfToken)
+                                    .textFieldStyle(.roundedBorder)
+                                    .onChange(of: hfToken) { _, newValue in
+                                        // Update environment variable immediately
+                                        if !newValue.isEmpty {
+                                            setenv("HF_TOKEN", newValue, 1)
+                                        }
+                                    }
+                                
+                                HStack(spacing: 4) {
+                                    Text(hfToken.isEmpty ? "Required for model downloads." : "Token configured ✓")
+                                        .font(.caption)
+                                        .foregroundColor(hfToken.isEmpty ? .orange : .green)
+                                    
+                                    Spacer()
+                                    
+                                    Link("Get Free Token", destination: URL(string: "https://huggingface.co/settings/tokens")!)
+                                        .font(.caption)
+                                }
+                            }
+                            
+                            Divider()
+                            
+                            // Model Selection
+                            VStack(alignment: .leading, spacing: 8) {
                                 Text("Model Selection")
                                     .font(.subheadline)
-                                HStack {
-                                    TextField("HuggingFace Model ID", text: $localModelId)
-                                        .textFieldStyle(.roundedBorder)
-                                        .onChange(of: localModelId) { _, newValue in
-                                            Task {
-                                                if !modelDownloadService.isModelDownloaded(modelId: newValue) {
-                                                    modelDownloadService.downloadModel(modelId: newValue)
+                                    .fontWeight(.medium)
+                                
+                                Picker("Model", selection: $selectedModel) {
+                                    ForEach(ModelOption.allCases) { option in
+                                        VStack(alignment: .leading) {
+                                            Text(option.displayName)
+                                                .font(.body)
+                                            Text(option.description)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .tag(option)
+                                    }
+                                }
+                                .pickerStyle(.radioGroup)
+                                .onChange(of: selectedModel) { _, newValue in
+                                    showCustomField = (newValue == .custom)
+                                    if newValue != .custom {
+                                        localModelId = newValue.rawValue
+                                        // Trigger download check
+                                        Task {
+                                            if !modelDownloadService.isModelDownloaded(modelId: localModelId) && !hfToken.isEmpty {
+                                                modelDownloadService.downloadModel(modelId: localModelId)
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                if showCustomField {
+                                    HStack {
+                                        TextField("e.g., mlx-community/Llama-3.2-1B-Instruct-4bit", text: $customModelId)
+                                            .textFieldStyle(.roundedBorder)
+                                        
+                                        Button("Use") {
+                                            if !customModelId.isEmpty {
+                                                localModelId = customModelId
+                                                Task {
+                                                    if !modelDownloadService.isModelDownloaded(modelId: localModelId) && !hfToken.isEmpty {
+                                                        modelDownloadService.downloadModel(modelId: localModelId)
+                                                    }
                                                 }
                                             }
                                         }
-                                    
-                                    if case .downloading = modelDownloadService.state {
-                                        ProgressView()
-                                            .controlSize(.small)
-                                            .help("Downloading model...")
-                                    } else if case .failed = modelDownloadService.state {
-                                        Button {
-                                            modelDownloadService.retryDownload()
-                                        } label: {
-                                            Image(systemName: "arrow.clockwise.circle.fill")
-                                                .foregroundColor(.red)
-                                        }
-                                        .buttonStyle(.plain)
-                                        .help("Retry download")
-                                    } else if modelDownloadService.isModelDownloaded(modelId: localModelId) {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.green)
-                                            .help("Model ready")
+                                        .disabled(customModelId.isEmpty)
                                     }
                                 }
-                                Text("Default: mlx-community/Llama-3.2-3B-Instruct-4bit")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            if case .downloading(let progress) = modelDownloadService.state {
-                                 Label("Downloading: \(Int(progress * 100))%", systemImage: "arrow.down.circle")
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
-                                    .padding(.top, 4)
-                            } else if modelDownloadService.isModelDownloaded(modelId: localModelId) {
-                                Label("Model Ready (~2GB)", systemImage: "checkmark.circle")
-                                    .font(.caption)
-                                    .foregroundColor(.green)
-                                    .padding(.top, 4)
-                            } else {
-                                Label("Model not downloaded (~2GB)", systemImage: "arrow.down.circle")
-                                    .font(.caption)
-                                    .foregroundColor(.orange)
-                                    .padding(.top, 4)
+                                
+                                // Download status
+                                if case .downloading(let progress) = modelDownloadService.state {
+                                    HStack {
+                                        ProgressView(value: progress)
+                                        Text("\(Int(progress * 100))%")
+                                            .font(.caption)
+                                            .foregroundColor(.blue)
+                                    }
+                                } else if modelDownloadService.isModelDownloaded(modelId: localModelId) {
+                                    Label("Model Ready", systemImage: "checkmark.circle")
+                                        .font(.caption)
+                                        .foregroundColor(.green)
+                                } else if hfToken.isEmpty {
+                                    Label("Add HF token above to download", systemImage: "key")
+                                        .font(.caption)
+                                        .foregroundColor(.orange)
+                                } else {
+                                    Label("Model not downloaded", systemImage: "arrow.down.circle")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
                             }
                             
                         } else {
@@ -174,6 +267,16 @@ struct GeneralSettingsDetailView: View {
             .padding(20)
         }
         .navigationTitle("General")
+        .onAppear {
+            // Set initial picker selection based on saved model ID
+            if let match = ModelOption.allCases.first(where: { $0.rawValue == localModelId }) {
+                selectedModel = match
+            } else {
+                selectedModel = .custom
+                customModelId = localModelId
+                showCustomField = true
+            }
+        }
     }
 }
 

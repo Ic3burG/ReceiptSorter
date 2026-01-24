@@ -14,7 +14,8 @@ let package = Package(
         .package(url: "https://github.com/openid/AppAuth-iOS.git", from: "1.6.2"),
         .package(url: "https://github.com/CoreOffice/CoreXLSX.git", from: "0.14.0"),
         .package(url: "https://github.com/ml-explore/mlx-swift", branch: "main"),
-        .package(url: "https://github.com/ml-explore/mlx-swift-lm", branch: "main")
+        .package(url: "https://github.com/ml-explore/mlx-swift-lm", branch: "main"),
+        .package(url: "https://github.com/huggingface/swift-transformers", from: "1.1.6")
     ],
     targets: [
         .target(
@@ -26,7 +27,8 @@ let package = Package(
                 .product(name: "MLXRandom", package: "mlx-swift"),
                 .product(name: "MLXNN", package: "mlx-swift"),
                 .product(name: "MLXLLM", package: "mlx-swift-lm"),
-                .product(name: "MLXLMCommon", package: "mlx-swift-lm")
+                .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
+                .product(name: "Hub", package: "swift-transformers")
             ]
         ),
         .executableTarget(

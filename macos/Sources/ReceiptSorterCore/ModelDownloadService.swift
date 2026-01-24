@@ -2,6 +2,7 @@ import Foundation
 @preconcurrency import MLX
 @preconcurrency import MLXLLM
 @preconcurrency import MLXLMCommon
+import Hub
 
 @available(macOS 14.0, *)
 @MainActor
@@ -52,28 +53,14 @@ public class ModelDownloadService: ObservableObject {
     
     /// Check if a model is already downloaded
     public func isModelDownloaded(modelId: String) -> Bool {
-        // Get the HuggingFace cache directory
-        let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let cacheDir = homeDir
-            .appendingPathComponent("Library")
-            .appendingPathComponent("Caches")
-            .appendingPathComponent("huggingface")
-            .appendingPathComponent("hub")
+        // Use HubApi to check for the model directory, consistent with download logic
+        let repo = Hub.Repo(id: modelId)
+        let modelURL = HubApi.shared.localRepoLocation(repo)
         
-        // Convert model ID to cache directory name
-        // e.g., "mlx-community/Llama-3.2-3B-Instruct-4bit" -> "models--mlx-community--Llama-3.2-3B-Instruct-4bit"
-        let modelDirName = "models--" + modelId.replacingOccurrences(of: "/", with: "--")
-        let modelPath = cacheDir.appendingPathComponent(modelDirName)
-        
-        // Check if directory exists and contains files
-        if FileManager.default.fileExists(atPath: modelPath.path) {
-            // Check if it has substantial content (at least 500MB to avoid partial downloads)
-            if let size = try? modelPath.directoryTotalSize(), size > 500_000_000 {
-                return true
-            }
-        }
-        
-        return false
+        // Check if the directory exists and has content (e.g. config.json)
+        // This is a fast check compared to recursive size calculation
+        let configURL = modelURL.appendingPathComponent("config.json")
+        return FileManager.default.fileExists(atPath: configURL.path)
     }
     
     /// Start downloading the model
@@ -88,27 +75,40 @@ public class ModelDownloadService: ObservableObject {
         totalBytes = modelSizeEstimate
         currentModelId = modelId
         
-        // Start download task
-        downloadTask = Task { @MainActor in
+        // Start download task detached from MainActor context
+        downloadTask = Task.detached { [weak self] in
+            guard let self = self else { return }
             do {
-                try await performDownload(modelId: modelId)
+                try await self.performDownload(modelId: modelId)
                 
-                // Mark as completed
-                state = .completed
-                progress = 1.0
-                
-                // Save completion state
-                UserDefaults.standard.set(true, forKey: "hasCompletedModelDownload")
-                UserDefaults.standard.set(modelId, forKey: "lastDownloadedModelId")
-                UserDefaults.standard.set(false, forKey: "modelDownloadFailed")
+                await MainActor.run {
+                    // Mark as completed
+                    self.state = .completed
+                    self.progress = 1.0
+                    
+                    // Save completion state
+                    UserDefaults.standard.set(true, forKey: "hasCompletedModelDownload")
+                    UserDefaults.standard.set(modelId, forKey: "lastDownloadedModelId")
+                    UserDefaults.standard.set(false, forKey: "modelDownloadFailed")
+                }
                 
             } catch {
-                // Handle download failure
-                let errorMessage = error.localizedDescription
-                state = .failed(errorMessage)
-                UserDefaults.standard.set(true, forKey: "modelDownloadFailed")
-                
-                print("Model download failed: \(errorMessage)")
+                await MainActor.run {
+                    // Handle download failure
+                    let errorMessage = error.localizedDescription
+                    
+                    // Provide actionable error messages for common issues
+                    var userFriendlyMessage = errorMessage
+                    if errorMessage.contains("Authentication") || errorMessage.contains("token") {
+                        userFriendlyMessage = "Authentication required. Please add your Hugging Face token in Settings (⌘,) → General."
+                    } else if errorMessage.contains("network") || errorMessage.contains("Network") {
+                        userFriendlyMessage = "Network error. Check your internet connection and try again."
+                    }
+                    
+                    self.state = .failed(userFriendlyMessage)
+                    UserDefaults.standard.set(true, forKey: "modelDownloadFailed")
+                    NSLog("ReceiptSorter: Model download failed: \(errorMessage)")
+                }
             }
         }
     }
@@ -130,55 +130,19 @@ public class ModelDownloadService: ObservableObject {
     
     // MARK: - Private Methods
     
-    private func performDownload(modelId: String) async throws {
-        // Create model configuration
-        let config = ModelConfiguration(id: modelId)
+    nonisolated private func performDownload(modelId: String) async throws {
+        // Use HubApi to download the model (snapshot) without loading it into memory.
+        let repo = Hub.Repo(id: modelId)
+        let api = HubApi.shared
         
-        // Get cache path to monitor progress
-        let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let cacheDir = homeDir
-            .appendingPathComponent("Library")
-            .appendingPathComponent("Caches")
-            .appendingPathComponent("huggingface")
-            .appendingPathComponent("hub")
-        
-        let modelDirName = "models--" + modelId.replacingOccurrences(of: "/", with: "--")
-        let modelPath = cacheDir.appendingPathComponent(modelDirName)
-        
-        // Start monitoring progress in background
-        let progressTask = Task { @MainActor in
-            await monitorDownloadProgress(modelPath: modelPath)
-        }
-        
-        // Load the model container (this triggers the download)
-        _ = try await LLMModelFactory.shared.loadContainer(configuration: config)
-        
-        // Cancel progress monitoring
-        progressTask.cancel()
-        
-        // Final progress update
-        progress = 1.0
-        state = .downloading(progress: 1.0)
-    }
-    
-    private func monitorDownloadProgress(modelPath: URL) async {
-        while !Task.isCancelled {
-            do {
-                // Get current size of downloaded files
-                if let currentSize = try? modelPath.directoryTotalSize() {
-                    downloadedBytes = currentSize
-                    
-                    // Calculate progress (cap at 99% until actually complete)
-                    let calculatedProgress = min(Double(currentSize) / Double(totalBytes), 0.99)
-                    progress = calculatedProgress
-                    state = .downloading(progress: calculatedProgress)
-                }
-                
-                // Check every 500ms
-                try await Task.sleep(nanoseconds: 500_000_000)
-            } catch {
-                // Task cancelled or other error
-                break
+        // Download with progress handler
+        try await api.snapshot(from: repo) { progress in
+            let fraction = progress.fractionCompleted
+
+            // Throttle updates via creating tasks on MainActor
+            Task { @MainActor in
+                self.progress = fraction
+                self.state = .downloading(progress: fraction)
             }
         }
     }
@@ -186,22 +150,4 @@ public class ModelDownloadService: ObservableObject {
 
 // MARK: - URL Extension for Directory Size
 
-extension URL {
-    func directoryTotalSize() throws -> Int64 {
-        guard let enumerator = FileManager.default.enumerator(
-            at: self,
-            includingPropertiesForKeys: [.fileSizeKey],
-            options: [.skipsHiddenFiles]
-        ) else {
-            return 0
-        }
-        
-        var totalSize: Int64 = 0
-        for case let fileURL as URL in enumerator {
-            let resourceValues = try fileURL.resourceValues(forKeys: [.fileSizeKey])
-            totalSize += Int64(resourceValues.fileSize ?? 0)
-        }
-        
-        return totalSize
-    }
-}
+

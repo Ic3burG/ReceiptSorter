@@ -4,9 +4,18 @@ import ReceiptSorterCore
 @main
 struct ReceiptSorterApp: App {
     @StateObject private var modelDownloadService = ModelDownloadService()
-    @AppStorage("localLLMEnabled") private var localLLMEnabled = false
+    @AppStorage("useLocalLLM") private var localLLMEnabled = false
     @AppStorage("hasCompletedModelDownload") private var hasCompletedDownload = false
-    @AppStorage("localModelId") private var localModelId: String = "mlx-community/Llama-3.2-3B-Instruct-4bit"
+    @AppStorage("localModelId") private var localModelId: String = "mlx-community/Llama-3.2-1B-Instruct-4bit"
+    @AppStorage("hfToken") private var hfToken: String = ""
+    
+    init() {
+        // Set Hugging Face token environment variable if available
+        // This allows HubApi to authenticate automatically
+        if let token = UserDefaults.standard.string(forKey: "hfToken"), !token.isEmpty {
+            setenv("HF_TOKEN", token, 1)
+        }
+    }
     
     var body: some Scene {
         WindowGroup {
