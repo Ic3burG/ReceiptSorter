@@ -67,29 +67,29 @@ public actor LocalLLMService: ReceiptDataExtractor {
             throw LocalLLMError.modelLoadFailed
         }
         
-        let canadianCategories = TaxCategories.canadian.joined(separator: ", ")
-        let usCategories = TaxCategories.us.joined(separator: ", ")
+        // Simplify categories for smaller models to prevent context window overload and confusion
+        let commonCategories = [
+            "Groceries", "Dining", "Gas/Fuel", "Transportation", "Shopping", 
+            "Entertainment", "Travel", "Utilities", "Health", "Services", "Other"
+        ].joined(separator: ", ")
         
         let systemPrompt = """
-        You are a receipt data extraction assistant. Extract the following information from the receipt text and return it as a VALID JSON object.
+        You are a receipt scanner. Extract data into this exact JSON format:
+        {
+          "vendor": "Store Name",
+          "date": "YYYY-MM-DD",
+          "total_amount": 10.99,
+          "currency": "CAD",
+          "category": "Groceries",
+          "description": "Brief description of items"
+        }
         
-        Required fields:
-        - total_amount: The total amount paid (numeric value only, no currency symbols)
-        - currency: Currency code in ISO 4217 format (e.g., CAD, USD)
-        - date: Transaction date in YYYY-MM-DD format
-        - vendor: Name of the merchant/vendor
-        - description: Brief description of items/services purchased
-        - category: The best matching tax category from the provided lists
-        
-        Tax Categories:
-        - Canadian Categories: \(canadianCategories)
-        - US Categories: \(usCategories)
-        
-        Instructions:
-        1. Look for currency symbols or location context. If uncertain, default to CAD.
-        2. Convert date to YYYY-MM-DD.
-        3. Use the final total amount.
-        4. Return ONLY the JSON object. No markdown, no "Here is the JSON", just the raw JSON.
+        Rules:
+        1. "total_amount" must be a number (no $ symbols).
+        2. "date" must be YYYY-MM-DD.
+        3. Default to "currency": "CAD" if unsure.
+        4. "category" must be one of: \(commonCategories)
+        5. Return ONLY the JSON object. No extra text.
         """
         
         let userPrompt = "Receipt text:\n\(text)"
