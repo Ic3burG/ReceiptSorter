@@ -74,27 +74,25 @@ public actor LocalLLMService: ReceiptDataExtractor {
         ].joined(separator: ", ")
         
         let systemPrompt = """
-        You are a receipt scanner AI.
+        You are a receipt scanner AI. Extract data from the receipt below into JSON.
         
-        Your goal is to extract specific information from the receipt text below and return it as a JSON object.
-        
-        Use this JSON structure:
+        JSON Schema:
         {
-          "vendor": "<Extract Store Name>",
-          "date": "<Extract Date YYYY-MM-DD>",
-          "total_amount": <Extract Total Number>,
+          "vendor": "string",
+          "date": "YYYY-MM-DD",
+          "total_amount": number,
           "currency": "CAD",
-          "category": "<Choose Category>",
-          "description": "<Summary of items>"
+          "category": "string",
+          "description": "string"
         }
         
-        Categories List: \(commonCategories)
+        Categories: Groceries, Dining, Gas, Transport, Shopping, Other
         
-        Rules:
+        Instructions:
         - Output ONLY valid JSON.
-        - Extract real data from the text.
-        - If uncertain about currency, use "CAD".
-        - Convert dates to YYYY-MM-DD.
+        - "category" must be one of the Categories list.
+        - If currency is unknown, use "CAD".
+        - Do not use markdown.
         """
         
         let userPrompt = "Receipt text:\n\(text)"
@@ -111,8 +109,12 @@ public actor LocalLLMService: ReceiptDataExtractor {
             NSLog("ReceiptSorter: Preparing model input...")
             let input = try await modelContainer.prepare(input: userInput)
             
-            // Generate parameters
-            let parameters = GenerateParameters(maxTokens: 1024, temperature: 0.1)
+            // Generate parameters - add repetitionPenalty to prevent loops
+            let parameters = GenerateParameters(
+                maxTokens: 1024, 
+                temperature: 0.1, 
+                repetitionPenalty: 1.1
+            )
             
             NSLog("ReceiptSorter: Starting generation stream...")
             // Generate stream
