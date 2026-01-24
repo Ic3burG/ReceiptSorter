@@ -132,19 +132,35 @@ public actor LocalLLMService: ReceiptDataExtractor {
     }
     
     private func parseResponse(_ text: String) throws -> ReceiptData {
-        // Clean up common LLM artifacts
-        let cleanJSON = text.replacingOccurrences(of: "```json", with: "")
-                            .replacingOccurrences(of: "```", with: "")
-                            .trimmingCharacters(in: .whitespacesAndNewlines)
+        NSLog("ReceiptSorter: [LLM] Raw output from model: \(text)")
         
-        guard let data = cleanJSON.data(using: .utf8) else {
+        // Robust JSON extraction: Find the first '{' and the last '}'
+        var jsonString = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if let firstBrace = jsonString.firstIndex(of: "{"),
+           let lastBrace = jsonString.lastIndex(of: "}") {
+            // Extract everything between the first and last braces (inclusive)
+            let range = firstBrace...lastBrace
+            jsonString = String(jsonString[range])
+        } else {
+            // Fallback cleanup if braces aren't found (unlikely for valid JSON)
+            jsonString = jsonString.replacingOccurrences(of: "```json", with: "")
+                                 .replacingOccurrences(of: "```", with: "")
+                                 .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        
+        guard let data = jsonString.data(using: .utf8) else {
+            NSLog("ReceiptSorter: [LLM] Failed to convert string to data")
             throw LocalLLMError.invalidData
         }
         
         do {
-            return try JSONDecoder().decode(ReceiptData.self, from: data)
+            let result = try JSONDecoder().decode(ReceiptData.self, from: data)
+            NSLog("ReceiptSorter: [LLM] JSON decode successful")
+            return result
         } catch {
-            print("Failed to decode JSON: \(cleanJSON)")
+            NSLog("ReceiptSorter: [LLM] JSON decode failed: \(error)")
+            NSLog("ReceiptSorter: [LLM] Attempted to parse: \(jsonString)")
             throw error
         }
     }
