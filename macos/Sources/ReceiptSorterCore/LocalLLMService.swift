@@ -12,6 +12,7 @@ public actor LocalLLMService: ReceiptDataExtractor {
     
     public init(modelId: String = "mlx-community/Llama-3.2-3B-Instruct-4bit") {
         self.modelId = modelId
+        NSLog("ReceiptSorter: [LLM] LocalLLMService initialized with model: \(modelId)")
     }
     
     public func isModelReady() -> Bool {
@@ -48,9 +49,14 @@ public actor LocalLLMService: ReceiptDataExtractor {
     }
     
     public func extractData(from text: String) async throws -> ReceiptData {
+        // CRASH DEBUG: Log immediately at function entry
+        NSLog("ReceiptSorter: [LLM] extractData ENTRY - function called")
+        
         NSLog("ReceiptSorter: Starting data extraction via Local LLM...")
         do {
+            NSLog("ReceiptSorter: [LLM] About to call ensureModelLoaded...")
             try await ensureModelLoaded()
+            NSLog("ReceiptSorter: [LLM] ensureModelLoaded returned successfully")
         } catch {
              NSLog("ReceiptSorter: Failed to ensure model loaded: \(error.localizedDescription)")
              throw error

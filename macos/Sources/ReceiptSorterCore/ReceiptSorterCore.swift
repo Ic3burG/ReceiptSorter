@@ -51,14 +51,22 @@ public struct ReceiptSorterCore: Sendable {
     }
     
     public func extractText(from fileURL: URL) async throws -> String {
-        return try await ocrService.extractText(from: fileURL)
+        NSLog("ReceiptSorterCore: OCR starting for file")
+        let result = try await ocrService.extractText(from: fileURL)
+        NSLog("ReceiptSorterCore: OCR complete, got \(result.count) chars")
+        return result
     }
     
     public func extractReceiptData(from text: String) async throws -> ReceiptData {
+        NSLog("ReceiptSorterCore: extractReceiptData called")
         guard let dataExtractor = dataExtractor else {
+            NSLog("ReceiptSorterCore: No data extractor configured!")
             throw GeminiError.notConfigured
         }
-        return try await dataExtractor.extractData(from: text)
+        NSLog("ReceiptSorterCore: About to call dataExtractor.extractData...")
+        let result = try await dataExtractor.extractData(from: text)
+        NSLog("ReceiptSorterCore: dataExtractor.extractData completed successfully")
+        return result
     }
     
     // MARK: - Export Methods

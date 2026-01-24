@@ -341,7 +341,16 @@ struct ContentView: View {
     
     @MainActor
     private func initializeCore() {
-        let localService = useLocalLLM ? LocalLLMService(modelId: localModelId) : nil
+        NSLog("ReceiptSorter: [CORE] initializeCore called, useLocalLLM=\(useLocalLLM)")
+        
+        let localService: LocalLLMService?
+        if useLocalLLM {
+            NSLog("ReceiptSorter: [CORE] Creating LocalLLMService...")
+            localService = LocalLLMService(modelId: localModelId)
+            NSLog("ReceiptSorter: [CORE] LocalLLMService created successfully")
+        } else {
+            localService = nil
+        }
         
         self.core = ReceiptSorterCore(
             apiKey: apiKey, 
@@ -352,6 +361,7 @@ struct ContentView: View {
             organizationBasePath: organizationBasePath,
             localLLMService: localService
         )
+        NSLog("ReceiptSorter: [CORE] ReceiptSorterCore initialized")
         
         Task {
             if let auth = core?.authService {
