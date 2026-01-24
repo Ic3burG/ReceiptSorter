@@ -16,23 +16,29 @@ echo "📍 Working in: $(pwd)"
 # echo "🧹 Cleaning..."
 # rm -rf .build "$BUNDLE_NAME"
 
-# Build Standard Binary (Native Arch)
-echo "🛠️  Building Binary..."
-swift build -c release --product "$EXECUTABLE_NAME"
+# Build using xcodebuild (required for Metal shader compilation)
+# SwiftPM cannot compile Metal shaders, xcodebuild handles this
+echo "🛠️  Building Binary (using xcodebuild for Metal shaders)..."
+xcodebuild build \
+    -scheme "$EXECUTABLE_NAME" \
+    -configuration Release \
+    -destination 'platform=macOS' \
+    -derivedDataPath .build/xcode \
+    -quiet
 
-# Locate the binary
+# Locate the binary built by xcodebuild
 echo "🔍 Locating binary..."
 
-if [ -f ".build/release/$EXECUTABLE_NAME" ]; then
-    BIN_PATH=".build/release/$EXECUTABLE_NAME"
-elif [ -f ".build/apple/Products/Release/$EXECUTABLE_NAME" ]; then
-    BIN_PATH=".build/apple/Products/Release/$EXECUTABLE_NAME"
-else
-    BIN_PATH=$(find .build -name "$EXECUTABLE_NAME" -type f ! -path "*Intermediates*" ! -path "*DWARF*" -path "*/Release/*" | head -n 1)
+# Xcodebuild outputs to DerivedData structure
+BIN_PATH=".build/xcode/Build/Products/Release/$EXECUTABLE_NAME"
+
+if [ ! -f "$BIN_PATH" ]; then
+    # Fallback: search in DerivedData
+    BIN_PATH=$(find .build/xcode -name "$EXECUTABLE_NAME" -type f ! -path "*Intermediates*" -path "*Release*" | head -n 1)
 fi
 
-if [ -z "$BIN_PATH" ]; then
-    echo "❌ Error: Could not find compiled binary '$EXECUTABLE_NAME' in .build directory."
+if [ -z "$BIN_PATH" ] || [ ! -f "$BIN_PATH" ]; then
+    echo "❌ Error: Could not find compiled binary '$EXECUTABLE_NAME'."
     exit 1
 fi
 
@@ -62,6 +68,19 @@ if [ -f "Resources/AppIcon.icns" ]; then
 else
     echo "⚠️  Warning: AppIcon.icns not found in Resources/"
 fi
+
+# Copy SwiftPM resource bundles (including MLX metallib)
+echo "📦 Copying Resource Bundles (MLX Metal shaders)..."
+XCODE_PRODUCTS=".build/xcode/Build/Products/Release"
+
+# Copy all .bundle directories to Resources
+for bundle in "$XCODE_PRODUCTS"/*.bundle; do
+    if [ -d "$bundle" ]; then
+        bundle_name=$(basename "$bundle")
+        echo "   📦 Copying $bundle_name..."
+        cp -R "$bundle" "$BUNDLE_NAME/Contents/Resources/"
+    fi
+done
 
 # Set Executable Name in Info.plist (ensure it matches)
 if [ -f "$BUNDLE_NAME/Contents/Info.plist" ]; then
