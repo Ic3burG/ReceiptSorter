@@ -74,22 +74,27 @@ public actor LocalLLMService: ReceiptDataExtractor {
         ].joined(separator: ", ")
         
         let systemPrompt = """
-        You are a receipt scanner. Extract data into this exact JSON format:
+        You are a receipt scanner AI.
+        
+        Your goal is to extract specific information from the receipt text below and return it as a JSON object.
+        
+        Use this JSON structure:
         {
-          "vendor": "Store Name",
-          "date": "YYYY-MM-DD",
-          "total_amount": 10.99,
+          "vendor": "<Extract Store Name>",
+          "date": "<Extract Date YYYY-MM-DD>",
+          "total_amount": <Extract Total Number>,
           "currency": "CAD",
-          "category": "Groceries",
-          "description": "Brief description of items"
+          "category": "<Choose Category>",
+          "description": "<Summary of items>"
         }
         
+        Categories List: \(commonCategories)
+        
         Rules:
-        1. "total_amount" must be a number (no $ symbols).
-        2. "date" must be YYYY-MM-DD.
-        3. Default to "currency": "CAD" if unsure.
-        4. "category" must be one of: \(commonCategories)
-        5. Return ONLY the JSON object. No extra text.
+        - Output ONLY valid JSON.
+        - Extract real data from the text.
+        - If uncertain about currency, use "CAD".
+        - Convert dates to YYYY-MM-DD.
         """
         
         let userPrompt = "Receipt text:\n\(text)"
