@@ -61,6 +61,23 @@ _Successfully migrated to Swift with superior performance and user experience._
 
 ## 📅 Upcoming Features
 
+### Phase 3.5: Model Pre-download on First Launch
+
+_Goal: Improve first-use experience for local LLM users._
+
+**Planning Document**: [Model Pre-download on Launch Plan](/docs/rfc/model-predownload-on-launch.md)
+
+- [ ] **Background Model Download**: Automatically download LLM model on first app launch
+- [ ] **Progress Indication**: Show download progress with percentage and estimated time
+- [ ] **Interruption Handling**: Graceful recovery from network failures or app quits
+- [ ] **Model Management UI**: Display model status and size in settings
+- [ ] **Smart Caching**: Avoid re-downloading on subsequent launches
+
+**Current State**: Model downloads on first use (~2GB, no progress indicator)  
+**Target State**: Background download on launch with clear progress UI  
+**Timeline**: 2-3 days  
+**Status**: Detailed plan created, awaiting user review for UI option selection
+
 ### Phase 4: Enhanced Distribution
 
 _Goal: Make installation seamless for end users and automate updates._
@@ -80,7 +97,24 @@ _Goal: Add power-user features and automation._
 - [ ] **Shortcuts Integration**: macOS Shortcuts app support for automation
 - [ ] **Export Formats**: QuickBooks, Xero, and other accounting software formats
 
-### Phase 6: Platform Expansion
+- [ ] **Widget Support**: Quick stats widget for macOS and iOS
+
+### Phase 6a: Liquid Glass Design System
+
+_Goal: Elevate visual design with premium, modern aesthetics._
+
+**Planning Document**: [Liquid Glass Design Adoption Plan](/docs/rfc/liquid-glass-design-adoption.md)
+
+- [ ] **Design System Foundation**: Create reusable glass material modifiers, color system, typography, and animations
+- [ ] **Component Library**: Build Liquid Glass versions of buttons, cards, text fields, and containers
+- [ ] **Settings Redesign**: Apply glass materials to settings window with enhanced animations
+- [ ] **Main Window Enhancement**: Premium glass UI for drop zone, preview, and processing states
+- [ ] **Polish & Optimization**: Performance tuning, dark mode refinement, and accessibility compliance
+
+**Timeline**: 10 weeks  
+**Status**: Detailed plan created, ready for implementation
+
+### Phase 7: Platform Expansion
 
 _Goal: Extend to other Apple platforms._
 
@@ -115,4 +149,5 @@ The project follows these principles:
 2. **Modular Design**: Core logic separated from UI for reusability
 3. **Privacy Focused**: All processing happens locally; only final data syncs to cloud
 4. **User Experience**: Prioritize simplicity and intuitive design
-5. **Open Source**: Maintain transparency and community contributions
+5. **Premium Design**: Implement modern, polished aesthetics with Liquid Glass design language
+6. **Open Source**: Maintain transparency and community contributions
