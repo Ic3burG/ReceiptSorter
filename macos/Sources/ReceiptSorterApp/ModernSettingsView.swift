@@ -112,84 +112,101 @@ struct GeneralSettingsDetailView: View {
     @State private var showCustomField: Bool = false
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                GroupBox("Artificial Intelligence") {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Toggle("Use Local LLM (Privacy Focused)", isOn: $useLocalLLM)
-                            .toggleStyle(.switch)
-                            .font(.body)
-                        
-                        if useLocalLLM {
-                            Text("Processing happens entirely on your device using MLX. No data leaves your Mac.")
-                                .font(.caption)
-                                .foregroundColor(.green)
-                            
-                            Divider()
-                            
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text("Hugging Face Token")
-                                        .font(.headline)
-                                    
-                                    if !hfToken.isEmpty {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.green)
-                                            .font(.caption)
-                                    } else {
-                                        Image(systemName: "exclamationmark.triangle.fill")
-                                            .foregroundColor(.orange)
-                                            .font(.caption)
+        Form {
+            Section {
+                Toggle("Use Local LLM", isOn: $useLocalLLM)
+                    .toggleStyle(.switch)
+            } header: {
+                Text("Artificial Intelligence")
+            } footer: {
+                if useLocalLLM {
+                    Label("Processing happens entirely on your device using MLX. No data leaves your Mac.", systemImage: "lock.shield.fill")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                } else {
+                    Text("Uses Gemini API for cloud-based processing.")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
+            }
+            
+            if useLocalLLM {
+                // Hugging Face Token Section
+                Section {
+                    LabeledContent {
+                        HStack(spacing: 8) {
+                            SecureField("Enter your token", text: $hfToken)
+                                .textFieldStyle(.roundedBorder)
+                                .privacySensitive()
+                                .onChange(of: hfToken) { _, newValue in
+                                    if !newValue.isEmpty {
+                                        setenv("HF_TOKEN", newValue, 1)
                                     }
                                 }
-                                
-                                SecureField("Enter your HF token", text: $hfToken)
-                                    .textFieldStyle(.roundedBorder)
-                                    .privacySensitive()
-                                    .onChange(of: hfToken) { _, newValue in
-                                        // Update environment variable immediately
-                                        if !newValue.isEmpty {
-                                            setenv("HF_TOKEN", newValue, 1)
-                                        }
-                                    }
-                                
-                                HStack(spacing: 4) {
-                                    Text(hfToken.isEmpty ? "Required for model downloads." : "Token configured ✓")
-                                        .font(.caption)
-                                        .foregroundColor(hfToken.isEmpty ? .orange : .green)
-                                    
-                                    Spacer()
-                                    
-                                    Link("Get Free Token", destination: URL(string: "https://huggingface.co/settings/tokens")!)
-                                        .font(.caption)
+                            
+                            if !hfToken.isEmpty {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                                    .imageScale(.medium)
+                            }
+                        }
+                    } label: {
+                        Text("Hugging Face Token")
+                    }
+                } header: {
+                    Text("Authentication")
+                } footer: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if hfToken.isEmpty {
+                            Label("Required for model downloads", systemImage: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.orange)
+                                .font(.caption)
+                        } else {
+                            Label("Token configured successfully", systemImage: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                                .font(.caption)
+                        }
+                        
+                        Link("Get a free token from Hugging Face", destination: URL(string: "https://huggingface.co/settings/tokens")!)
+                            .font(.caption)
+                    }
+                }
+                
+                // Model Selection Section
+                Section {
+                    Picker("Model", selection: $selectedModel) {
+                        ForEach(ModelOption.allCases) { option in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(option.displayName)
+                                Text(option.description)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .tag(option)
+                        }
+                    }
+                    .pickerStyle(.radioGroup)
+                    .onChange(of: selectedModel) { _, newValue in
+                        showCustomField = (newValue == .custom)
+                        if newValue != .custom {
+                            localModelId = newValue.rawValue
+                            Task {
+                                if !modelDownloadService.isModelDownloaded(modelId: localModelId) && !hfToken.isEmpty {
+                                    modelDownloadService.downloadModel(modelId: localModelId)
                                 }
                             }
-                            
-                            Divider()
-                            
-                            // Model Selection
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Model Selection")
-                                    .font(.headline)
+                        }
+                    }
+                    
+                    if showCustomField {
+                        LabeledContent("Custom Model ID") {
+                            HStack(spacing: 8) {
+                                TextField("e.g., mlx-community/Llama-3.2-1B-Instruct-4bit", text: $customModelId)
+                                    .textFieldStyle(.roundedBorder)
                                 
-                                Picker("Model", selection: $selectedModel) {
-                                    ForEach(ModelOption.allCases) { option in
-                                        VStack(alignment: .leading) {
-                                            Text(option.displayName)
-                                                .font(.body)
-                                            Text(option.description)
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                        }
-                                        .tag(option)
-                                    }
-                                }
-                                .pickerStyle(.radioGroup)
-                                .onChange(of: selectedModel) { _, newValue in
-                                    showCustomField = (newValue == .custom)
-                                    if newValue != .custom {
-                                        localModelId = newValue.rawValue
-                                        // Trigger download check
+                                Button("Use") {
+                                    if !customModelId.isEmpty {
+                                        localModelId = customModelId
                                         Task {
                                             if !modelDownloadService.isModelDownloaded(modelId: localModelId) && !hfToken.isEmpty {
                                                 modelDownloadService.downloadModel(modelId: localModelId)
@@ -197,70 +214,76 @@ struct GeneralSettingsDetailView: View {
                                         }
                                     }
                                 }
-                                
-                                if showCustomField {
-                                    HStack(spacing: 12) {
-                                        TextField("e.g., mlx-community/Llama-3.2-1B-Instruct-4bit", text: $customModelId)
-                                            .textFieldStyle(.roundedBorder)
-                                        
-                                        Button("Use") {
-                                            if !customModelId.isEmpty {
-                                                localModelId = customModelId
-                                                Task {
-                                                    if !modelDownloadService.isModelDownloaded(modelId: localModelId) && !hfToken.isEmpty {
-                                                        modelDownloadService.downloadModel(modelId: localModelId)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        .buttonStyle(.borderedProminent)
-                                        .disabled(customModelId.isEmpty)
-                                    }
-                                }
-                                
-                                // Download status
-                                if case .downloading(let progress) = modelDownloadService.state {
-                                    HStack {
-                                        ProgressView(value: progress)
-                                        Text("\(Int(progress * 100))%")
-                                            .font(.caption)
-                                            .foregroundColor(.blue)
-                                    }
-                                } else if modelDownloadService.isModelDownloaded(modelId: localModelId) {
-                                    Label("Model Ready", systemImage: "checkmark.circle")
-                                        .font(.caption)
-                                        .foregroundColor(.green)
-                                } else if hfToken.isEmpty {
-                                    Label("Add HF token above to download", systemImage: "key")
-                                        .font(.caption)
-                                        .foregroundColor(.orange)
-                                } else {
-                                    Label("Model not downloaded", systemImage: "arrow.down.circle")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.small)
+                                .disabled(customModelId.isEmpty)
                             }
-                            
-                        } else {
-                            SecureField("Gemini API Key", text: $geminiApiKey)
-                                .textFieldStyle(.roundedBorder)
-                                .privacySensitive()
-                            
-                            Text("Required for data extraction.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            Link("Get API Key", destination: URL(string: "https://aistudio.google.com/")!)
-                                .font(.caption)
                         }
+                    }
+                    
+                    // Download Status
+                    if case .downloading(let progress) = modelDownloadService.state {
+                        LabeledContent("Download Progress") {
+                            HStack(spacing: 8) {
+                                ProgressView(value: progress)
+                                    .frame(maxWidth: 200)
+                                Text("\(Int(progress * 100))%")
+                                    .foregroundStyle(.secondary)
+                                    .font(.caption)
+                                    .monospacedDigit()
+                            }
+                        }
+                    } else if modelDownloadService.isModelDownloaded(modelId: localModelId) {
+                        LabeledContent("Status") {
+                            Label("Ready", systemImage: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                        }
+                    } else if hfToken.isEmpty {
+                        LabeledContent("Status") {
+                            Label("Add token above to download", systemImage: "key.fill")
+                                .foregroundStyle(.orange)
+                        }
+                    } else {
+                        LabeledContent("Status") {
+                            Label("Not downloaded", systemImage: "arrow.down.circle")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } header: {
+                    Text("Model Selection")
+                } footer: {
+                    Text("Select a pre-configured model or enter a custom Hugging Face model ID.")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
+                
+            } else {
+                // Gemini API Section
+                Section {
+                    LabeledContent("API Key") {
+                        SecureField("Enter your Gemini API key", text: $geminiApiKey)
+                            .textFieldStyle(.roundedBorder)
+                            .privacySensitive()
+                            .frame(maxWidth: 300)
+                    }
+                } header: {
+                    Text("Gemini API")
+                } footer: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Required for cloud-based data extraction.")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                        
+                        Link("Get an API key from Google AI Studio", destination: URL(string: "https://aistudio.google.com/")!)
+                            .font(.caption)
                     }
                 }
             }
-            .padding(20)
         }
+        .formStyle(.grouped)
         .navigationTitle("General")
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
-            // Set initial picker selection based on saved model ID
             if let match = ModelOption.allCases.first(where: { $0.rawValue == localModelId }) {
                 selectedModel = match
             } else {
@@ -279,61 +302,82 @@ struct ExportSettingsDetailView: View {
     @State private var showFilePicker = false
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                GroupBox("Excel Export") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            TextField("Excel File", text: $excelFilePath)
-                                .textFieldStyle(.roundedBorder)
-                                .disabled(true)
-                            
-                            Button("Choose...") {
-                                showFilePicker = true
-                            }
-                            .buttonStyle(.bordered)
-                        }
+        Form {
+            Section {
+                LabeledContent("Excel File") {
+                    HStack(spacing: 8) {
+                        Text(excelFilePath.isEmpty ? "No file selected" : excelFilePath)
+                            .foregroundStyle(excelFilePath.isEmpty ? .secondary : .primary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
-                        if excelFilePath.isEmpty {
-                            Label("No file selected", systemImage: "exclamationmark.triangle")
-                                .foregroundColor(.orange)
-                                .font(.caption)
-                        } else {
-                            Label("File configured", systemImage: "checkmark.circle")
-                                .foregroundColor(.green)
-                                .font(.caption)
+                        Button("Choose...") {
+                            showFilePicker = true
                         }
-                        
-                        Text("Select an existing Excel file to update, or a new location to create one.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
                     }
                 }
                 
-                GroupBox {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Tips")
-                            .font(.headline)
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Label("Duplicate Detection", systemImage: "doc.on.doc")
-                                .font(.body)
-                            Text("Receipts with the same date, vendor, and amount will not be added twice.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            Label("Column Structure", systemImage: "tablecells")
-                                .font(.body)
-                            Text("Date, Vendor, Description, Category (manual), Amount, Currency, Notes")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
+                if !excelFilePath.isEmpty {
+                    LabeledContent("Status") {
+                        Label("Configured", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
                     }
                 }
+            } header: {
+                Text("Excel Export")
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    if excelFilePath.isEmpty {
+                        Label("Choose an Excel file to get started", systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                            .font(.caption)
+                    }
+                    
+                    Text("Select an existing Excel file to update, or a new location to create one.")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
             }
-            .padding(20)
+            
+            Section {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Duplicate Detection", systemImage: "doc.on.doc.fill")
+                        .font(.subheadline)
+                    
+                    Text("Receipts with the same date, vendor, and amount will not be added twice.")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                
+                Divider()
+                    .padding(.vertical, 4)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Column Structure", systemImage: "tablecells.fill")
+                        .font(.subheadline)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("The Excel file will contain the following columns:")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                        
+                        Text("Date • Vendor • Description • Category • Amount • Currency • Notes")
+                            .font(.caption)
+                            .foregroundStyle(.blue)
+                            .monospaced()
+                    }
+                }
+            } header: {
+                Text("Information")
+            }
         }
+        .formStyle(.grouped)
         .navigationTitle("Export")
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .fileImporter(
             isPresented: $showFilePicker,
             allowedContentTypes: [.init(filenameExtension: "xlsx")!, .data],
@@ -360,84 +404,104 @@ struct OrganizationSettingsDetailView: View {
     @State private var showFolderPicker = false
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                GroupBox("File Organization") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Toggle("Auto-organize after export", isOn: $autoOrganize)
-                            .toggleStyle(.switch)
-                            .font(.body)
+        Form {
+            Section {
+                Toggle("Auto-organize after export", isOn: $autoOrganize)
+                    .toggleStyle(.switch)
+            } header: {
+                Text("File Organization")
+            } footer: {
+                Text("When enabled, receipts are automatically moved into a folder structure based on their date after export.")
+                    .foregroundStyle(.secondary)
+                    .font(.caption)
+            }
+            
+            Section {
+                LabeledContent("Base Folder") {
+                    HStack(spacing: 8) {
+                        Text(organizationBasePath.isEmpty ? "No folder selected" : organizationBasePath)
+                            .foregroundStyle(organizationBasePath.isEmpty ? .secondary : .primary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
-                        Text("When enabled, receipts are automatically moved into a folder structure based on their date after export.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Divider().padding(.vertical, 5)
-                        
-                        HStack {
-                            TextField("Base Folder", text: $organizationBasePath)
-                                .textFieldStyle(.roundedBorder)
-                                .disabled(true)
-                            
-                            Button("Choose...") {
-                                showFolderPicker = true
-                            }
-                            .buttonStyle(.bordered)
+                        Button("Choose...") {
+                            showFolderPicker = true
                         }
-                        
-                        if organizationBasePath.isEmpty {
-                            Label("No folder selected", systemImage: "exclamationmark.triangle")
-                                .foregroundColor(.orange)
-                                .font(.caption)
-                        } else {
-                            Label("Folder configured", systemImage: "checkmark.circle")
-                                .foregroundColor(.green)
-                                .font(.caption)
-                        }
-                        
-                        Text("Select the base folder where organized receipts will be stored.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
                     }
                 }
                 
-                GroupBox {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Folder Structure")
-                            .font(.headline)
-                        
-                        HStack {
-                            Label("Year/Month Organization", systemImage: "folder")
-                                .font(.body)
-                            Text("Receipts are organized into: **BaseFolder/YYYY/mm - MMM yyyy/**")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Example:")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text("    BaseFolder/2025/06 - June 2025/receipt.pdf")
-                                .font(.system(.caption, design: .monospaced))
-                                .foregroundColor(.blue)
-                        }
-                        
-                        Divider().padding(.vertical, 5)
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Label("Missing Dates", systemImage: "calendar.badge.exclamationmark")
-                                .font(.body)
-                            Text("If a receipt's date cannot be extracted, it will not be moved. You'll be notified so you can organize it manually.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
+                if !organizationBasePath.isEmpty {
+                    LabeledContent("Status") {
+                        Label("Configured", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
                     }
                 }
+            } header: {
+                Text("Storage Location")
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    if organizationBasePath.isEmpty {
+                        Label("Choose a base folder to get started", systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                            .font(.caption)
+                    }
+                    
+                    Text("Select the base folder where organized receipts will be stored.")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
             }
-            .padding(20)
+            
+            Section {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Year/Month Organization", systemImage: "folder.fill")
+                        .font(.subheadline)
+                    
+                    Text("Receipts are organized into: **BaseFolder/YYYY/mm - MMM yyyy/**")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                
+                DisclosureGroup {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("BaseFolder/2025/06 - June 2025/receipt.pdf")
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(.blue)
+                        
+                        Text("BaseFolder/2025/12 - December 2025/invoice.pdf")
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(.blue)
+                    }
+                    .padding(.top, 4)
+                } label: {
+                    Text("Example paths")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Divider()
+                    .padding(.vertical, 4)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Missing Dates", systemImage: "calendar.badge.exclamationmark")
+                        .font(.subheadline)
+                    
+                    Text("If a receipt's date cannot be extracted, it will not be moved. You'll be notified so you can organize it manually.")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } header: {
+                Text("Folder Structure")
+            }
         }
+        .formStyle(.grouped)
         .navigationTitle("Organization")
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .fileImporter(
             isPresented: $showFolderPicker,
             allowedContentTypes: [.folder],
@@ -467,91 +531,134 @@ struct CloudSyncSettingsDetailView: View {
     @State private var isFormatting = false
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                GroupBox("Configuration") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        TextField("Spreadsheet Link", text: $sheetInput)
-                            .textFieldStyle(.roundedBorder)
-                            .onChange(of: sheetInput) { _, newValue in
-                                extractSheetID(from: newValue)
-                            }
-                            .onAppear { sheetInput = googleSheetId }
-                        
-                        if !googleSheetId.isEmpty && googleSheetId != sheetInput {
-                            Text("ID extracted: \(googleSheetId)")
-                                .font(.caption)
-                                .foregroundColor(.green)
+        Form {
+            Section {
+                LabeledContent("Spreadsheet Link") {
+                    TextField("Paste your Google Sheets URL", text: $sheetInput)
+                        .textFieldStyle(.roundedBorder)
+                        .onChange(of: sheetInput) { _, newValue in
+                            extractSheetID(from: newValue)
                         }
-                        
-                        Text("Paste the full URL of your Google Sheet.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Divider().padding(.vertical, 5)
-                        
-                        TextField("OAuth Client ID", text: $clientID)
-                            .textFieldStyle(.roundedBorder)
-                        Text("Your Google Cloud OAuth 2.0 Client ID.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        SecureField("OAuth Client Secret", text: $clientSecret)
-                            .textFieldStyle(.roundedBorder)
-                            .privacySensitive()
-                        
-                        Text("Required for Desktop App authentication.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        if !googleSheetId.isEmpty {
-                            Button {
-                                formatSheet()
-                            } label: {
-                                Label(isFormatting ? "Formatting..." : "Apply Professional Formatting", 
-                                      systemImage: isFormatting ? "" : "paintpalette")
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(isFormatting)
-                            .padding(.top, 5)
-                        }
-                    }
+                        .onAppear { sheetInput = googleSheetId }
                 }
                 
-                GroupBox {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Setup Guide")
-                            .font(.headline)
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Label("1. Create Client ID", systemImage: "1.circle")
-                                .font(.body)
-                            Text("Go to Google Cloud Console > APIs & Services > Credentials. Create an **OAuth 2.0 Client ID**.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                            
-                            Label("2. Select 'Desktop App'", systemImage: "2.circle")
-                                .font(.body)
-                            Text("Important: Select **Desktop App** as the Application Type (NOT iOS). This enables the required authentication flow.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                            
-                            Label("3. Sign In", systemImage: "3.circle")
-                                .font(.body)
-                            Text("Copy the Client ID & Secret above, then click 'Sign In' on the main screen.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .padding(.vertical, 5)
+                if !googleSheetId.isEmpty && googleSheetId != sheetInput {
+                    LabeledContent("Extracted ID") {
+                        Text(googleSheetId)
+                            .foregroundStyle(.green)
+                            .font(.caption)
+                            .monospaced()
                     }
                 }
+            } header: {
+                Text("Google Sheets")
+            } footer: {
+                Text("Paste the full URL of your Google Sheet. The sheet ID will be extracted automatically.")
+                    .foregroundStyle(.secondary)
+                    .font(.caption)
             }
-            .padding(20)
+            
+            Section {
+                LabeledContent("Client ID") {
+                    TextField("Your OAuth 2.0 Client ID", text: $clientID)
+                        .textFieldStyle(.roundedBorder)
+                }
+                
+                LabeledContent("Client Secret") {
+                    SecureField("Your OAuth 2.0 Client Secret", text: $clientSecret)
+                        .textFieldStyle(.roundedBorder)
+                        .privacySensitive()
+                }
+            } header: {
+                Text("OAuth Configuration")
+            } footer: {
+                Text("Required for Desktop App authentication with Google Cloud.")
+                    .foregroundStyle(.secondary)
+                    .font(.caption)
+            }
+            
+            if !googleSheetId.isEmpty {
+                Section {
+                    Button {
+                        formatSheet()
+                    } label: {
+                        HStack {
+                            if isFormatting {
+                                ProgressView()
+                                    .controlSize(.small)
+                            }
+                            Label(isFormatting ? "Formatting..." : "Apply Professional Formatting",
+                                  systemImage: "paintpalette.fill")
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isFormatting)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                } header: {
+                    Text("Actions")
+                }
+            }
+            
+            Section {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "1.circle.fill")
+                            .foregroundStyle(.blue)
+                            .imageScale(.large)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Create Client ID")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            
+                            Text("Go to Google Cloud Console > APIs & Services > Credentials. Create an **OAuth 2.0 Client ID**.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "2.circle.fill")
+                            .foregroundStyle(.blue)
+                            .imageScale(.large)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Select 'Desktop App'")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            
+                            Text("Important: Select **Desktop App** as the Application Type (NOT iOS). This enables the required authentication flow.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "3.circle.fill")
+                            .foregroundStyle(.blue)
+                            .imageScale(.large)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Sign In")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            
+                            Text("Copy the Client ID & Secret above, then click 'Sign In' on the main screen.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            } header: {
+                Text("Setup Guide")
+            }
         }
+        .formStyle(.grouped)
         .navigationTitle("Cloud Sync")
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
     @MainActor
