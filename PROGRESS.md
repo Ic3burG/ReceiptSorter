@@ -2,6 +2,35 @@
 
 **IMPORTANT:** This file must be updated with a summary of changes after every session or significant code modification. These updates must be committed and pushed to the GitHub repository immediately.
 
+## Session: January 31, 2026
+
+### 🎨 Standard SwiftUI Adoption (ADR-001)
+
+- **Complete Design System Migration**: Successfully migrated the entire macOS application from the custom "Liquid Glass" design system to native SwiftUI components.
+  - **Phase 1 - Primary Views**: Refactored `OnboardingView.swift`, `ModernSettingsView.swift`, `ContentView.swift`, and `DuplicateReviewView.swift`.
+    - Replaced 20 `LGButton` instances with standard `Button` + `.buttonStyle(.borderedProminent/.bordered)`.
+    - Replaced 9 `LGTextField` instances with `TextField`/`SecureField` + `.textFieldStyle(.roundedBorder)`.
+    - Replaced 8 `LGGroupBox` instances with standard `GroupBox`.
+    - Replaced 6 `LGCard` instances with `GroupBox`.
+    - Updated 40+ typography references from `LiquidGlassTypography.*` to standard `.font()` modifiers.
+    - Removed custom modifiers: `.lgSidebarStyle()`, `.glassSurface()`.
+    - Applied `.privacySensitive()` to all sensitive `SecureField` inputs.
+  - **Phase 2 - Complete Cleanup**: Removed all remaining Liquid Glass dependencies.
+    - Created `WelcomeView.swift`: Streamlined 212-line welcome screen (replaced 411-line `LGWelcomeView`).
+    - Added `ProcessingItemRow` and `DataCard` helper views inline in `ContentView.swift`.
+    - **Deleted entire `DesignSystem` directory** (13 files removed):
+      - Components: `LGButton`, `LGCard`, `LGDataCard`, `LGGroupBox`, `LGProcessingItemRow`, `LGSidebar`, `LGTextField`, `LGWelcomeView`.
+      - Core: `Animations`, `Colors`, `Materials`, `Shadows`, `Typography`.
+- **Migration Impact**:
+  - 27 files modified across 2 commits.
+  - 1,606 lines added, 1,700 lines deleted (net -94 lines).
+  - Zero Liquid Glass dependencies remaining.
+  - Build time: 8.14s, All 6 tests passing.
+- **Documentation**: Created ADR-001 documenting the architectural decision, updated status to "Accepted".
+- **Result**: Application now uses 100% native macOS SwiftUI throughout, with improved maintainability, better accessibility, and reduced codebase complexity.
+
+---
+
 ## Session: January 20, 2026
 
 ### 🔐 Secure Distribution Pipeline
