@@ -3,15 +3,23 @@ import SwiftUI
 public struct LGTextField: View {
     let title: String
     @Binding var text: String
+    let isSecure: Bool
     @FocusState private var isFocused: Bool
     
-    public init(_ title: String, text: Binding<String>) {
+    public init(_ title: String, text: Binding<String>, isSecure: Bool = false) {
         self.title = title
         self._text = text
+        self.isSecure = isSecure
     }
     
     public var body: some View {
-        TextField(title, text: $text)
+        Group {
+            if isSecure {
+                SecureField(title, text: $text)
+            } else {
+                TextField(title, text: $text)
+            }
+        }
             .textFieldStyle(.plain)
             .padding(12)
             .background {
