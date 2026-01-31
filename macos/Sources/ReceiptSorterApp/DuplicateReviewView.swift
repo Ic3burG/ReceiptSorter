@@ -28,86 +28,84 @@ struct DuplicateReviewView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack {
+            HStack(spacing: 12) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.orange)
                     .font(.title2)
-                Text("Potential Duplicate Detected")
-                    .font(.headline)
+                    .foregroundColor(.orange)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Duplicate File Detected")
+                        .font(.headline)
+                    Text("A file with similar attributes already exists.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
             }
             .padding()
-            .frame(maxWidth: .infinity)
             .background(Color.orange.opacity(0.1))
             
-            Divider()
-            
-            // Side-by-side comparison
-            HStack(spacing: 0) {
-                // Existing file (left)
+            // Comparison Content
+            HStack(spacing: 24) {
+                // Existing File
                 FilePreviewColumn(
                     title: "Existing File",
                     url: conflict.existingURL,
                     metadata: existingMetadata,
-                    badgeColor: .blue
+                    color: .blue
                 )
                 
                 Divider()
+                    .overlay(Color.secondary.opacity(0.2))
                 
-                // New file (right)
+                // New File
                 FilePreviewColumn(
                     title: "New File",
                     url: conflict.newFileURL,
                     metadata: newMetadata,
-                    badgeColor: .green
+                    color: .green
                 )
             }
-            .frame(minHeight: 400)
+            .padding(24)
+            .background(Color(NSColor.controlBackgroundColor))
             
             Divider()
             
-            // Action buttons
+            // Actions
             HStack(spacing: 16) {
-                Button(action: { resolveWith(.keepExisting) }) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "arrow.left.circle")
-                            .font(.title2)
-                        Text("Keep Existing")
-                            .font(.caption)
-                    }
-                    .frame(width: 100)
+                // Option 1: Keep Existing (Discard New)
+                Button {
+                    resolveWith(.keepExisting)
+                } label: {
+                    Label("Keep Existing", systemImage: "trash")
                 }
                 .buttonStyle(.bordered)
-                .help("Keep the existing file. The new file stays in its original location.")
+                .help("Delete the new file and keep the existing one.")
                 
-                Button(action: { resolveWith(.keepBoth) }) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "doc.on.doc")
-                            .font(.title2)
-                        Text("Keep Both")
-                            .font(.caption)
-                    }
-                    .frame(width: 100)
+                Spacer()
+                
+                // Option 2: Keep Both (Rename New)
+                Button {
+                    resolveWith(.keepBoth)
+                } label: {
+                    Label("Keep Both", systemImage: "doc.on.doc")
                 }
                 .buttonStyle(.borderedProminent)
-                .help("Keep both files. The new file will be renamed with a unique suffix.")
+                .help("Keep both files. The new file will be renamed.")
                 
-                Button(action: { resolveWith(.replaceWithNew) }) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "arrow.right.circle")
-                            .font(.title2)
-                        Text("Replace")
-                            .font(.caption)
-                    }
-                    .frame(width: 100)
+                // Option 3: Replace (Overwrite)
+                Button {
+                    resolveWith(.replaceWithNew)
+                } label: {
+                    Label("Replace Old", systemImage: "arrow.triangle.2.circlepath")
                 }
                 .buttonStyle(.bordered)
-                .tint(.red)
-                .help("Replace the existing file with the new one. The existing file will be deleted.")
+                .help("Overwrite the existing file with the new one.")
             }
             .padding()
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(width: 800, height: 550)
+        .frame(width: 900, height: 650)
     }
     
     private func resolveWith(_ resolution: ConflictResolution) {
@@ -121,83 +119,98 @@ struct FilePreviewColumn: View {
     let title: String
     let url: URL
     let metadata: FileMetadata?
-    let badgeColor: Color
+    let color: Color
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Title badge
-            Text(title)
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4)
-                .background(badgeColor)
-                .cornerRadius(4)
-                .padding(.top, 12)
+        VStack(spacing: 16) {
+            // Title Badge
+            HStack {
+                Circle()
+                    .fill(color)
+                    .frame(width: 8, height: 8)
+                
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Image(systemName: url.pathExtension.lowercased() == "pdf" ? "doc.text" : "photo")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 4)
             
             // Preview
             ZStack {
-                Color(NSColor.controlBackgroundColor)
+                Color.black.opacity(0.05)
                 
                 if url.pathExtension.lowercased() == "pdf" {
                     PDFKitRepresentedView(url: url)
                 } else {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                        case .failure:
-                            Image(systemName: "photo")
-                                .font(.largeTitle)
-                                .foregroundColor(.secondary)
-                        case .empty:
-                            ProgressView()
-                        @unknown default:
-                            EmptyView()
-                        }
+                    AsyncImage(url: url) { image in
+                        image.resizable().aspectRatio(contentMode: .fit)
+                    } placeholder: {
+                        ProgressView()
                     }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(12)
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+            )
+            .frame(height: 300)
             
-            // Metadata
-            VStack(alignment: .leading, spacing: 6) {
-                MetadataRow(icon: "doc", label: "Name", value: metadata?.filename ?? url.lastPathComponent)
-                MetadataRow(icon: "calendar", label: "Modified", value: metadata?.formattedDate ?? "Unknown")
-                MetadataRow(icon: "internaldrive", label: "Size", value: metadata?.formattedSize ?? "Unknown")
+            // Metadata Cards
+            VStack(spacing: 12) {
+                MiniDataCard(icon: "doc.text", label: "Filename", value: metadata?.filename ?? url.lastPathComponent)
+                HStack(spacing: 12) {
+                    MiniDataCard(icon: "calendar", label: "Date", value: metadata?.formattedDate ?? "Unknown")
+                    MiniDataCard(icon: "internaldrive", label: "Size", value: metadata?.formattedSize ?? "Unknown")
+                }
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(NSColor.windowBackgroundColor))
         }
         .frame(maxWidth: .infinity)
     }
 }
 
-/// Single row of file metadata
-struct MetadataRow: View {
+/// A smaller card component for metadata display
+struct MiniDataCard: View {
     let icon: String
     let label: String
     let value: String
     
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .foregroundColor(.secondary)
-                .frame(width: 16)
-            Text(label + ":")
-                .foregroundColor(.secondary)
-                .font(.caption)
-            Text(value)
-                .font(.caption)
-                .fontWeight(.medium)
-                .lineLimit(1)
-                .truncationMode(.middle)
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.blue.opacity(0.1))
+                    .frame(width: 32, height: 32)
+                Image(systemName: icon)
+                    .font(.caption)
+                    .foregroundColor(.blue)
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                Text(value)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            Spacer()
         }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(NSColor.controlBackgroundColor))
+                .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        )
     }
 }
 

@@ -27,6 +27,8 @@ struct ReceiptSorterApp: App {
                     }
                 }
         }
+        .windowStyle(.hiddenTitleBar)
+        .windowToolbarStyle(.unified)
         
         Settings {
             ModernSettingsView()

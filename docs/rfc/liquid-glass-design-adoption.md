@@ -2,7 +2,7 @@
 
 **Receipt Sorter macOS**  
 Created: 2026-01-23  
-Status: Planning
+Status: **SUPERSEDED** by [ADR 001: Standard SwiftUI Adoption](/docs/adr/001-standard-swiftui-adoption.md)
 
 ## Executive Summary
 

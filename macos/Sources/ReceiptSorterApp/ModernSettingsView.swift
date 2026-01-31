@@ -45,28 +45,19 @@ struct ModernSettingsView: View {
             }
             .navigationTitle("Settings")
             .frame(minWidth: 200)
-            .lgSidebarStyle() // Apply Glass Sidebar Style
         } detail: {
             // Detail view
-            ZStack {
-                // Background
-                Color.clear
-                    .glassSurface(intensity: .subtle)
-                    .ignoresSafeArea()
-                
-                if let section = selectedSection {
-                    settingsDetailView(for: section)
-                        .transition(.opacity.combined(with: .move(edge: .trailing)))
-                } else {
-                    Text("Select a settings category")
-                        .font(LiquidGlassTypography.title) // Use new typography
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
+            if let section = selectedSection {
+                settingsDetailView(for: section)
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+            } else {
+                Text("Select a settings category")
+                    .font(.title)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .frame(width: 800, height: 600) // Increased size for better layout
-        .background(LiquidGlassColors.glassDark) // Overall window background
+        .frame(width: 800, height: 600)
     }
     
     @ViewBuilder
@@ -123,26 +114,23 @@ struct GeneralSettingsDetailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                LGGroupBox {
-                    Text("Artificial Intelligence").font(LiquidGlassTypography.headline)
-                } content: {
+                GroupBox("Artificial Intelligence") {
                     VStack(alignment: .leading, spacing: 16) {
                         Toggle("Use Local LLM (Privacy Focused)", isOn: $useLocalLLM)
                             .toggleStyle(.switch)
-                            .font(LiquidGlassTypography.body)
+                            .font(.body)
                         
                         if useLocalLLM {
                             Text("Processing happens entirely on your device using MLX. No data leaves your Mac.")
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                                 .foregroundColor(.green)
                             
                             Divider()
                             
-                            // HF Token Section
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
                                     Text("Hugging Face Token")
-                                        .font(LiquidGlassTypography.headline)
+                                        .font(.headline)
                                     
                                     if !hfToken.isEmpty {
                                         Image(systemName: "checkmark.circle.fill")
@@ -155,7 +143,9 @@ struct GeneralSettingsDetailView: View {
                                     }
                                 }
                                 
-                                LGTextField("Enter your HF token", text: $hfToken, isSecure: true)
+                                SecureField("Enter your HF token", text: $hfToken)
+                                    .textFieldStyle(.roundedBorder)
+                                    .privacySensitive()
                                     .onChange(of: hfToken) { _, newValue in
                                         // Update environment variable immediately
                                         if !newValue.isEmpty {
@@ -165,13 +155,13 @@ struct GeneralSettingsDetailView: View {
                                 
                                 HStack(spacing: 4) {
                                     Text(hfToken.isEmpty ? "Required for model downloads." : "Token configured ✓")
-                                        .font(LiquidGlassTypography.caption)
+                                        .font(.caption)
                                         .foregroundColor(hfToken.isEmpty ? .orange : .green)
                                     
                                     Spacer()
                                     
                                     Link("Get Free Token", destination: URL(string: "https://huggingface.co/settings/tokens")!)
-                                        .font(LiquidGlassTypography.caption)
+                                        .font(.caption)
                                 }
                             }
                             
@@ -180,15 +170,15 @@ struct GeneralSettingsDetailView: View {
                             // Model Selection
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("Model Selection")
-                                    .font(LiquidGlassTypography.headline)
+                                    .font(.headline)
                                 
                                 Picker("Model", selection: $selectedModel) {
                                     ForEach(ModelOption.allCases) { option in
                                         VStack(alignment: .leading) {
                                             Text(option.displayName)
-                                                .font(LiquidGlassTypography.body)
+                                                .font(.body)
                                             Text(option.description)
-                                                .font(LiquidGlassTypography.caption)
+                                                .font(.caption)
                                                 .foregroundColor(.secondary)
                                         }
                                         .tag(option)
@@ -210,9 +200,10 @@ struct GeneralSettingsDetailView: View {
                                 
                                 if showCustomField {
                                     HStack(spacing: 12) {
-                                        LGTextField("e.g., mlx-community/Llama-3.2-1B-Instruct-4bit", text: $customModelId)
+                                        TextField("e.g., mlx-community/Llama-3.2-1B-Instruct-4bit", text: $customModelId)
+                                            .textFieldStyle(.roundedBorder)
                                         
-                                        LGButton("Use", style: .primary) {
+                                        Button("Use") {
                                             if !customModelId.isEmpty {
                                                 localModelId = customModelId
                                                 Task {
@@ -222,6 +213,7 @@ struct GeneralSettingsDetailView: View {
                                                 }
                                             }
                                         }
+                                        .buttonStyle(.borderedProminent)
                                         .disabled(customModelId.isEmpty)
                                     }
                                 }
@@ -231,33 +223,35 @@ struct GeneralSettingsDetailView: View {
                                     HStack {
                                         ProgressView(value: progress)
                                         Text("\(Int(progress * 100))%")
-                                            .font(LiquidGlassTypography.caption)
+                                            .font(.caption)
                                             .foregroundColor(.blue)
                                     }
                                 } else if modelDownloadService.isModelDownloaded(modelId: localModelId) {
                                     Label("Model Ready", systemImage: "checkmark.circle")
-                                        .font(LiquidGlassTypography.caption)
+                                        .font(.caption)
                                         .foregroundColor(.green)
                                 } else if hfToken.isEmpty {
                                     Label("Add HF token above to download", systemImage: "key")
-                                        .font(LiquidGlassTypography.caption)
+                                        .font(.caption)
                                         .foregroundColor(.orange)
                                 } else {
                                     Label("Model not downloaded", systemImage: "arrow.down.circle")
-                                        .font(LiquidGlassTypography.caption)
+                                        .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
                             }
                             
                         } else {
-                            LGTextField("Gemini API Key", text: $geminiApiKey, isSecure: true)
+                            SecureField("Gemini API Key", text: $geminiApiKey)
+                                .textFieldStyle(.roundedBorder)
+                                .privacySensitive()
                             
                             Text("Required for data extraction.")
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                             
                             Link("Get API Key", destination: URL(string: "https://aistudio.google.com/")!)
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                         }
                     }
                 }
@@ -287,51 +281,51 @@ struct ExportSettingsDetailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                LGGroupBox {
-                    Text("Excel Export").font(LiquidGlassTypography.headline)
-                } content: {
+                GroupBox("Excel Export") {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            LGTextField("Excel File", text: $excelFilePath)
+                            TextField("Excel File", text: $excelFilePath)
+                                .textFieldStyle(.roundedBorder)
                                 .disabled(true)
                             
-                            LGButton("Choose...") {
+                            Button("Choose...") {
                                 showFilePicker = true
                             }
+                            .buttonStyle(.bordered)
                         }
                         
                         if excelFilePath.isEmpty {
                             Label("No file selected", systemImage: "exclamationmark.triangle")
                                 .foregroundColor(.orange)
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                         } else {
                             Label("File configured", systemImage: "checkmark.circle")
                                 .foregroundColor(.green)
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                         }
                         
                         Text("Select an existing Excel file to update, or a new location to create one.")
-                            .font(LiquidGlassTypography.caption)
+                            .font(.caption)
                             .foregroundColor(.secondary)
                     }
                 }
                 
-                LGCard {
+                GroupBox {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Tips")
-                            .font(LiquidGlassTypography.headline)
+                            .font(.headline)
                         
                         VStack(alignment: .leading, spacing: 8) {
                             Label("Duplicate Detection", systemImage: "doc.on.doc")
-                                .font(LiquidGlassTypography.body)
+                                .font(.body)
                             Text("Receipts with the same date, vendor, and amount will not be added twice.")
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                             
                             Label("Column Structure", systemImage: "tablecells")
-                                .font(LiquidGlassTypography.body)
+                                .font(.body)
                             Text("Date, Vendor, Description, Category (manual), Amount, Currency, Notes")
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
@@ -368,64 +362,64 @@ struct OrganizationSettingsDetailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                LGGroupBox {
-                    Text("File Organization").font(LiquidGlassTypography.headline)
-                } content: {
+                GroupBox("File Organization") {
                     VStack(alignment: .leading, spacing: 12) {
                         Toggle("Auto-organize after export", isOn: $autoOrganize)
                             .toggleStyle(.switch)
-                            .font(LiquidGlassTypography.body)
+                            .font(.body)
                         
                         Text("When enabled, receipts are automatically moved into a folder structure based on their date after export.")
-                            .font(LiquidGlassTypography.caption)
+                            .font(.caption)
                             .foregroundColor(.secondary)
                         
                         Divider().padding(.vertical, 5)
                         
                         HStack {
-                            LGTextField("Base Folder", text: $organizationBasePath)
+                            TextField("Base Folder", text: $organizationBasePath)
+                                .textFieldStyle(.roundedBorder)
                                 .disabled(true)
                             
-                            LGButton("Choose...") {
+                            Button("Choose...") {
                                 showFolderPicker = true
                             }
+                            .buttonStyle(.bordered)
                         }
                         
                         if organizationBasePath.isEmpty {
                             Label("No folder selected", systemImage: "exclamationmark.triangle")
                                 .foregroundColor(.orange)
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                         } else {
                             Label("Folder configured", systemImage: "checkmark.circle")
                                 .foregroundColor(.green)
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                         }
                         
                         Text("Select the base folder where organized receipts will be stored.")
-                            .font(LiquidGlassTypography.caption)
+                            .font(.caption)
                             .foregroundColor(.secondary)
                     }
                 }
                 
-                LGCard {
+                GroupBox {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Folder Structure")
-                            .font(LiquidGlassTypography.headline)
+                            .font(.headline)
                         
                         HStack {
                             Label("Year/Month Organization", systemImage: "folder")
-                                .font(LiquidGlassTypography.body)
+                                .font(.body)
                             Text("Receipts are organized into: **BaseFolder/YYYY/mm - MMM yyyy/**")
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Example:")
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                             Text("    BaseFolder/2025/06 - June 2025/receipt.pdf")
-                                .font(LiquidGlassTypography.code)
+                                .font(.system(.caption, design: .monospaced))
                                 .foregroundColor(.blue)
                         }
                         
@@ -433,9 +427,9 @@ struct OrganizationSettingsDetailView: View {
                         
                         VStack(alignment: .leading, spacing: 8) {
                             Label("Missing Dates", systemImage: "calendar.badge.exclamationmark")
-                                .font(LiquidGlassTypography.body)
+                                .font(.body)
                             Text("If a receipt's date cannot be extracted, it will not be moved. You'll be notified so you can organize it manually.")
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
@@ -475,11 +469,10 @@ struct CloudSyncSettingsDetailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                LGGroupBox {
-                    Text("Configuration").font(LiquidGlassTypography.headline)
-                } content: {
+                GroupBox("Configuration") {
                     VStack(alignment: .leading, spacing: 12) {
-                        LGTextField("Spreadsheet Link", text: $sheetInput)
+                        TextField("Spreadsheet Link", text: $sheetInput)
+                            .textFieldStyle(.roundedBorder)
                             .onChange(of: sheetInput) { _, newValue in
                                 extractSheetID(from: newValue)
                             }
@@ -487,63 +480,68 @@ struct CloudSyncSettingsDetailView: View {
                         
                         if !googleSheetId.isEmpty && googleSheetId != sheetInput {
                             Text("ID extracted: \(googleSheetId)")
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                                 .foregroundColor(.green)
                         }
                         
                         Text("Paste the full URL of your Google Sheet.")
-                            .font(LiquidGlassTypography.caption)
+                            .font(.caption)
                             .foregroundColor(.secondary)
                         
                         Divider().padding(.vertical, 5)
                         
-                        LGTextField("OAuth Client ID", text: $clientID)
+                        TextField("OAuth Client ID", text: $clientID)
+                            .textFieldStyle(.roundedBorder)
                         Text("Your Google Cloud OAuth 2.0 Client ID.")
-                            .font(LiquidGlassTypography.caption)
+                            .font(.caption)
                             .foregroundColor(.secondary)
                         
-                        LGTextField("OAuth Client Secret", text: $clientSecret, isSecure: true)
+                        SecureField("OAuth Client Secret", text: $clientSecret)
+                            .textFieldStyle(.roundedBorder)
+                            .privacySensitive()
                         
                         Text("Required for Desktop App authentication.")
-                            .font(LiquidGlassTypography.caption)
+                            .font(.caption)
                             .foregroundColor(.secondary)
                         
                         if !googleSheetId.isEmpty {
-                            LGButton(isFormatting ? "Formatting..." : "Apply Professional Formatting", 
-                                   icon: isFormatting ? nil : "paintpalette", 
-                                   style: .primary) {
+                            Button {
                                 formatSheet()
+                            } label: {
+                                Label(isFormatting ? "Formatting..." : "Apply Professional Formatting", 
+                                      systemImage: isFormatting ? "" : "paintpalette")
                             }
+                            .buttonStyle(.borderedProminent)
                             .disabled(isFormatting)
                             .padding(.top, 5)
                         }
                     }
                 }
                 
-                LGCard {
+                GroupBox {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Setup Guide")
-                            .font(LiquidGlassTypography.headline)
+                            .font(.headline)
                         
                         VStack(alignment: .leading, spacing: 8) {
                             Label("1. Create Client ID", systemImage: "1.circle")
-                                .font(LiquidGlassTypography.body)
+                                .font(.body)
                             Text("Go to Google Cloud Console > APIs & Services > Credentials. Create an **OAuth 2.0 Client ID**.")
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
                             
                             Label("2. Select 'Desktop App'", systemImage: "2.circle")
-                                .font(LiquidGlassTypography.body)
+                                .font(.body)
                             Text("Important: Select **Desktop App** as the Application Type (NOT iOS). This enables the required authentication flow.")
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
                             
                             Label("3. Sign In", systemImage: "3.circle")
-                                .font(LiquidGlassTypography.body)
+                                .font(.body)
                             Text("Copy the Client ID & Secret above, then click 'Sign In' on the main screen.")
-                                .font(LiquidGlassTypography.caption)
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }

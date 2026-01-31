@@ -87,5 +87,7 @@ public struct LGButton: View {
             .foregroundColor(style == .primary ? .white : .primary)
         }
         .buttonStyle(LGButtonStyle(style: style))
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(.isButton)
     }
 }
