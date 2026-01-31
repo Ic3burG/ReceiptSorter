@@ -146,7 +146,7 @@ struct ContentView: View {
     private var sidebarContent: some View {
         VStack {
             if items.isEmpty {
-                LGWelcomeView(
+                WelcomeView(
                     apiKey: $apiKey,
                     useLocalLLM: $useLocalLLM,
                     excelFilePath: $excelFilePath,
@@ -158,7 +158,7 @@ struct ContentView: View {
                 List(selection: $selectedItemId) {
                     ForEach(items) { item in
                         NavigationLink(value: item.id) {
-                            LGProcessingItemRow(
+                            ProcessingItemRow(
                                 filename: item.url.lastPathComponent,
                                 subtitle: item.data?.vendor ?? statusText(for: item),
                                 icon: icon(for: item),
@@ -301,11 +301,11 @@ struct ContentView: View {
                                 VStack(alignment: .leading, spacing: 16) { // Reduced spacing for cards
                                     if let data = item.data {
                                         // Extracted Data Cards
-                                        LGDataCard(title: "Vendor", icon: "building.2", value: data.vendor)
-                                        LGDataCard(title: "Date", icon: "calendar", value: data.date)
-                                        LGDataCard(title: "Amount", icon: "dollarsign.circle", value: "\(String(format: "%.2f", data.total_amount ?? 0.0)) \(data.currency ?? "")")
-                                        LGDataCard(title: "Category", icon: "tag", value: data.category)
-                                        LGDataCard(title: "Description", icon: "text.alignleft", value: data.description)
+                                        DataCard(title: "Vendor", icon: "building.2", value: data.vendor)
+                                        DataCard(title: "Date", icon: "calendar", value: data.date)
+                                        DataCard(title: "Amount", icon: "dollarsign.circle", value: "\(String(format: "%.2f", data.total_amount ?? 0.0)) \(data.currency ?? "")")
+                                        DataCard(title: "Category", icon: "tag", value: data.category)
+                                        DataCard(title: "Description", icon: "text.alignleft", value: data.description)
                                         
                                         if item.status == .done {
                                             HStack {
@@ -721,5 +721,107 @@ struct ContentView: View {
         content.sound = .default
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)
+    }
+}
+// MARK: - Helper Views
+
+/// A sidebar row displaying file processing status
+struct ProcessingItemRow: View {
+    let filename: String
+    let subtitle: String
+    let icon: String
+    let color: Color
+    
+    @State private var isHovering = false
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.15))
+                    .frame(width: 32, height: 32)
+                
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                    .font(.system(size: 14))
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(filename)
+                    .font(.body)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+            
+            Spacer()
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 8)
+        .background {
+            if isHovering {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(.white.opacity(0.1))
+            }
+        }
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovering = hovering
+            }
+        }
+    }
+}
+
+/// A card displaying extracted receipt data
+struct DataCard: View {
+    let title: String
+    let icon: String
+    let value: String?
+    
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 36, height: 36)
+                
+                Image(systemName: icon)
+                    .foregroundColor(.secondary)
+                    .font(.system(size: 14))
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Text(value ?? "Unknown")
+                    .font(.body)
+                    .foregroundColor(.primary)
+                    .textSelection(.enabled)
+            }
+            
+            Spacer()
+        }
+        .padding(12)
+        .background {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.ultraThinMaterial.opacity(0.3))
+            
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(
+                    LinearGradient(
+                        colors: [.white.opacity(0.1), .white.opacity(0.05)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.5
+                )
+        }
     }
 }
