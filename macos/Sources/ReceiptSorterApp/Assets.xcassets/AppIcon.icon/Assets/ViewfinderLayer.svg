@@ -1,0 +1,22 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="paint0_linear" x1="200" y1="200" x2="824" y2="824" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#007AFF"/>
+      <stop offset="1" stop-color="#AF52DE"/>
+    </linearGradient>
+    <filter id="filter0_g" x="150" y="150" width="724" height="724" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <g filter="url(#filter0_g)">
+    <!-- Top Left -->
+    <path d="M200 350V220C200 208.954 208.954 200 220 200H350" stroke="url(#paint0_linear)" stroke-width="40" stroke-linecap="round"/>
+    <!-- Top Right -->
+    <path d="M674 200H804C815.046 200 824 208.954 824 220V350" stroke="url(#paint0_linear)" stroke-width="40" stroke-linecap="round"/>
+    <!-- Bottom Left -->
+    <path d="M200 674V804C200 815.046 208.954 824 220 824H350" stroke="url(#paint0_linear)" stroke-width="40" stroke-linecap="round"/>
+    <!-- Bottom Right -->
+    <path d="M674 824H804C815.046 824 824 815.046 824 804V674" stroke="url(#paint0_linear)" stroke-width="40" stroke-linecap="round"/>
+  </g>
+</svg>

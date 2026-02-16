@@ -1,0 +1,38 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="paper_gradient" x1="512" y1="200" x2="512" y2="824" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F2F2F7"/>
+    </linearGradient>
+    <filter id="filter0_d" x="200" y="150" width="624" height="724" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="15"/>
+      <feGaussianBlur stdDeviation="20"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.15 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+    </filter>
+  </defs>
+  <g filter="url(#filter0_d)">
+    <!-- Main Paper Body -->
+    <rect x="250" y="200" width="524" height="624" rx="24" fill="url(#paper_gradient)"/>
+    
+    <!-- Edge Definition (Hairline border for contrast) -->
+    <rect x="250.5" y="200.5" width="523" height="623" rx="23.5" stroke="black" stroke-opacity="0.05"/>
+    
+    <!-- Receipt Lines (Darkened for better contrast) -->
+    <rect x="310" y="280" width="404" height="12" rx="6" fill="#D1D1D6"/>
+    <rect x="310" y="330" width="280" height="12" rx="6" fill="#D1D1D6"/>
+    
+    <rect x="310" y="400" width="404" height="12" rx="6" fill="#E5E5EA"/>
+    <rect x="310" y="450" width="360" height="12" rx="6" fill="#E5E5EA"/>
+    <rect x="310" y="500" width="390" height="12" rx="6" fill="#E5E5EA"/>
+    
+    <rect x="310" y="570" width="404" height="12" rx="6" fill="#D1D1D6"/>
+    <rect x="310" y="620" width="230" height="12" rx="6" fill="#D1D1D6"/>
+    
+    <!-- Bottom "Total" line -->
+    <rect x="580" y="730" width="134" height="24" rx="8" fill="#C7C7CC"/>
+  </g>
+</svg>

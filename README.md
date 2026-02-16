@@ -1,13 +1,14 @@
 # Receipt Sorter - macOS App
 
 [![macOS Build](https://github.com/Ic3burG/ReceiptSorter/actions/workflows/ci-macos.yml/badge.svg)](https://github.com/Ic3burG/ReceiptSorter/actions/workflows/ci-macos.yml)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
 A privacy-first, native macOS application that automatically processes receipts, extracts financial data, and organizes your expenses—**all on your device**.
 
 ## 🔒 Privacy First
 
 Receipt Sorter is designed with your privacy as the top priority.
+
 - **100% Local Processing**: By default, all OCR and AI analysis happens directly on your Mac. No receipt data is sent to the cloud.
 - **On-Device AI**: Powered by Apple Silicon and MLX, we run state-of-the-art LLMs (like Llama 3) locally to understand your documents.
 - **Your Data, Your Control**: You choose where your data goes. Keep it local in Excel, or opt-in to sync specifically with your own Google Sheets.
@@ -16,8 +17,8 @@ Receipt Sorter is designed with your privacy as the top priority.
 
 - 🖱️ **Native macOS Interface**: Beautiful SwiftUI interface with drag-and-drop support.
 - ⚡ **Local Intelligence**:
-    - **OCR**: Text extraction using Apple's Vision Framework.
-    - **AI Extraction**: Runs localized LLMs (Llama 3 via MLX) to parse amounts, dates, and vendors without internet.
+  - **OCR**: Text extraction using Apple's Vision Framework.
+  - **AI Extraction**: Runs localized LLMs (Llama 3 via MLX) to parse amounts, dates, and vendors without internet.
 - 🏷️ **Smart Categorization**: Automatically categorizes expenses for Canadian and US tax purposes.
 - 💰 **Multi-Currency Support**: Handles CAD, USD, EUR, GBP, JPY, AUD, CHF.
 - 📂 **Auto-Organization**: Automatically sorts processed files into Year/Month folders.
@@ -35,26 +36,54 @@ Receipt Sorter is designed with your privacy as the top priority.
 
 The app intelligently selects tax categories based on the receipt's currency.
 
-### Canadian Categories (CAD)
-*Office Expenses, Meals & Entertainment, Travel, Vehicle Expenses, Professional Services, Marketing & Advertising, Utilities & Rent, Insurance, Education & Training, Other*
+- Office Expenses
+- Meals & Entertainment
+- Travel
+- Vehicle Expenses
+- Professional Services
+- Marketing & Advertising
+- Utilities & Rent
+- Insurance
+- Education & Training
+- Other
 
 ### US Categories (USD)
-*Advertising, Vehicle Expenses, Commissions & Fees, Contract Labor, Insurance, Interest, Legal & Professional Services, Office Expenses, Rent & Lease, Repairs & Maintenance, Supplies, Taxes & Licenses, Travel, Meals, Utilities, Other*
+
+- Advertising
+- Vehicle Expenses
+- Commissions & Fees
+- Contract Labor
+- Insurance
+- Interest
+- Legal & Professional Services
+- Office Expenses
+- Rent & Lease
+- Repairs & Maintenance
+- Supplies
+- Taxes & Licenses
+- Travel
+- Meals
+- Utilities
+- Other
 
 ## Installation
 
 ### Download
+
 1. Download the latest release from the [Releases page](https://github.com/Ic3burG/ReceiptSorter/releases).
 2. Move `Receipt Sorter.app` to your Applications folder.
 
 ### First Run (Local AI)
+
 1. Launch the app.
 2. Go to **Settings > General**.
 3. Ensure **"Use Local LLM"** is enabled (Default).
 4. The first time you process a receipt, the app will download the optimized model (~2GB). This happens once.
 
 ### Cloud AI Setup (Optional)
+
 If you prefer to use Google's servers instead of your local hardware:
+
 1. Go to **Settings > General**.
 2. Toggle "Use Local LLM" **OFF**.
 3. Enter your Google Gemini API key ([Get one here](https://aistudio.google.com/)).
@@ -84,4 +113,5 @@ swift build -c release
 
 ## License
 
-MIT License. Your data is yours.
+GNU Affero General Public License v3.0 or later.
+Commercial licensing available through OJD Technical Solutions.

@@ -2,42 +2,49 @@
 import PackageDescription
 
 let package = Package(
-    name: "ReceiptSorterCore",
-    platforms: [
-        .macOS(.v14)
-    ],
-    products: [
-        .library(name: "ReceiptSorterCore", targets: ["ReceiptSorterCore"]),
-        .executable(name: "ReceiptSorterApp", targets: ["ReceiptSorterApp"])
-    ],
-    dependencies: [
-        .package(url: "https://github.com/openid/AppAuth-iOS.git", from: "1.6.2"),
-        .package(url: "https://github.com/CoreOffice/CoreXLSX.git", from: "0.14.0"),
-        .package(url: "https://github.com/ml-explore/mlx-swift", branch: "main"),
-        .package(url: "https://github.com/ml-explore/mlx-swift-lm", branch: "main"),
-        .package(url: "https://github.com/huggingface/swift-transformers", from: "1.1.6")
-    ],
-    targets: [
-        .target(
-            name: "ReceiptSorterCore",
-            dependencies: [
-                .product(name: "AppAuth", package: "AppAuth-iOS"),
-                .product(name: "CoreXLSX", package: "CoreXLSX"),
-                .product(name: "MLX", package: "mlx-swift"),
-                .product(name: "MLXRandom", package: "mlx-swift"),
-                .product(name: "MLXNN", package: "mlx-swift"),
-                .product(name: "MLXLLM", package: "mlx-swift-lm"),
-                .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
-                .product(name: "Hub", package: "swift-transformers")
-            ]
-        ),
-        .executableTarget(
-            name: "ReceiptSorterApp",
-            dependencies: ["ReceiptSorterCore"]
-        ),
-        .testTarget(
-            name: "ReceiptSorterCoreTests",
-            dependencies: ["ReceiptSorterCore"]
-        ),
-    ]
+  name: "ReceiptSorterCore",
+  platforms: [
+    .macOS(.v14)
+  ],
+  products: [
+    .library(name: "ReceiptSorterCore", targets: ["ReceiptSorterCore"]),
+    .executable(name: "ReceiptSorterApp", targets: ["ReceiptSorterApp"]),
+  ],
+  dependencies: [
+    .package(url: "https://github.com/openid/AppAuth-iOS.git", from: "1.6.2"),
+    .package(url: "https://github.com/CoreOffice/CoreXLSX.git", from: "0.14.0"),
+    .package(url: "https://github.com/ml-explore/mlx-swift", branch: "main"),
+    .package(url: "https://github.com/ml-explore/mlx-swift-lm", branch: "main"),
+    .package(url: "https://github.com/huggingface/swift-transformers", from: "1.1.6"),
+  ],
+  targets: [
+    .target(
+      name: "ReceiptSorterCore",
+      dependencies: [
+        .product(name: "AppAuth", package: "AppAuth-iOS"),
+        .product(name: "CoreXLSX", package: "CoreXLSX"),
+        .product(name: "MLX", package: "mlx-swift"),
+        .product(name: "MLXRandom", package: "mlx-swift"),
+        .product(name: "MLXNN", package: "mlx-swift"),
+        .product(name: "MLXLLM", package: "mlx-swift-lm"),
+        .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
+        .product(name: "Hub", package: "swift-transformers"),
+      ]
+    ),
+    .executableTarget(
+      name: "ReceiptSorterApp",
+      dependencies: ["ReceiptSorterCore"],
+      exclude: [
+        "Info.plist",
+        "ReceiptSorterApp.entitlements",
+      ],
+      resources: [
+        .process("Assets.xcassets")
+      ]
+    ),
+    .testTarget(
+      name: "ReceiptSorterCoreTests",
+      dependencies: ["ReceiptSorterCore"]
+    ),
+  ]
 )
