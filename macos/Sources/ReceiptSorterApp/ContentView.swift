@@ -458,17 +458,24 @@ struct ContentView: View {
     self.isAuthorized = false
   }
 
+  /// Extract a file URL from an NSItemProvider in a nonisolated context so the
+  /// non-Sendable `NSSecureCoding` result never crosses an isolation boundary.
+  nonisolated private func fileURL(from provider: NSItemProvider) async -> URL? {
+    guard
+      let urlData = try? await provider.loadItem(
+        forTypeIdentifier: "public.file-url", options: nil) as? Data,
+      let url = URL(dataRepresentation: urlData, relativeTo: nil)
+    else { return nil }
+    return url
+  }
+
   private func loadFiles(from providers: [NSItemProvider]) {
     // Workaround for NSItemProvider not being Sendable in strict concurrency checks
     let safeProviders = UnsafeSendableWrapper(value: providers)
 
     Task { @MainActor in
       for provider in safeProviders.value {
-        if let urlData = try? await provider.loadItem(
-          forTypeIdentifier: "public.file-url", options: nil) as? Data,
-          let url = URL(dataRepresentation: urlData, relativeTo: nil)
-        {
-
+        if let url = await fileURL(from: provider) {
           // Essential for files dropped from outside or network volumes
           _ = url.startAccessingSecurityScopedResource()
 
