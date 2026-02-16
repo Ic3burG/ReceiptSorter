@@ -121,3 +121,4 @@ This project is licensed under the **GNU Affero General Public License v3.0 or l
 
 ### Commercial Licensing
 Commercial licensing is available for enterprises and professional use cases that require alternative terms. Please contact **OJD Technical Solutions** for more information.
+\n<!-- CLA trigger test -->
