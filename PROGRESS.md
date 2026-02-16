@@ -2,6 +2,26 @@
 
 **IMPORTANT:** This file must be updated with a summary of changes after every session or significant code modification. These updates must be committed and pushed to the GitHub repository immediately.
 
+## Session: February 15, 2026
+
+### ⚖️ Licensing & Contributor Infrastructure
+
+- **License Migration**: Transitioned the project from MIT to the **GNU Affero General Public License v3 (AGPL-3.0)**.
+  - Updated root `LICENSE` and `ReceiptSorter/LICENSE` with the full AGPL-3.0 text.
+  - Updated both root and nested `README.md` files to reflect the new licensing terms.
+- **Contributor Governance**: Established a formal contribution framework.
+  - Created `CONTRIBUTING.md` defining the contribution workflow and linking to the [central OJD Technical Solutions CLA](https://github.com/Ic3burG/.github/blob/main/CLA.md).
+  - Explicitly stated the requirement for signing the CLA once to cover all organization projects.
+- **Legal Compliance & Headers**:
+  - Created `COPYRIGHT-HEADER.txt` as a standard template for the project.
+  - Developed and executed a script to **apply copyright headers to all 40+ Swift source files** and test files across the repository.
+  - Headers include project name, copyright holder (OJD Technical Solutions), SPDX identifier (AGPL-3.0-or-later), and a note on commercial licensing availability.
+- **Documentation Updates**:
+  - Refined the "License" section in READMEs to mention the availability of commercial licensing for enterprises.
+  - Added "Contributing" sections to all primary documentation.
+
+---
+
 ## Session: January 31, 2026
 
 ### 🎨 Standard SwiftUI Adoption (ADR-001)

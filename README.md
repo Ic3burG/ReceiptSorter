@@ -111,7 +111,13 @@ swift build -c release
 ./scripts/bundle.sh
 ```
 
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines and information about our Contributor License Agreement (CLA).
+
 ## License
 
-GNU Affero General Public License v3.0 or later.
-Commercial licensing available through OJD Technical Solutions.
+This project is licensed under the **GNU Affero General Public License v3.0 or later** - see the [LICENSE](LICENSE) file for details.
+
+### Commercial Licensing
+Commercial licensing is available for enterprises and professional use cases that require alternative terms. Please contact **OJD Technical Solutions** for more information.
