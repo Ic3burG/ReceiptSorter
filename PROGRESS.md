@@ -9,6 +9,11 @@
 - **Successful Production Build**: Compiled and bundled the native macOS application using `xcodebuild` and `bundle.sh`.
   - Verified app bundle structure and dependencies (MLX Metal shaders, AppAuth, etc.).
   - Signed the bundle with an ad-hoc identity for local verification.
+- **Model Switch to Qwen 2.5**: Transitioned the default local LLM from Llama 3.2 3B to **Qwen 2.5 3B**.
+  - Updated all default `AppStorage` values in `ReceiptSorterApp`, `ContentView`, and `ModernSettingsView`.
+  - Updated `ModelOption` enum in Settings UI with the new model's display name and description.
+  - Standardized the project-wide model ID to `mlx-community/Qwen2.5-3B-Instruct-4bit`.
+  - Updated `README.md`, `ROADMAP.md`, and technical RFCs to reflect the switch.
 - **Code Quality & Maintenance**:
   - **Warning Resolution**: Fixed Swift compiler warnings in `LocalLLMService.swift` by integrating `commonCategories` into the system prompt and in `ReceiptSorterCore.swift` by removing unnecessary `nonisolated(unsafe)` modifiers.
   - **Testing**: Verified all 6 unit tests pass on the current architecture.

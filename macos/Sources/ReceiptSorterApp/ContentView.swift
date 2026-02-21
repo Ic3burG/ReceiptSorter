@@ -56,7 +56,7 @@ struct ContentView: View {
   @AppStorage("geminiApiKey") private var apiKey: String = ""
   @AppStorage("useLocalLLM") private var useLocalLLM: Bool = true
   @AppStorage("localModelId") private var localModelId: String =
-    "mlx-community/Llama-3.2-3B-Instruct-4bit"
+    "mlx-community/Qwen2.5-3B-Instruct-4bit"
   @AppStorage("excelFilePath") private var excelFilePath: String = ""
   @AppStorage("googleSheetId") private var googleSheetId: String = ""
   @AppStorage("googleClientID") private var clientID: String = ""

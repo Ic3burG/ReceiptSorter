@@ -10,7 +10,7 @@ A privacy-first, native macOS application that automatically processes receipts,
 Receipt Sorter is designed with your privacy as the top priority.
 
 - **100% Local Processing**: By default, all OCR and AI analysis happens directly on your Mac. No receipt data is sent to the cloud.
-- **On-Device AI**: Powered by Apple Silicon and MLX, we run state-of-the-art LLMs (like Llama 3) locally to understand your documents.
+- **On-Device AI**: Powered by Apple Silicon and MLX, we run state-of-the-art LLMs (like Qwen 2.5) locally to understand your documents.
 - **Your Data, Your Control**: You choose where your data goes. Keep it local in Excel, or opt-in to sync specifically with your own Google Sheets.
 
 ## Features
@@ -18,7 +18,7 @@ Receipt Sorter is designed with your privacy as the top priority.
 - 🖱️ **Native macOS Interface**: Beautiful SwiftUI interface with drag-and-drop support.
 - ⚡ **Local Intelligence**:
   - **OCR**: Text extraction using Apple's Vision Framework.
-  - **AI Extraction**: Runs localized LLMs (Llama 3 via MLX) to parse amounts, dates, and vendors without internet.
+  - **AI Extraction**: Runs localized LLMs (Qwen 2.5 via MLX) to parse amounts, dates, and vendors without internet.
 - 🏷️ **Smart Categorization**: Automatically categorizes expenses for Canadian and US tax purposes.
 - 💰 **Multi-Currency Support**: Handles CAD, USD, EUR, GBP, JPY, AUD, CHF.
 - 📂 **Auto-Organization**: Automatically sorts processed files into Year/Month folders.

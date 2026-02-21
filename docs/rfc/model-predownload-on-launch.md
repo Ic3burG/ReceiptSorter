@@ -310,7 +310,7 @@ func estimateProgress() -> Double {
 
 MLX likely stores models in:
 
-- `~/Library/Caches/huggingface/hub/models--mlx-community--Llama-3.2-3B-Instruct-4bit/`
+- `~/Library/Caches/huggingface/hub/models--mlx-community--Qwen2.5-3B-Instruct-4bit/`
 - Or similar HuggingFace cache structure
 
 Need to:
@@ -621,7 +621,7 @@ Estimated effort: **2-3 days**
 
 1. **MLX Progress API**: Does MLX expose download progress? Need to investigate MLXLLM documentation.
 2. **UI Option**: Which download UI option (A/B/C) does the user prefer? **Requires user feedback.**
-3. **Model Size Verification**: Exact size of `Llama-3.2-3B-Instruct-4bit`? Currently assuming ~2GB.
+3. **Model Size Verification**: Exact size of `Qwen2.5-3B-Instruct-4bit`? Currently assuming ~2GB.
 4. **Cache Management**: Should we implement automatic cleanup of old models?
 5. **Multi-model Support**: Should users be able to have multiple models downloaded simultaneously?
 
