@@ -32,7 +32,7 @@ import MLXVLM
 public actor LocalLLMService: ReceiptDataExtractor {
 
   private let modelId: String
-  private var modelContainer: VLMModelContainer?
+  private var modelContainer: ModelContainer?
 
   public init(modelId: String = "mlx-community/Qwen2.5-VL-3B-Instruct-4bit") {
     self.modelId = modelId
@@ -108,10 +108,10 @@ public actor LocalLLMService: ReceiptDataExtractor {
 
     let chat: [Chat.Message] = [
       .system(systemPrompt),
-      .user(prompt)
+      .user(prompt, images: imageURL.map { [.url($0)] } ?? [])
     ]
 
-    let userInput = UserInput(chat: chat, images: imageURL.map { [.url($0)] } ?? [])
+    let userInput = UserInput(chat: chat)
 
     do {
       let input = try await modelContainer.prepare(input: userInput)

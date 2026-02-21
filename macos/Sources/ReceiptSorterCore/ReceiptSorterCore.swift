@@ -28,7 +28,7 @@ public struct ReceiptSorterCore: Sendable {
   public let ocrService: OCRService
   public let dataExtractor: ReceiptDataExtractor?
   public let sheetService: SheetService?
-  nonisolated(unsafe) public let authService: AuthService?
+  public let authService: AuthService?
   public let excelService: ExcelService?
   public let fileOrganizationService: FileOrganizationService?
 
