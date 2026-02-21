@@ -23,3 +23,4 @@ receipts/sorted/
 receipts/source/
 macos/*.app
 service_account.json
+.worktrees/
