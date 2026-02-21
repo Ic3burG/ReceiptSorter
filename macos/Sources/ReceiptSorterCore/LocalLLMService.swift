@@ -33,7 +33,7 @@ public actor LocalLLMService: ReceiptDataExtractor {
   private let modelId: String
   private var modelContainer: ModelContainer?
 
-  public init(modelId: String = "mlx-community/Llama-3.2-3B-Instruct-4bit") {
+  public init(modelId: String = "mlx-community/Qwen2.5-3B-Instruct-4bit") {
     self.modelId = modelId
     NSLog("ReceiptSorter: [LLM] LocalLLMService initialized with model: \(modelId)")
   }
