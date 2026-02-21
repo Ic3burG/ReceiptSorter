@@ -23,27 +23,25 @@
 
 import Foundation
 import Hub
-@preconcurrency import MLX
-@preconcurrency import MLXLLM
-@preconcurrency import MLXLMCommon
+import MLX
+import MLXLLM
+import MLXLMCommon
+import MLXVLM
 
 @available(macOS 14.0, *)
 public actor LocalLLMService: ReceiptDataExtractor {
 
   private let modelId: String
-  private var modelContainer: ModelContainer?
+  private var modelContainer: VLMModelContainer?
 
-  public init(modelId: String = "mlx-community/Llama-3.2-3B-Instruct-4bit") {
+  public init(modelId: String = "mlx-community/Qwen2.5-VL-3B-Instruct-4bit") {
     self.modelId = modelId
-    NSLog("ReceiptSorter: [LLM] LocalLLMService initialized with model: \(modelId)")
+    NSLog("ReceiptSorter: [VLM] LocalLLMService initialized with model: \(modelId)")
   }
 
   public func isModelReady() -> Bool {
-    // Use HubApi to check for the model directory, consistent with ModelDownloadService
     let repo = Hub.Repo(id: modelId)
     let modelURL = HubApi.shared.localRepoLocation(repo)
-
-    // Check if the directory exists and has content (e.g. config.json)
     let configURL = modelURL.appendingPathComponent("config.json")
     return FileManager.default.fileExists(atPath: configURL.path)
   }
@@ -51,54 +49,44 @@ public actor LocalLLMService: ReceiptDataExtractor {
   private func ensureModelLoaded() async throws {
     if modelContainer != nil { return }
 
-    // Safety check
     guard isModelReady() else {
       throw LocalLLMError.modelNotDownloaded
     }
 
-    // Load using explicit directory path to ensure consistency
     let repo = Hub.Repo(id: modelId)
     let modelURL = HubApi.shared.localRepoLocation(repo)
     let config = ModelConfiguration(directory: modelURL)
 
-    NSLog("ReceiptSorter: Loading local model from: \(modelURL.path)")
+    NSLog("ReceiptSorter: Loading local VLM model from: \(modelURL.path)")
     do {
-      self.modelContainer = try await LLMModelFactory.shared.loadContainer(configuration: config)
-      NSLog("ReceiptSorter: Model container loaded successfully.")
+      self.modelContainer = try await VLMModelFactory.shared.loadContainer(configuration: config)
+      NSLog("ReceiptSorter: VLM model container loaded successfully.")
     } catch {
-      NSLog(
-        "ReceiptSorter: CRITICAL - Failed to load model container: \(error.localizedDescription)")
+      NSLog("ReceiptSorter: CRITICAL - Failed to load VLM model container: \(error.localizedDescription)")
       throw error
     }
   }
 
   public func extractData(from text: String) async throws -> ReceiptData {
-    // CRASH DEBUG: Log immediately at function entry
-    NSLog("ReceiptSorter: [LLM] extractData ENTRY - function called")
+    // Fallback or specific text-only extraction using VLM
+    let userPrompt = "Extract receipt data from this text: \(text)"
+    return try await process(prompt: userPrompt, imageURL: nil)
+  }
 
-    NSLog("ReceiptSorter: Starting data extraction via Local LLM...")
-    do {
-      NSLog("ReceiptSorter: [LLM] About to call ensureModelLoaded...")
-      try await ensureModelLoaded()
-      NSLog("ReceiptSorter: [LLM] ensureModelLoaded returned successfully")
-    } catch {
-      NSLog("ReceiptSorter: Failed to ensure model loaded: \(error.localizedDescription)")
-      throw error
-    }
+  public func extractData(from imageURL: URL) async throws -> ReceiptData {
+    let userPrompt = "Extract data from this receipt image."
+    return try await process(prompt: userPrompt, imageURL: imageURL)
+  }
+
+  private func process(prompt: String, imageURL: URL?) async throws -> ReceiptData {
+    try await ensureModelLoaded()
 
     guard let modelContainer = modelContainer else {
-      NSLog("ReceiptSorter: Model container is nil after load attempt")
       throw LocalLLMError.modelLoadFailed
     }
 
-    // Simplify categories for smaller models to prevent context window overload and confusion
-    let commonCategories = [
-      "Groceries", "Dining", "Gas/Fuel", "Transportation", "Shopping",
-      "Entertainment", "Travel", "Utilities", "Health", "Services", "Other",
-    ].joined(separator: ", ")
-
     let systemPrompt = """
-      You are a receipt scanner AI. Extract data from the receipt below into JSON.
+      You are a receipt scanner AI. Extract data from the receipt into JSON.
 
       JSON Schema:
       {
@@ -116,85 +104,54 @@ public actor LocalLLMService: ReceiptDataExtractor {
       - Output ONLY valid JSON.
       - "category" must be one of the Categories list.
       - If currency is unknown, use "CAD".
-      - Do not use markdown.
       """
 
-    let userPrompt = "Receipt text:\n\(text)"
-
-    // Use Chat struct from MLXLMCommon
     let chat: [Chat.Message] = [
       .system(systemPrompt),
-      .user(userPrompt),
+      .user(prompt)
     ]
 
-    let userInput = UserInput(chat: chat)
+    let userInput = UserInput(chat: chat, images: imageURL.map { [.url($0)] } ?? [])
 
     do {
-      NSLog("ReceiptSorter: Preparing model input...")
       let input = try await modelContainer.prepare(input: userInput)
-
-      // Generate parameters - add repetitionPenalty to prevent loops
-      let parameters = GenerateParameters(
-        maxTokens: 1024,
-        temperature: 0.1,
-        repetitionPenalty: 1.1
-      )
-
-      NSLog("ReceiptSorter: Starting generation stream...")
-      // Generate stream
+      let parameters = GenerateParameters(maxTokens: 1024, temperature: 0.1)
       let stream = try await modelContainer.generate(input: input, parameters: parameters)
 
       var fullOutput = ""
       for await event in stream {
-        switch event {
-        case .chunk(let text):
+        if case .chunk(let text) = event {
           fullOutput += text
-        default:
-          break
         }
       }
 
-      NSLog("ReceiptSorter: Generation complete. Parsing response...")
       return try parseResponse(fullOutput)
     } catch {
-      NSLog("ReceiptSorter: Generation or Parse failed: \(error.localizedDescription)")
+      NSLog("ReceiptSorter: VLM Generation failed: \(error.localizedDescription)")
       throw error
     }
   }
 
   private func parseResponse(_ text: String) throws -> ReceiptData {
-    NSLog("ReceiptSorter: [LLM] Raw output from model: \(text)")
-
-    // Robust JSON extraction: Find the first '{' and the last '}'
     var jsonString = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    // Handle DeepSeek-style thinking if present (unlikely in Qwen-VL but good for robustness)
+    if let range = jsonString.range(of: "</think>") {
+        jsonString = String(jsonString[range.upperBound...])
+    }
 
     if let firstBrace = jsonString.firstIndex(of: "{"),
       let lastBrace = jsonString.lastIndex(of: "}")
     {
-      // Extract everything between the first and last braces (inclusive)
       let range = firstBrace...lastBrace
       jsonString = String(jsonString[range])
-    } else {
-      // Fallback cleanup if braces aren't found (unlikely for valid JSON)
-      jsonString = jsonString.replacingOccurrences(of: "```json", with: "")
-        .replacingOccurrences(of: "```", with: "")
-        .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     guard let data = jsonString.data(using: .utf8) else {
-      NSLog("ReceiptSorter: [LLM] Failed to convert string to data")
       throw LocalLLMError.invalidData
     }
 
-    do {
-      let result = try JSONDecoder().decode(ReceiptData.self, from: data)
-      NSLog("ReceiptSorter: [LLM] JSON decode successful")
-      return result
-    } catch {
-      NSLog("ReceiptSorter: [LLM] JSON decode failed: \(error)")
-      NSLog("ReceiptSorter: [LLM] Attempted to parse: \(jsonString)")
-      throw error
-    }
+    return try JSONDecoder().decode(ReceiptData.self, from: data)
   }
 }
 
@@ -209,7 +166,7 @@ public enum LocalLLMError: LocalizedError {
     case .modelLoadFailed: return "Failed to load local LLM model."
     case .invalidData: return "Could not parse JSON response from local model."
     case .generationFailed(let msg): return "Generation failed: \(msg)"
-    case .modelNotDownloaded: return "Model not downloaded. Please wait for download to complete."
+    case .modelNotDownloaded: return "Model not downloaded."
     }
   }
 }

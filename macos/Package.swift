@@ -28,6 +28,7 @@ let package = Package(
         .product(name: "MLXNN", package: "mlx-swift"),
         .product(name: "MLXLLM", package: "mlx-swift-lm"),
         .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
+        .product(name: "MLXVLM", package: "mlx-swift-lm"),
         .product(name: "Hub", package: "swift-transformers"),
       ]
     ),

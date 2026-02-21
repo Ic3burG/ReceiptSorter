@@ -160,6 +160,11 @@ public actor GeminiService: ReceiptDataExtractor {
     return try parseResponse(textPart.text)
   }
 
+  public func extractData(from imageURL: URL) async throws -> ReceiptData {
+    // Placeholder: In a real implementation, we would send the image bytes to Gemini
+    throw GeminiError.apiError("Image-based extraction not yet implemented for GeminiService")
+  }
+
   private func parseResponse(_ text: String) throws -> ReceiptData {
     let cleanJSON = text.replacingOccurrences(of: "```json", with: "")
       .replacingOccurrences(of: "```", with: "")

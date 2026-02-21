@@ -70,7 +70,9 @@ public class ModelDownloadService: ObservableObject {
 
   // MARK: - Initialization
 
-  public init() {}
+  public init(modelId: String = "mlx-community/Qwen2.5-VL-3B-Instruct-4bit") {
+    self.currentModelId = modelId
+  }
 
   // MARK: - Public Methods
 
