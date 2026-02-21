@@ -110,7 +110,7 @@ public actor LocalLLMService: ReceiptDataExtractor {
         "description": "string"
       }
 
-      Categories: Groceries, Dining, Gas, Transport, Shopping, Other
+      Categories: \(commonCategories)
 
       Instructions:
       - Output ONLY valid JSON.

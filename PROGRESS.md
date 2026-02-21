@@ -2,6 +2,23 @@
 
 **IMPORTANT:** This file must be updated with a summary of changes after every session or significant code modification. These updates must be committed and pushed to the GitHub repository immediately.
 
+## Session: February 21, 2026
+
+### 🏗️ Build & Refinement
+
+- **Successful Production Build**: Compiled and bundled the native macOS application using `xcodebuild` and `bundle.sh`.
+  - Verified app bundle structure and dependencies (MLX Metal shaders, AppAuth, etc.).
+  - Signed the bundle with an ad-hoc identity for local verification.
+- **Code Quality & Maintenance**:
+  - **Warning Resolution**: Fixed Swift compiler warnings in `LocalLLMService.swift` by integrating `commonCategories` into the system prompt and in `ReceiptSorterCore.swift` by removing unnecessary `nonisolated(unsafe)` modifiers.
+  - **Testing**: Verified all 6 unit tests pass on the current architecture.
+- **Roadmap Synchronization**:
+  - Updated `ROADMAP.md` to mark **Phase 3.5 (Model Pre-download on First Launch)** as complete, reflecting its full implementation in `ModelDownloadService` and `ContentView`.
+  - Formally marked **Phase 6a (Liquid Glass Design System)** as superseded by native SwiftUI adoption (ADR-001) to match the current codebase state.
+- **Documentation**: Confirmed alignment between `PROGRESS.md`, `ROADMAP.md`, and the actual implementation state.
+
+---
+
 ## Session: February 15, 2026
 
 ### ⚖️ Licensing & Contributor Infrastructure
