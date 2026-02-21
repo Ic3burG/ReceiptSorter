@@ -2,6 +2,23 @@
 
 **IMPORTANT:** This file must be updated with a summary of changes after every session or significant code modification. These updates must be committed and pushed to the GitHub repository immediately.
 
+## Session: February 21, 2026
+
+### 🧠 MLXVLM Dependency & Build Resolution (qwen-vlm)
+
+- **Dependency Alignment**: Verified and fixed the `MLXVLM` dependency resolution within the `qwen-vlm` worktree.
+- **API Migration**: Updated `LocalLLMService.swift` to align with the latest `mlx-swift-lm` (main branch) API changes.
+  - Replaced the deprecated `VLMModelContainer` with the unified `ModelContainer` type.
+  - Refactored `UserInput` initialization to correctly embed images within `Chat.Message` objects, fulfilling the new structured input requirements.
+- **Code Quality & Modernization**:
+  - Resolved a compiler warning in `ReceiptSorterCore.swift` by removing an unnecessary `nonisolated(unsafe)` attribute from the `authService` property (now correctly identified as `Sendable`).
+- **Validation**:
+  - Confirmed successful compilation with `swift build` (warning-free).
+  - Verified core functionality with `swift test`, passing all 6 tests in the `ReceiptSorterCore` suite.
+- **Version Control**: Committed and pushed all fixes to the `feat/qwen-vlm` remote branch.
+
+---
+
 ## Session: February 15, 2026
 
 ### ⚖️ Licensing & Contributor Infrastructure
