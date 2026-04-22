@@ -28,47 +28,96 @@ struct ModelDownloadBanner: View {
   @ObservedObject var downloadService: ModelDownloadService
   @Environment(\.colorScheme) var colorScheme
 
+  private var bannerIcon: String {
+    switch downloadService.state {
+    case .notStarted: return "arrow.down.circle"
+    case .downloading: return "arrow.down.circle.fill"
+    case .failed: return "exclamationmark.circle.fill"
+    case .completed: return "checkmark.circle.fill"
+    }
+  }
+
+  private var bannerColor: Color {
+    switch downloadService.state {
+    case .notStarted: return .orange
+    case .downloading: return .accentColor
+    case .failed: return .red
+    case .completed: return .green
+    }
+  }
+
+  private var bannerTitle: String {
+    switch downloadService.state {
+    case .notStarted: return "AI Model Required"
+    case .downloading: return "Downloading AI Model"
+    case .failed: return "Download Failed"
+    case .completed: return "Model Ready"
+    }
+  }
+
+  private var bannerSubtitle: String {
+    switch downloadService.state {
+    case .notStarted:
+      return "\(GemmaModel.displayName) (~3 GB) is needed to process receipts."
+    case .downloading(let progress):
+      let pct = Int(progress * 100)
+      let downloaded = ByteCountFormatter.string(
+        fromByteCount: downloadService.downloadedBytes, countStyle: .file)
+      let total = ByteCountFormatter.string(
+        fromByteCount: downloadService.totalBytes, countStyle: .file)
+      return "\(pct)% complete (\(downloaded) of ~\(total))"
+    case .failed(let error):
+      return error
+    case .completed:
+      return "Ready to process receipts."
+    }
+  }
+
+  private var bannerSubtitleColor: Color {
+    if case .failed = downloadService.state { return .red }
+    return .secondary
+  }
+
+  @ViewBuilder
+  private var bannerAction: some View {
+    switch downloadService.state {
+    case .notStarted:
+      Button("Download") {
+        downloadService.downloadModel(modelId: GemmaModel.modelId)
+      }
+      .buttonStyle(.borderedProminent)
+      .controlSize(.small)
+    case .failed:
+      Button("Retry") {
+        downloadService.retryDownload()
+      }
+      .buttonStyle(.bordered)
+      .controlSize(.small)
+    default:
+      EmptyView()
+    }
+  }
+
   var body: some View {
     VStack(spacing: 8) {
       HStack {
-        Image(systemName: "arrow.down.circle.fill")
-          .foregroundColor(.accentColor)
+        Image(systemName: bannerIcon)
+          .foregroundColor(bannerColor)
           .font(.system(size: 20))
 
         VStack(alignment: .leading, spacing: 2) {
-          Text("Downloading AI Model")
+          Text(bannerTitle)
             .font(.headline)
             .foregroundColor(.primary)
 
-          if case .downloading(let progress) = downloadService.state {
-            let percentage = Int(progress * 100)
-            let downloaded = ByteCountFormatter.string(
-              fromByteCount: downloadService.downloadedBytes, countStyle: .file)
-            let total = ByteCountFormatter.string(
-              fromByteCount: downloadService.totalBytes, countStyle: .file)
-            Text("\(percentage)% complete (\(downloaded) of ~\(total))")
-              .font(.caption)
-              .foregroundColor(.secondary)
-          } else if case .failed(let error) = downloadService.state {
-            Text("Download failed: \(error)")
-              .font(.caption)
-              .foregroundColor(.red)
-          } else {
-            Text("Preparing download...")
-              .font(.caption)
-              .foregroundColor(.secondary)
-          }
+          Text(bannerSubtitle)
+            .font(.caption)
+            .foregroundColor(bannerSubtitleColor)
         }
 
         Spacer()
 
-        if case .failed = downloadService.state {
-          Button("Retry") {
-            downloadService.retryDownload()
-          }
-          .buttonStyle(.bordered)
-          .controlSize(.small)
-        }
+        bannerAction
       }
 
       if case .downloading(let progress) = downloadService.state {

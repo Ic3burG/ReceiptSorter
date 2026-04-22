@@ -33,15 +33,22 @@ struct WelcomeView: View {
   let isAuthorized: Bool
   let onSignIn: () -> Void
 
+  @EnvironmentObject var modelDownloadService: ModelDownloadService
   @State private var showSettings = false
   @State private var isHovering = false
 
+  private var isModelReady: Bool {
+    modelDownloadService.isModelDownloaded(modelId: GemmaModel.modelId)
+      || modelDownloadService.state == .completed
+  }
+
   private var isFullyConfigured: Bool {
-    !excelFilePath.isEmpty && !organizationBasePath.isEmpty
+    isModelReady && !excelFilePath.isEmpty && !organizationBasePath.isEmpty
   }
 
   private var configuredCount: Int {
-    var count = 1  // AI is always configured (Gemma 4 local)
+    var count = 0
+    if isModelReady { count += 1 }
     if !excelFilePath.isEmpty { count += 1 }
     if !organizationBasePath.isEmpty { count += 1 }
     return count
@@ -99,11 +106,7 @@ struct WelcomeView: View {
                   .foregroundColor(isFullyConfigured ? .green : .orange)
               }
 
-              setupItem(
-                icon: "cpu",
-                title: "Local AI · \(GemmaModel.displayName)",
-                isConfigured: true
-              )
+              aiModelRow
 
               setupItem(
                 icon: "doc.badge.arrow.up",
@@ -196,6 +199,73 @@ struct WelcomeView: View {
       Text("Settings opened in ModernSettingsView")
         .padding()
         .frame(width: 400, height: 300)
+    }
+  }
+
+  @ViewBuilder
+  private var aiModelRow: some View {
+    switch modelDownloadService.state {
+    case .notStarted where !isModelReady:
+      HStack(spacing: 12) {
+        Image(systemName: "arrow.down.circle")
+          .foregroundColor(.orange)
+          .frame(width: 24)
+        VStack(alignment: .leading, spacing: 2) {
+          Text("AI Model · \(GemmaModel.displayName)")
+            .font(.body)
+          Text("~3 GB · Required before processing receipts")
+            .font(.caption)
+            .foregroundColor(.secondary)
+        }
+        Spacer()
+        Button("Download") {
+          modelDownloadService.downloadModel(modelId: GemmaModel.modelId)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.small)
+      }
+
+    case .downloading(let progress):
+      VStack(alignment: .leading, spacing: 6) {
+        HStack(spacing: 12) {
+          Image(systemName: "arrow.down.circle.fill")
+            .foregroundColor(.accentColor)
+            .frame(width: 24)
+          Text("Downloading \(GemmaModel.displayName)…")
+            .font(.body)
+          Spacer()
+          Text("\(Int(progress * 100))%")
+            .font(.caption.monospacedDigit())
+            .foregroundColor(.secondary)
+        }
+        ProgressView(value: progress, total: 1.0)
+          .progressViewStyle(.linear)
+          .padding(.leading, 36)
+      }
+
+    case .failed(let message):
+      HStack(spacing: 12) {
+        Image(systemName: "exclamationmark.circle.fill")
+          .foregroundColor(.red)
+          .frame(width: 24)
+        VStack(alignment: .leading, spacing: 2) {
+          Text("Download Failed")
+            .font(.body)
+          Text(message)
+            .font(.caption)
+            .foregroundColor(.red)
+            .lineLimit(2)
+        }
+        Spacer()
+        Button("Retry") {
+          modelDownloadService.retryDownload()
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+      }
+
+    default:
+      setupItem(icon: "cpu", title: "Local AI · \(GemmaModel.displayName)", isConfigured: true)
     }
   }
 

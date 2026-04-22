@@ -84,7 +84,11 @@ struct ContentView: View {
   var body: some View {
     VStack(spacing: 0) {
       // Model Download Banner
-      if case .downloading = modelDownloadService.state {
+      if case .notStarted = modelDownloadService.state,
+        !modelDownloadService.isModelDownloaded(modelId: GemmaModel.modelId)
+      {
+        ModelDownloadBanner(downloadService: modelDownloadService)
+      } else if case .downloading = modelDownloadService.state {
         ModelDownloadBanner(downloadService: modelDownloadService)
       } else if case .failed = modelDownloadService.state {
         ModelDownloadBanner(downloadService: modelDownloadService)

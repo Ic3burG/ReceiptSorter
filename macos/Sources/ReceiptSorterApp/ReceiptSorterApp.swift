@@ -58,9 +58,9 @@ struct ReceiptSorterApp: App {
   }
 
   private func checkAndDownloadModel() async {
-    // We check if it's already downloaded in the service
-    // If not, we start the download
-    if !modelDownloadService.isModelDownloaded(modelId: GemmaModel.modelId) && !hasCompletedDownload {
+    // Always check whether the current model is on disk — do not gate on the
+    // legacy hasCompletedDownload flag, which may be stale after a model swap.
+    if !modelDownloadService.isModelDownloaded(modelId: GemmaModel.modelId) {
       modelDownloadService.downloadModel(modelId: GemmaModel.modelId)
     }
   }
