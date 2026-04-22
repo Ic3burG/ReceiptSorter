@@ -66,7 +66,7 @@ public class ModelDownloadService: ObservableObject {
   // MARK: - Private Properties
 
   private var downloadTask: Task<Void, Never>?
-  private let modelSizeEstimate: Int64 = 2_147_483_648  // ~2GB
+  private let modelSizeEstimate: Int64 = GemmaModel.sizeEstimateBytes
 
   // MARK: - Initialization
 
@@ -111,7 +111,6 @@ public class ModelDownloadService: ObservableObject {
 
           // Save completion state
           UserDefaults.standard.set(true, forKey: "hasCompletedModelDownload")
-          UserDefaults.standard.set(modelId, forKey: "lastDownloadedModelId")
           UserDefaults.standard.set(false, forKey: "modelDownloadFailed")
         }
 

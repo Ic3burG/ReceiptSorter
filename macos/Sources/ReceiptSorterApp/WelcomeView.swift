@@ -28,8 +28,6 @@ import UniformTypeIdentifiers
 
 /// A welcome screen shown when no receipts are loaded
 struct WelcomeView: View {
-  @Binding var apiKey: String
-  @Binding var useLocalLLM: Bool
   @Binding var excelFilePath: String
   @Binding var organizationBasePath: String
   let isAuthorized: Bool
@@ -39,12 +37,11 @@ struct WelcomeView: View {
   @State private var isHovering = false
 
   private var isFullyConfigured: Bool {
-    (!apiKey.isEmpty || useLocalLLM) && !excelFilePath.isEmpty && !organizationBasePath.isEmpty
+    !excelFilePath.isEmpty && !organizationBasePath.isEmpty
   }
 
   private var configuredCount: Int {
-    var count = 0
-    if !apiKey.isEmpty || useLocalLLM { count += 1 }
+    var count = 1  // AI is always configured (Gemma 4 local)
     if !excelFilePath.isEmpty { count += 1 }
     if !organizationBasePath.isEmpty { count += 1 }
     return count
@@ -103,9 +100,9 @@ struct WelcomeView: View {
               }
 
               setupItem(
-                icon: useLocalLLM ? "cpu" : "key",
-                title: useLocalLLM ? "Local AI" : "Gemini API",
-                isConfigured: useLocalLLM || !apiKey.isEmpty
+                icon: "cpu",
+                title: "Local AI · \(GemmaModel.displayName)",
+                isConfigured: true
               )
 
               setupItem(
