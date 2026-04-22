@@ -24,3 +24,4 @@ receipts/source/
 macos/*.app
 service_account.json
 .worktrees/
+macos/ReceiptSorter.xcodeproj

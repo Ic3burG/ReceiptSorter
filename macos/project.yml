@@ -1,0 +1,73 @@
+name: ReceiptSorter
+
+options:
+  bundleIdPrefix: com.receiptsorter
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  generateEmptyDirectories: false
+  createIntermediateGroups: true
+
+packages:
+  ReceiptSorterCore:
+    path: .
+
+targets:
+  ReceiptSorterApp:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Sources/ReceiptSorterApp
+        excludes:
+          - Info.plist
+          - ReceiptSorterApp.entitlements
+    resources:
+      - path: Sources/ReceiptSorterApp/Assets.xcassets
+    info:
+      path: Sources/ReceiptSorterApp/Info.plist
+    entitlements:
+      path: Sources/ReceiptSorterApp/ReceiptSorterApp.entitlements
+    dependencies:
+      - package: ReceiptSorterCore
+        product: ReceiptSorterCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.receiptsorter.app
+        PRODUCT_NAME: Receipt Sorter
+        SWIFT_VERSION: "6.0"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+        ENABLE_HARDENED_RUNTIME: YES
+        SWIFT_STRICT_CONCURRENCY: complete
+
+  ReceiptSorterCoreTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - Tests/ReceiptSorterCoreTests
+    dependencies:
+      - package: ReceiptSorterCore
+        product: ReceiptSorterCore
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+
+schemes:
+  Receipt Sorter:
+    build:
+      targets:
+        ReceiptSorterApp: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - ReceiptSorterCoreTests
+    profile:
+      config: Release
+    archive:
+      config: Release
