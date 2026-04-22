@@ -53,10 +53,6 @@ struct ProcessingItem: Identifiable, Equatable {
 
 struct ContentView: View {
   // Persistent Settings
-  @AppStorage("geminiApiKey") private var apiKey: String = ""
-  @AppStorage("useLocalLLM") private var useLocalLLM: Bool = true
-  @AppStorage("localModelId") private var localModelId: String =
-    "mlx-community/Llama-3.2-3B-Instruct-4bit"
   @AppStorage("excelFilePath") private var excelFilePath: String = ""
   @AppStorage("googleSheetId") private var googleSheetId: String = ""
   @AppStorage("googleClientID") private var clientID: String = ""
@@ -123,9 +119,6 @@ struct ContentView: View {
       }
 
       .onAppear { initializeCore() }
-      .onChange(of: apiKey) { _, _ in initializeCore() }
-      .onChange(of: useLocalLLM) { _, _ in initializeCore() }
-      .onChange(of: localModelId) { _, _ in initializeCore() }
       .onChange(of: excelFilePath) { _, _ in initializeCore() }
       .onChange(of: clientID) { _, _ in initializeCore() }
       .onChange(of: clientSecret) { _, _ in initializeCore() }
@@ -178,8 +171,6 @@ struct ContentView: View {
     VStack {
       if items.isEmpty {
         WelcomeView(
-          apiKey: $apiKey,
-          useLocalLLM: $useLocalLLM,
           excelFilePath: $excelFilePath,
           organizationBasePath: $organizationBasePath,
           isAuthorized: isAuthorized,
@@ -408,25 +399,13 @@ struct ContentView: View {
 
   @MainActor
   private func initializeCore() {
-    NSLog("ReceiptSorter: [CORE] initializeCore called, useLocalLLM=\(useLocalLLM)")
-
-    let localService: LocalLLMService?
-    if useLocalLLM {
-      NSLog("ReceiptSorter: [CORE] Creating LocalLLMService...")
-      localService = LocalLLMService(modelId: localModelId)
-      NSLog("ReceiptSorter: [CORE] LocalLLMService created successfully")
-    } else {
-      localService = nil
-    }
-
+    NSLog("ReceiptSorter: [CORE] initializeCore called")
     self.core = ReceiptSorterCore(
-      apiKey: apiKey,
       clientID: clientID,
       clientSecret: clientSecret,
       sheetID: googleSheetId,
       excelFilePath: excelFilePath,
-      organizationBasePath: organizationBasePath,
-      localLLMService: localService
+      organizationBasePath: organizationBasePath
     )
     NSLog("ReceiptSorter: [CORE] ReceiptSorterCore initialized")
 
@@ -522,9 +501,7 @@ struct ContentView: View {
   private func processItem(at index: Int) async {
     // Run on background thread to prevent UI hangs (especially during OCR/MLX load)
     await Task.detached(priority: .userInitiated) {
-      let (item, useLocal, key) = await MainActor.run {
-        (items[index], useLocalLLM, apiKey)
-      }
+      let item = await MainActor.run { items[index] }
 
       // Re-access security scoped resource if needed (dropping files often requires this)
       let accessGranted = item.url.startAccessingSecurityScopedResource()
@@ -532,11 +509,6 @@ struct ContentView: View {
         if accessGranted {
           item.url.stopAccessingSecurityScopedResource()
         }
-      }
-
-      if !useLocal && key.isEmpty {
-        await MainActor.run { items[index].error = "Missing API Key" }
-        return
       }
 
       let core = await MainActor.run { self.core }
