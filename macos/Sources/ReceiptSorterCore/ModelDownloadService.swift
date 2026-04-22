@@ -111,7 +111,6 @@ public class ModelDownloadService: ObservableObject {
 
           // Save completion state
           UserDefaults.standard.set(true, forKey: "hasCompletedModelDownload")
-          UserDefaults.standard.set(modelId, forKey: "lastDownloadedModelId")
           UserDefaults.standard.set(false, forKey: "modelDownloadFailed")
         }
 
