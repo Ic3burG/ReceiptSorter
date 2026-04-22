@@ -31,6 +31,7 @@ struct ModernSettingsView: View {
     case general = "General"
     case export = "Export"
     case organization = "Organization"
+    case corrections = "Corrections"
     case cloudSync = "Cloud Sync"
 
     var id: String { rawValue }
@@ -40,6 +41,7 @@ struct ModernSettingsView: View {
       case .general: return "gear"
       case .export: return "square.and.arrow.up"
       case .organization: return "folder"
+      case .corrections: return "brain"
       case .cloudSync: return "icloud"
       }
     }
@@ -49,6 +51,7 @@ struct ModernSettingsView: View {
       case .general: return .gray
       case .export: return .blue
       case .organization: return .cyan
+      case .corrections: return .purple
       case .cloudSync: return .blue
       }
     }
@@ -85,6 +88,8 @@ struct ModernSettingsView: View {
       ExportSettingsDetailView()
     case .organization:
       OrganizationSettingsDetailView()
+    case .corrections:
+      CorrectionsSettingsDetailView()
     case .cloudSync:
       CloudSyncSettingsDetailView()
     }
@@ -429,6 +434,122 @@ struct CloudSyncSettingsDetailView: View {
       self.googleSheetId = String(input[..<queryIndex])
     } else {
       self.googleSheetId = input
+    }
+  }
+}
+
+// MARK: - Corrections Settings Detail View
+
+struct CorrectionsSettingsDetailView: View {
+  @EnvironmentObject var correctionStore: CorrectionStore
+  @State private var showClearConfirmation = false
+
+  var body: some View {
+    Form {
+      if !correctionStore.rules.isEmpty {
+        Section {
+          ForEach(correctionStore.rules.sorted { $0.applyCount > $1.applyCount }) { rule in
+            HStack(spacing: 12) {
+              VStack(alignment: .leading, spacing: 2) {
+                Text(rule.field.capitalized)
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+                Text("\"\(rule.original)\" → \"\(rule.corrected)\"")
+                  .font(.body)
+              }
+              Spacer()
+              Text("applied \(rule.applyCount)×")
+                .font(.caption)
+                .foregroundStyle(.purple)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Color.purple.opacity(0.1))
+                .clipShape(Capsule())
+              Button(role: .destructive) {
+                correctionStore.deleteRule(id: rule.id)
+              } label: {
+                Image(systemName: "trash")
+                  .foregroundStyle(.red)
+              }
+              .buttonStyle(.plain)
+            }
+            .padding(.vertical, 2)
+          }
+        } header: {
+          Text("Rules (applied automatically)")
+        } footer: {
+          Text("Promoted from corrections seen 3 or more times. Applied to every extraction.")
+            .font(.caption)
+        }
+      }
+
+      if !correctionStore.corrections.isEmpty {
+        Section {
+          ForEach(correctionStore.corrections.sorted { $0.updatedAt > $1.updatedAt }) { c in
+            HStack(spacing: 12) {
+              VStack(alignment: .leading, spacing: 2) {
+                Text(c.field.capitalized)
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+                Text("\"\(c.original)\" → \"\(c.corrected)\"")
+                  .font(.body)
+              }
+              Spacer()
+              if c.count > 1 {
+                Text("×\(c.count)")
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+              }
+              Button(role: .destructive) {
+                correctionStore.deleteCorrection(id: c.id)
+              } label: {
+                Image(systemName: "trash")
+                  .foregroundStyle(.red)
+              }
+              .buttonStyle(.plain)
+            }
+            .padding(.vertical, 2)
+          }
+        } header: {
+          Text("Examples (injected into AI prompt)")
+        } footer: {
+          Text("The 5 most recent examples are shown to the AI before each extraction.")
+            .font(.caption)
+        }
+      }
+
+      if correctionStore.corrections.isEmpty && correctionStore.rules.isEmpty {
+        Section {
+          Text(
+            "No corrections recorded yet. Click any extracted field in the main view to correct it."
+          )
+          .foregroundStyle(.secondary)
+          .font(.body)
+        }
+      }
+
+      if !correctionStore.corrections.isEmpty || !correctionStore.rules.isEmpty {
+        Section {
+          Button(role: .destructive) {
+            showClearConfirmation = true
+          } label: {
+            Text("Clear All Corrections & Rules")
+              .foregroundStyle(.red)
+          }
+        }
+      }
+    }
+    .formStyle(.grouped)
+    .navigationTitle("Corrections")
+    .confirmationDialog(
+      "Clear all corrections and rules?",
+      isPresented: $showClearConfirmation,
+      titleVisibility: .visible
+    ) {
+      Button("Clear All", role: .destructive) { correctionStore.clearAll() }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("This cannot be undone. The AI will no longer learn from past edits.")
     }
   }
 }
