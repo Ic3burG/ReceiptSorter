@@ -34,7 +34,6 @@ struct WelcomeView: View {
   let onSignIn: () -> Void
 
   @EnvironmentObject var modelDownloadService: ModelDownloadService
-  @State private var showSettings = false
   @State private var isHovering = false
 
   private var isModelReady: Bool {
@@ -121,7 +120,7 @@ struct WelcomeView: View {
               )
 
               Button {
-                showSettings = true
+                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
               } label: {
                 Label("Configure", systemImage: "gearshape")
                   .frame(maxWidth: .infinity)
@@ -195,11 +194,6 @@ struct WelcomeView: View {
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .sheet(isPresented: $showSettings) {
-      Text("Settings opened in ModernSettingsView")
-        .padding()
-        .frame(width: 400, height: 300)
-    }
   }
 
   @ViewBuilder
