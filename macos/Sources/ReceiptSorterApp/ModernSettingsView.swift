@@ -395,7 +395,7 @@ struct CloudSyncSettingsDetailView: View {
     guard !googleSheetId.isEmpty else { return }
     isFormatting = true
 
-    let core = ReceiptSorterCore(clientID: clientID, sheetID: googleSheetId)
+    let core = ReceiptSorterCore(correctionStore: CorrectionStore(), clientID: clientID, sheetID: googleSheetId)
 
     Task {
       do {

@@ -352,6 +352,7 @@ struct ContentView: View {
                       value: data.total_amount.map { String(format: "%.2f", $0) },
                       isCorrected: item.correctedFields.contains("total_amount")
                     ) { _, corrected in
+                      // Amount is session-only: numeric field, no cross-receipt rule learning
                       guard index < items.count, let d = items[index].data, let amount = Double(corrected) else { return }
                       items[index].data = ReceiptData(
                         total_amount: amount, currency: d.currency, date: d.date,

@@ -60,7 +60,7 @@ public struct ReceiptSorterCore: Sendable {
 
   @MainActor
   public init(
-    correctionStore: CorrectionStore = CorrectionStore(),
+    correctionStore: CorrectionStore,
     clientID: String? = nil,
     clientSecret: String? = nil,
     sheetID: String? = nil,
