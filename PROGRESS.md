@@ -2,6 +2,43 @@
 
 **IMPORTANT:** This file must be updated with a summary of changes after every session or significant code modification. These updates must be committed and pushed to the GitHub repository immediately.
 
+## Session: April 22, 2026
+
+### 🤖 Gemma 4 Migration
+
+Migrated Receipt Sorter's AI engine to **Gemma 4** as the sole model, removing all other model paths (Gemini cloud API, Llama presets, custom model picker).
+
+**Design decisions:**
+- Apple Vision Framework retained for OCR — faster and more reliable on clean printed receipts than Gemma 4 vision; avoids context-window cost and latency
+- UI locked to Gemma 4 with no model picker — simplifies onboarding and eliminates edge cases
+- Model ID centralized in a single `GemmaModel` enum (`GemmaModel.modelId`, `.displayName`, `.sizeEstimateBytes`) — future model upgrades are a one-line change
+- Big Bang approach — all changes landed in one clean diff (codebase small enough to avoid transitional PRs)
+
+**Core layer changes:**
+- **`GemmaModel.swift`** (new): Single source of truth for `mlx-community/gemma-4-e4b-it-4bit`, display name, and 3GB size estimate
+- **`GeminiService.swift`** (deleted): Removed cloud extractor and all Gemini request/response types
+- **`ReceiptSorterCore.swift`**: `ReceiptData` moved here from deleted GeminiService; init simplified to always create `LocalLLMService`; `dataExtractor` made non-optional
+- **`LocalLLMService.swift`**: Default `modelId` updated to `GemmaModel.modelId`
+- **`ModelDownloadService.swift`**: `modelSizeEstimate` updated to `GemmaModel.sizeEstimateBytes`; orphaned `lastDownloadedModelId` UserDefaults write removed
+
+**UI layer changes:**
+- **`ContentView.swift`**: Removed `geminiApiKey`, `useLocalLLM`, `localModelId` `@AppStorage` keys and their `.onChange` observers; `initializeCore()` simplified; fixed `processItem` to remove the cloud/local branch; added `.environmentObject(modelDownloadService)` to the onboarding sheet (critical crash fix for first launch)
+- **`WelcomeView.swift`**: Removed `apiKey` and `useLocalLLM` bindings; AI setup row now always shows as configured
+- **`ReceiptSorterApp.swift`**: Removed `useLocalLLM` and `localModelId` AppStorage; `checkAndDownloadModel()` now uses `GemmaModel.modelId` directly
+- **`ModernSettingsView.swift`**: Removed model picker, Gemini key field, cloud toggle; replaced with Gemma 4 info label, download status (including `.failed` state), HF token field
+- **`OnboardingView.swift`**: Removed cloud toggle and Gemini key step; `ConfigurationStep` now shows HF token + download progress
+- **`ModelDownloadBanner.swift`**: Fixed empty Retry button action to call `downloadService.retryDownload()`
+
+**Bugs caught and fixed during review:**
+- Missing `.environmentObject(modelDownloadService)` on the onboarding sheet — SwiftUI `.sheet` doesn't inherit the environment, causing a crash on first launch
+- `.failed` download state showed "Not downloaded" silently in both ModernSettingsView and OnboardingView — now surfaces error message in red
+- `ModelDownloadBanner` Retry button had an empty TODO action — now calls `retryDownload()`
+- `lastDownloadedModelId` UserDefaults write in ModelDownloadService was orphaned after `localModelId` AppStorage was removed
+
+**Migration stats:** 11 commits, ~456 deletions, ~179 insertions
+
+---
+
 ## Session: February 15, 2026
 
 ### ⚖️ Licensing & Contributor Infrastructure
