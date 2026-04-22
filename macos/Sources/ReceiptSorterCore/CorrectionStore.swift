@@ -87,3 +87,102 @@ public class CorrectionStore: ObservableObject {
     }
   }
 }
+
+// MARK: - Business Logic
+
+@available(macOS 14.0, *)
+extension CorrectionStore {
+
+  /// Records a user correction. Creates a new Correction or increments an existing one.
+  /// Auto-promotes to a Rule when count reaches 3.
+  public func record(field: String, original: String, corrected: String) {
+    let trimmedOriginal = original.trimmingCharacters(in: .whitespaces)
+    let trimmedCorrected = corrected.trimmingCharacters(in: .whitespaces)
+    guard trimmedOriginal != trimmedCorrected,
+      !trimmedOriginal.isEmpty,
+      !trimmedCorrected.isEmpty
+    else { return }
+
+    if let idx = corrections.firstIndex(where: {
+      $0.field == field
+        && $0.original.lowercased() == trimmedOriginal.lowercased()
+        && $0.corrected == trimmedCorrected
+    }) {
+      corrections[idx].count += 1
+      corrections[idx].updatedAt = Date()
+      let count = corrections[idx].count
+      let alreadyHasRule = rules.contains {
+        $0.field == field && $0.original.lowercased() == trimmedOriginal.lowercased()
+      }
+      if count >= 3 && !alreadyHasRule {
+        rules.append(
+          Rule(
+            id: UUID(), field: field, original: trimmedOriginal,
+            corrected: trimmedCorrected, applyCount: 0, promotedAt: Date()))
+      }
+    } else {
+      corrections.append(
+        Correction(
+          id: UUID(), field: field, original: trimmedOriginal, corrected: trimmedCorrected,
+          count: 1, createdAt: Date(), updatedAt: Date()))
+    }
+    save()
+  }
+
+  /// Returns a prompt snippet of the 5 most recent corrections, or nil if none exist.
+  public func buildFewShotSnippet() -> String? {
+    guard !corrections.isEmpty else { return nil }
+    let lines = corrections
+      .sorted { $0.updatedAt > $1.updatedAt }
+      .prefix(5)
+      .map { "- \($0.field): \"\($0.original)\" → \"\($0.corrected)\"" }
+    return "Past corrections (apply these patterns to new receipts):\n" + lines.joined(separator: "\n")
+  }
+
+  /// Applies all Rules to an extracted ReceiptData. Returns the corrected data.
+  /// Increments applyCount on each matched rule.
+  public func applyRules(to data: ReceiptData) -> ReceiptData {
+    guard !rules.isEmpty else { return data }
+    var mutated = false
+
+    func apply(field: String, value: String?) -> String? {
+      guard let value else { return nil }
+      guard let idx = rules.firstIndex(where: {
+        $0.field == field && $0.original.lowercased() == value.lowercased()
+      }) else { return value }
+      let result = rules[idx].corrected
+      rules[idx].applyCount += 1
+      mutated = true
+      return result
+    }
+
+    let result = ReceiptData(
+      total_amount: data.total_amount,
+      currency: apply(field: "currency", value: data.currency),
+      date: apply(field: "date", value: data.date),
+      vendor: apply(field: "vendor", value: data.vendor),
+      description: apply(field: "description", value: data.description),
+      category: apply(field: "category", value: data.category)
+    )
+    if mutated { save() }
+    return result
+  }
+
+  // MARK: - Management
+
+  public func deleteCorrection(id: UUID) {
+    corrections.removeAll { $0.id == id }
+    save()
+  }
+
+  public func deleteRule(id: UUID) {
+    rules.removeAll { $0.id == id }
+    save()
+  }
+
+  public func clearAll() {
+    corrections.removeAll()
+    rules.removeAll()
+    save()
+  }
+}
