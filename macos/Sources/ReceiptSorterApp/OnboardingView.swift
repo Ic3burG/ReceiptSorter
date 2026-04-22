@@ -285,6 +285,10 @@ struct ConfigurationStep: View {
           Label("\(GemmaModel.displayName) ready", systemImage: "checkmark.circle.fill")
             .foregroundStyle(.green)
             .font(.caption)
+        } else if case .failed(let message) = modelDownloadService.state {
+          Label(message, systemImage: "xmark.circle.fill")
+            .foregroundStyle(.red)
+            .font(.caption)
         }
       }
       .padding(.horizontal, 40)

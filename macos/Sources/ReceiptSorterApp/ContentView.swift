@@ -161,6 +161,7 @@ struct ContentView: View {
           set: { if !$0 { hasCompletedOnboarding = true } }
         )
       )
+      .environmentObject(modelDownloadService)
       .interactiveDismissDisabled()
     }
   }
