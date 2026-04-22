@@ -64,10 +64,7 @@ struct ModelDownloadBanner: View {
 
         if case .failed = downloadService.state {
           Button("Retry") {
-            // Assuming the service will have the model ID stored or passed in
-            // For now, we might need to handle this via the parent or store the ID in service
-            // TODO: Wire up retry properly with model ID
-            // downloadService.retryDownload(modelId: ...)
+            downloadService.retryDownload()
           }
           .buttonStyle(.bordered)
           .controlSize(.small)
