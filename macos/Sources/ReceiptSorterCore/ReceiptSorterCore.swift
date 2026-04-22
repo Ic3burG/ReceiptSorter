@@ -56,17 +56,21 @@ public struct ReceiptSorterCore: Sendable {
   public let sheetService: SheetService?
   public let excelService: ExcelService?
   public let fileOrganizationService: FileOrganizationService?
+  public let correctionStore: CorrectionStore
 
   @MainActor
   public init(
+    correctionStore: CorrectionStore = CorrectionStore(),
     clientID: String? = nil,
     clientSecret: String? = nil,
     sheetID: String? = nil,
     excelFilePath: String? = nil,
     organizationBasePath: String? = nil
   ) {
+    self.correctionStore = correctionStore
     self.ocrService = OCRService()
-    self.dataExtractor = LocalLLMService(modelId: GemmaModel.modelId)
+    self.dataExtractor = LocalLLMService(
+      modelId: GemmaModel.modelId, correctionStore: correctionStore)
 
     if let clientID = clientID, !clientID.isEmpty {
       let auth = AuthService(clientID: clientID, clientSecret: clientSecret)

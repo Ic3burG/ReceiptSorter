@@ -80,6 +80,7 @@ struct ContentView: View {
 
   // Download Service
   @EnvironmentObject var modelDownloadService: ModelDownloadService
+  @EnvironmentObject var correctionStore: CorrectionStore
 
   var body: some View {
     VStack(spacing: 0) {
@@ -406,6 +407,7 @@ struct ContentView: View {
   private func initializeCore() {
     NSLog("ReceiptSorter: [CORE] initializeCore called")
     self.core = ReceiptSorterCore(
+      correctionStore: correctionStore,
       clientID: clientID,
       clientSecret: clientSecret,
       sheetID: googleSheetId,

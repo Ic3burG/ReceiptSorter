@@ -27,12 +27,11 @@ import SwiftUI
 @main
 struct ReceiptSorterApp: App {
   @StateObject private var modelDownloadService = ModelDownloadService()
+  @StateObject private var correctionStore = CorrectionStore()
   @AppStorage("hasCompletedModelDownload") private var hasCompletedDownload = false
   @AppStorage("hfToken") private var hfToken: String = ""
 
   init() {
-    // Set Hugging Face token environment variable if available
-    // This allows HubApi to authenticate automatically
     if let token = UserDefaults.standard.string(forKey: "hfToken"), !token.isEmpty {
       setenv("HF_TOKEN", token, 1)
     }
@@ -42,6 +41,7 @@ struct ReceiptSorterApp: App {
     WindowGroup {
       ContentView()
         .environmentObject(modelDownloadService)
+        .environmentObject(correctionStore)
         .onAppear {
           Task {
             await checkAndDownloadModel()
@@ -54,14 +54,13 @@ struct ReceiptSorterApp: App {
     Settings {
       ModernSettingsView()
         .environmentObject(modelDownloadService)
+        .environmentObject(correctionStore)
     }
   }
 
   private func checkAndDownloadModel() async {
-    // Always check whether the current model is on disk — do not gate on the
-    // legacy hasCompletedDownload flag, which may be stale after a model swap.
-    if !modelDownloadService.isModelDownloaded(modelId: GemmaModel.modelId) {
-      modelDownloadService.downloadModel(modelId: GemmaModel.modelId)
-    }
+    guard !modelDownloadService.isModelDownloaded(modelId: GemmaModel.modelId) else { return }
+    guard !hfToken.isEmpty else { return }
+    modelDownloadService.downloadModel(modelId: GemmaModel.modelId)
   }
 }

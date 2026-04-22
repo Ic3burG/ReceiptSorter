@@ -33,20 +33,28 @@ public actor LocalLLMService: ReceiptDataExtractor {
 
   private let modelId: String
   private var modelContainer: ModelContainer?
+  // `let` + all accesses via MainActor.run — safe despite nonisolated(unsafe)
+  nonisolated(unsafe) private let correctionStore: CorrectionStore
 
-  public init(modelId: String = GemmaModel.modelId) {
+  public init(modelId: String = GemmaModel.modelId, correctionStore: CorrectionStore) {
     self.modelId = modelId
+    self.correctionStore = correctionStore
     NSLog("ReceiptSorter: [LLM] LocalLLMService initialized with model: \(modelId)")
   }
 
   public func isModelReady() -> Bool {
-    // Use HubApi to check for the model directory, consistent with ModelDownloadService
     let repo = Hub.Repo(id: modelId)
     let modelURL = HubApi.shared.localRepoLocation(repo)
 
-    // Check if the directory exists and has content (e.g. config.json)
     let configURL = modelURL.appendingPathComponent("config.json")
-    return FileManager.default.fileExists(atPath: configURL.path)
+    guard FileManager.default.fileExists(atPath: configURL.path) else { return false }
+
+    let enumerator = FileManager.default.enumerator(
+      at: modelURL, includingPropertiesForKeys: nil)
+    while let url = enumerator?.nextObject() as? URL {
+      if url.pathExtension == "safetensors" { return true }
+    }
+    return false
   }
 
   private func ensureModelLoaded() async throws {
@@ -94,13 +102,10 @@ public actor LocalLLMService: ReceiptDataExtractor {
       throw LocalLLMError.modelLoadFailed
     }
 
-    // Simplify categories for smaller models to prevent context window overload and confusion
-    let commonCategories = [
-      "Groceries", "Dining", "Gas/Fuel", "Transportation", "Shopping",
-      "Entertainment", "Travel", "Utilities", "Health", "Services", "Other",
-    ].joined(separator: ", ")
+    // Fetch few-shot corrections from the store (MainActor call from actor context)
+    let fewShotSnippet = await MainActor.run { correctionStore.buildFewShotSnippet() }
 
-    let systemPrompt = """
+    let systemPromptBase = """
       You are a receipt scanner AI. Extract data from the receipt below into JSON.
 
       JSON Schema:
@@ -121,6 +126,8 @@ public actor LocalLLMService: ReceiptDataExtractor {
       - If currency is unknown, use "CAD".
       - Do not use markdown.
       """
+
+    let systemPrompt = fewShotSnippet.map { $0 + "\n\n" + systemPromptBase } ?? systemPromptBase
 
     let userPrompt = "Receipt text:\n\(text)"
 
@@ -158,7 +165,9 @@ public actor LocalLLMService: ReceiptDataExtractor {
       }
 
       NSLog("ReceiptSorter: Generation complete. Parsing response...")
-      return try parseResponse(fullOutput)
+      let parsed = try parseResponse(fullOutput)
+      let corrected = await MainActor.run { correctionStore.applyRules(to: parsed) }
+      return corrected
     } catch {
       NSLog("ReceiptSorter: Generation or Parse failed: \(error.localizedDescription)")
       throw error
