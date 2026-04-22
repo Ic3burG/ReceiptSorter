@@ -34,6 +34,7 @@ struct WelcomeView: View {
   let onSignIn: () -> Void
 
   @EnvironmentObject var modelDownloadService: ModelDownloadService
+  @Environment(\.openSettings) private var openSettings
   @State private var isHovering = false
 
   private var isModelReady: Bool {
@@ -120,7 +121,7 @@ struct WelcomeView: View {
               )
 
               Button {
-                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                openSettings()
               } label: {
                 Label("Configure", systemImage: "gearshape")
                   .frame(maxWidth: .infinity)
