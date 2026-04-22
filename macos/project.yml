@@ -9,10 +9,56 @@ options:
   createIntermediateGroups: true
 
 packages:
-  ReceiptSorterCore:
-    path: .
+  AppAuth-iOS:
+    url: https://github.com/openid/AppAuth-iOS.git
+    from: "1.6.2"
+  CoreXLSX:
+    url: https://github.com/CoreOffice/CoreXLSX.git
+    from: "0.14.0"
+  mlx-swift:
+    url: https://github.com/ml-explore/mlx-swift
+    branch: main
+  mlx-swift-lm:
+    url: https://github.com/ml-explore/mlx-swift-lm
+    branch: main
+  swift-transformers:
+    url: https://github.com/huggingface/swift-transformers.git
+    from: "1.1.6"
 
 targets:
+  ReceiptSorterCore:
+    type: framework
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - Sources/ReceiptSorterCore
+    dependencies:
+      - package: AppAuth-iOS
+        product: AppAuth
+      - package: CoreXLSX
+        product: CoreXLSX
+      - package: mlx-swift
+        product: MLX
+      - package: mlx-swift
+        product: MLXRandom
+      - package: mlx-swift
+        product: MLXNN
+      - package: mlx-swift-lm
+        product: MLXLLM
+      - package: mlx-swift-lm
+        product: MLXLMCommon
+      - package: swift-transformers
+        product: Hub
+      - package: swift-transformers
+        product: Tokenizers
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        SWIFT_STRICT_CONCURRENCY: complete
+        MACH_O_TYPE: staticlib
+        VERSIONING_SYSTEM: ""
+
   ReceiptSorterApp:
     type: application
     platform: macOS
@@ -26,11 +72,18 @@ targets:
       - path: Sources/ReceiptSorterApp/Assets.xcassets
     info:
       path: Sources/ReceiptSorterApp/Info.plist
+      properties:
+        CFBundleIconFile: AppIcon
+        NSHighResolutionCapable: true
+        LSMinimumSystemVersion: "14.0"
     entitlements:
       path: Sources/ReceiptSorterApp/ReceiptSorterApp.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+        com.apple.security.network.client: true
+        com.apple.security.files.user-selected.read-write: true
     dependencies:
-      - package: ReceiptSorterCore
-        product: ReceiptSorterCore
+      - target: ReceiptSorterCore
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.receiptsorter.app
@@ -49,8 +102,7 @@ targets:
     sources:
       - Tests/ReceiptSorterCoreTests
     dependencies:
-      - package: ReceiptSorterCore
-        product: ReceiptSorterCore
+      - target: ReceiptSorterCore
     settings:
       base:
         SWIFT_VERSION: "6.0"
@@ -61,6 +113,7 @@ schemes:
     build:
       targets:
         ReceiptSorterApp: all
+        ReceiptSorterCore: all
     run:
       config: Debug
     test:
