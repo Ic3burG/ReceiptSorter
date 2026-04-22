@@ -30,8 +30,6 @@ struct OnboardingView: View {
 
   // Onboarding State
   @State private var currentStep = 0
-  @AppStorage("geminiApiKey") private var apiKey: String = ""
-  @AppStorage("useLocalLLM") private var useLocalLLM: Bool = true
   @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
 
   var body: some View {
@@ -88,7 +86,7 @@ struct OnboardingView: View {
           } else if currentStep == 1 {
             PermissionsStep().transition(.opacity)
           } else if currentStep == 2 {
-            ConfigurationStep(apiKey: $apiKey, useLocalLLM: $useLocalLLM).transition(.opacity)
+            ConfigurationStep().transition(.opacity)
           } else if currentStep == 3 {
             ReadyStep(onExplore: completeOnboarding).transition(.opacity)
           }
@@ -234,8 +232,8 @@ struct PermissionsStep: View {
 }
 
 struct ConfigurationStep: View {
-  @Binding var apiKey: String
-  @Binding var useLocalLLM: Bool
+  @AppStorage("hfToken") private var hfToken: String = ""
+  @EnvironmentObject var modelDownloadService: ModelDownloadService
 
   var body: some View {
     VStack(spacing: 32) {
@@ -244,34 +242,49 @@ struct ConfigurationStep: View {
 
       VStack(spacing: 24) {
         GroupBox {
-          Toggle("Use Local Intelligence", isOn: $useLocalLLM)
-            .toggleStyle(.switch)
-            .font(.headline)
-        }
-
-        if !useLocalLLM {
-          VStack(alignment: .leading, spacing: 8) {
-            Text("Gemini API Key")
+          VStack(alignment: .leading, spacing: 12) {
+            Label("Local AI · \(GemmaModel.displayName)", systemImage: "cpu")
               .font(.headline)
 
-            HStack {
-              Image(systemName: "key.fill")
-                .foregroundColor(.secondary)
-              SecureField("Enter API Key", text: $apiKey)
-                .textFieldStyle(.roundedBorder)
-                .privacySensitive()
-            }
+            Text("Receipt Sorter runs entirely on your Mac using MLX. No data leaves your device.")
+              .font(.caption)
+              .foregroundColor(.secondary)
+          }
+          .padding(.vertical, 4)
+        }
 
-            Link("Get API Key", destination: URL(string: "https://aistudio.google.com/app/apikey")!)
+        GroupBox {
+          VStack(alignment: .leading, spacing: 8) {
+            Text("Hugging Face Token")
+              .font(.headline)
+
+            SecureField("Enter token (required for download)", text: $hfToken)
+              .textFieldStyle(.roundedBorder)
+              .textContentType(.password)
+              .onChange(of: hfToken) { _, newValue in
+                if !newValue.isEmpty {
+                  setenv("HF_TOKEN", newValue, 1)
+                }
+              }
+
+            Link(
+              "Get a free token from Hugging Face",
+              destination: URL(string: "https://huggingface.co/settings/tokens")!
+            )
+            .font(.caption)
+          }
+          .padding(.vertical, 4)
+        }
+
+        if case .downloading(let progress) = modelDownloadService.state {
+          ProgressView(value: progress) {
+            Text("Downloading \(GemmaModel.displayName)…")
               .font(.caption)
           }
-          .transition(.opacity)
-        } else {
-          Text("Local models run directly on your Mac. No data leaves your device.")
+        } else if modelDownloadService.isModelDownloaded(modelId: GemmaModel.modelId) {
+          Label("\(GemmaModel.displayName) ready", systemImage: "checkmark.circle.fill")
+            .foregroundStyle(.green)
             .font(.caption)
-            .foregroundColor(.secondary)
-            .multilineTextAlignment(.center)
-            .padding(.horizontal)
         }
       }
       .padding(.horizontal, 40)
