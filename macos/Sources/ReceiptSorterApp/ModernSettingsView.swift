@@ -94,165 +94,88 @@ struct ModernSettingsView: View {
 // MARK: - General Settings Detail View
 
 struct GeneralSettingsDetailView: View {
-  @AppStorage("geminiApiKey") private var geminiApiKey: String = ""
-  @AppStorage("useLocalLLM") private var useLocalLLM: Bool = true
-  @AppStorage("localModelId") private var localModelId: String =
-    "mlx-community/Llama-3.2-3B-Instruct-4bit"
   @AppStorage("hfToken") private var hfToken: String = ""
-
   @EnvironmentObject var modelDownloadService: ModelDownloadService
-
-  // Curated model options
-  enum ModelOption: String, CaseIterable, Identifiable {
-    case llama3B = "mlx-community/Llama-3.2-3B-Instruct-4bit"
-    case custom = "custom"
-
-    var id: String { rawValue }
-
-    var displayName: String {
-      switch self {
-      case .llama3B: return "Llama 3.2 3B"
-      case .custom: return "Custom Model"
-      }
-    }
-
-    var description: String {
-      switch self {
-      case .llama3B: return "Balanced • ~2GB • High quality"
-      case .custom: return "Enter custom model ID"
-      }
-    }
-  }
-
-  @State private var selectedModel: ModelOption = .llama3B
-  @State private var customModelId: String = ""
-  @State private var showCustomField: Bool = false
 
   var body: some View {
     Form {
       Section {
-        Toggle("Use Local LLM", isOn: $useLocalLLM)
-          .toggleStyle(.switch)
+        LabeledContent("Model") {
+          VStack(alignment: .leading, spacing: 4) {
+            Text(GemmaModel.displayName)
+              .fontWeight(.medium)
+            Text("~\(GemmaModel.sizeEstimateBytes / 1_000_000_000)GB · Runs entirely on your device")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
+        }
+
+        // Download status
+        if case .downloading(let progress) = modelDownloadService.state {
+          LabeledContent("Download Progress") {
+            HStack {
+              ProgressView(value: progress)
+              Text("\(Int(progress * 100))%")
+                .font(.caption)
+                .monospacedDigit()
+            }
+          }
+        } else if modelDownloadService.isModelDownloaded(modelId: GemmaModel.modelId) {
+          LabeledContent("Status") {
+            Label("Ready", systemImage: "checkmark.circle.fill")
+              .foregroundStyle(.green)
+              .font(.caption)
+          }
+        } else if case .failed(let message) = modelDownloadService.state {
+          LabeledContent("Status") {
+            Label(message, systemImage: "xmark.circle.fill")
+              .foregroundStyle(.red)
+              .font(.caption)
+          }
+        } else {
+          LabeledContent("Status") {
+            Label("Not downloaded", systemImage: "exclamationmark.triangle.fill")
+              .foregroundStyle(.orange)
+              .font(.caption)
+          }
+        }
       } header: {
         Text("Artificial Intelligence")
       } footer: {
-        if useLocalLLM {
-          Text("Processing happens entirely on your device using MLX. No data leaves your Mac.")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        } else {
-          Text("Uses Gemini API for cloud-based processing.")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
+        Text("Processing happens entirely on your device using MLX. No data leaves your Mac.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
       }
 
-      if useLocalLLM {
-        // Hugging Face Token Section
-        Section {
-          LabeledContent {
-            VStack(alignment: .leading) {
-              SecureField("Enter your token", text: $hfToken)
-                .textFieldStyle(.roundedBorder)
-                .textContentType(.password)
-                .onChange(of: hfToken) { _, newValue in
-                  if !newValue.isEmpty {
-                    setenv("HF_TOKEN", newValue, 1)
-                  }
+      Section {
+        LabeledContent {
+          VStack(alignment: .leading) {
+            SecureField("Enter your token", text: $hfToken)
+              .textFieldStyle(.roundedBorder)
+              .textContentType(.password)
+              .onChange(of: hfToken) { _, newValue in
+                if !newValue.isEmpty {
+                  setenv("HF_TOKEN", newValue, 1)
                 }
-
-              if !hfToken.isEmpty {
-                Text("Token configured")
-                  .font(.caption)
-                  .foregroundStyle(.green)
               }
-            }
-          } label: {
-            Text("Hugging Face Token")
-          }
-        } header: {
-          Text("Authentication")
-        } footer: {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Required for model downloads.")
-            Link(
-              "Get a free token from Hugging Face",
-              destination: URL(string: "https://huggingface.co/settings/tokens")!
-            )
-            .font(.caption)
-          }
-        }
 
-        // Model Selection Section
-        Section {
-          Picker("Model", selection: $selectedModel) {
-            ForEach(ModelOption.allCases) { option in
-              Text(option.displayName).tag(option)
-            }
-          }
-          .onChange(of: selectedModel) { _, newValue in
-            showCustomField = (newValue == .custom)
-            if newValue != .custom {
-              localModelId = newValue.rawValue
-              downloadModelIfNeeded(modelId: localModelId)
-            }
-          }
-
-          if showCustomField {
-            LabeledContent("Custom Model ID") {
-              HStack {
-                TextField("e.g., mlx-community/Llama-3.2-1B-Instruct-4bit", text: $customModelId)
-                  .textFieldStyle(.roundedBorder)
-
-                Button("Use") {
-                  if !customModelId.isEmpty {
-                    localModelId = customModelId
-                    downloadModelIfNeeded(modelId: localModelId)
-                  }
-                }
-                .disabled(customModelId.isEmpty)
-              }
-            }
-          }
-
-          // Download Status
-          if case .downloading(let progress) = modelDownloadService.state {
-            LabeledContent("Download Progress") {
-              HStack {
-                ProgressView(value: progress)
-                Text("\(Int(progress * 100))%")
-                  .font(.caption)
-                  .monospacedDigit()
-              }
-            }
-          } else if modelDownloadService.isModelDownloaded(modelId: localModelId) {
-            LabeledContent("Status") {
-              Text("Ready")
+            if !hfToken.isEmpty {
+              Text("Token configured")
+                .font(.caption)
                 .foregroundStyle(.green)
             }
-          } else {
-            LabeledContent("Status") {
-              Text("Not Downloaded")
-                .foregroundStyle(.secondary)
-            }
           }
-        } header: {
-          Text("Model Selection")
+        } label: {
+          Text("Hugging Face Token")
         }
-
-      } else {
-        // Gemini API Section
-        Section {
-          LabeledContent("API Key") {
-            SecureField("Enter your Gemini API key", text: $geminiApiKey)
-              .textFieldStyle(.roundedBorder)
-          }
-        } header: {
-          Text("Gemini API")
-        } footer: {
+      } header: {
+        Text("Authentication")
+      } footer: {
+        VStack(alignment: .leading, spacing: 4) {
+          Text("Required for model downloads.")
           Link(
-            "Get an API key from Google AI Studio",
-            destination: URL(string: "https://aistudio.google.com/")!
+            "Get a free token from Hugging Face",
+            destination: URL(string: "https://huggingface.co/settings/tokens")!
           )
           .font(.caption)
         }
@@ -260,23 +183,6 @@ struct GeneralSettingsDetailView: View {
     }
     .formStyle(.grouped)
     .navigationTitle("General")
-    .onAppear {
-      if let match = ModelOption.allCases.first(where: { $0.rawValue == localModelId }) {
-        selectedModel = match
-      } else {
-        selectedModel = .custom
-        customModelId = localModelId
-        showCustomField = true
-      }
-    }
-  }
-
-  private func downloadModelIfNeeded(modelId: String) {
-    Task {
-      if !modelDownloadService.isModelDownloaded(modelId: modelId) && !hfToken.isEmpty {
-        modelDownloadService.downloadModel(modelId: modelId)
-      }
-    }
   }
 }
 
