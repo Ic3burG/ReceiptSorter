@@ -40,6 +40,7 @@ struct ProcessingItem: Identifiable, Equatable {
   var data: ReceiptData?
   var error: String?
   var organized: Bool = false  // Track if file has been organized
+  var correctedFields: Set<String> = []
 
   enum ItemStatus: Equatable {
     case pending
@@ -330,15 +331,57 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 16) {  // Reduced spacing for cards
                   if let data = item.data {
                     // Extracted Data Cards
-                    DataCard(title: "Vendor", icon: "building.2", value: data.vendor)
-                    DataCard(title: "Date", icon: "calendar", value: data.date)
-                    DataCard(
+                    EditableDataCard(
+                      title: "Vendor", icon: "building.2",
+                      value: data.vendor,
+                      isCorrected: item.correctedFields.contains("vendor")
+                    ) { original, corrected in
+                      applyCorrection(at: index, field: "vendor", original: original, corrected: corrected)
+                    }
+
+                    EditableDataCard(
+                      title: "Date", icon: "calendar",
+                      value: data.date,
+                      isCorrected: item.correctedFields.contains("date")
+                    ) { original, corrected in
+                      applyCorrection(at: index, field: "date", original: original, corrected: corrected)
+                    }
+
+                    EditableDataCard(
                       title: "Amount", icon: "dollarsign.circle",
-                      value:
-                        "\(String(format: "%.2f", data.total_amount ?? 0.0)) \(data.currency ?? "")"
-                    )
-                    DataCard(title: "Category", icon: "tag", value: data.category)
-                    DataCard(title: "Description", icon: "text.alignleft", value: data.description)
+                      value: data.total_amount.map { String(format: "%.2f", $0) },
+                      isCorrected: item.correctedFields.contains("total_amount")
+                    ) { _, corrected in
+                      guard index < items.count, let d = items[index].data, let amount = Double(corrected) else { return }
+                      items[index].data = ReceiptData(
+                        total_amount: amount, currency: d.currency, date: d.date,
+                        vendor: d.vendor, description: d.description, category: d.category)
+                      items[index].correctedFields.insert("total_amount")
+                    }
+
+                    EditableDataCard(
+                      title: "Currency", icon: "coloncurrencysign.circle",
+                      value: data.currency,
+                      isCorrected: item.correctedFields.contains("currency")
+                    ) { original, corrected in
+                      applyCorrection(at: index, field: "currency", original: original, corrected: corrected)
+                    }
+
+                    EditableDataCard(
+                      title: "Category", icon: "tag",
+                      value: data.category,
+                      isCorrected: item.correctedFields.contains("category")
+                    ) { original, corrected in
+                      applyCorrection(at: index, field: "category", original: original, corrected: corrected)
+                    }
+
+                    EditableDataCard(
+                      title: "Description", icon: "text.alignleft",
+                      value: data.description,
+                      isCorrected: item.correctedFields.contains("description")
+                    ) { original, corrected in
+                      applyCorrection(at: index, field: "description", original: original, corrected: corrected)
+                    }
 
                     if item.status == .done {
                       HStack {
@@ -402,6 +445,40 @@ struct ContentView: View {
   }
 
   // MARK: - Logic
+
+  @MainActor
+  private func applyCorrection(at index: Int, field: String, original: String, corrected: String) {
+    guard index < items.count, let data = items[index].data else { return }
+    let d = data
+    let updated: ReceiptData
+    switch field {
+    case "vendor":
+      updated = ReceiptData(
+        total_amount: d.total_amount, currency: d.currency, date: d.date,
+        vendor: corrected, description: d.description, category: d.category)
+    case "currency":
+      updated = ReceiptData(
+        total_amount: d.total_amount, currency: corrected, date: d.date,
+        vendor: d.vendor, description: d.description, category: d.category)
+    case "date":
+      updated = ReceiptData(
+        total_amount: d.total_amount, currency: d.currency, date: corrected,
+        vendor: d.vendor, description: d.description, category: d.category)
+    case "description":
+      updated = ReceiptData(
+        total_amount: d.total_amount, currency: d.currency, date: d.date,
+        vendor: d.vendor, description: corrected, category: d.category)
+    case "category":
+      updated = ReceiptData(
+        total_amount: d.total_amount, currency: d.currency, date: d.date,
+        vendor: d.vendor, description: d.description, category: corrected)
+    default:
+      return
+    }
+    correctionStore.record(field: field, original: original, corrected: corrected)
+    items[index].correctedFields.insert(field)
+    items[index].data = updated
+  }
 
   @MainActor
   private func initializeCore() {
@@ -806,51 +883,3 @@ struct ProcessingItemRow: View {
   }
 }
 
-/// A card displaying extracted receipt data
-struct DataCard: View {
-  let title: String
-  let icon: String
-  let value: String?
-
-  var body: some View {
-    HStack(alignment: .center, spacing: 12) {
-      ZStack {
-        Circle()
-          .fill(.ultraThinMaterial)
-          .frame(width: 36, height: 36)
-
-        Image(systemName: icon)
-          .foregroundColor(.secondary)
-          .font(.system(size: 14))
-      }
-
-      VStack(alignment: .leading, spacing: 2) {
-        Text(title)
-          .font(.caption)
-          .foregroundColor(.secondary)
-
-        Text(value ?? "Unknown")
-          .font(.body)
-          .foregroundColor(.primary)
-          .textSelection(.enabled)
-      }
-
-      Spacer()
-    }
-    .padding(12)
-    .background {
-      RoundedRectangle(cornerRadius: 12)
-        .fill(.ultraThinMaterial.opacity(0.3))
-
-      RoundedRectangle(cornerRadius: 12)
-        .stroke(
-          LinearGradient(
-            colors: [.white.opacity(0.1), .white.opacity(0.05)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-          ),
-          lineWidth: 0.5
-        )
-    }
-  }
-}

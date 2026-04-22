@@ -94,8 +94,8 @@ struct EditableDataCard: View {
       RoundedRectangle(cornerRadius: 12)
         .fill(
           isEditing
-            ? Color.accentColor.opacity(0.05)
-            : .ultraThinMaterial.opacity(0.3)
+            ? AnyShapeStyle(Color.accentColor.opacity(0.05))
+            : AnyShapeStyle(.ultraThinMaterial.opacity(0.3))
         )
       RoundedRectangle(cornerRadius: 12)
         .stroke(
