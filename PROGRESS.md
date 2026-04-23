@@ -2,6 +2,36 @@
 
 **IMPORTANT:** This file must be updated with a summary of changes after every session or significant code modification. These updates must be committed and pushed to the GitHub repository immediately.
 
+## Session: April 22–23, 2026
+
+### 🧠 Correction & Learning System
+
+Implemented a two-layer system that lets users correct extracted receipt fields inline and have the app improve over time.
+
+**Architecture decisions:**
+- **Few-shot injection (soft guidance):** The 5 most recently updated corrections are injected into the LLM system prompt as examples before every extraction. Generalises to similar inputs without hard-coding anything.
+- **Rule promotion (deterministic safety net):** When the same `(field, original → corrected)` pair is seen ≥ 3 times, it is auto-promoted to a Rule and applied after every extraction, guaranteeing correctness for known patterns.
+- `total_amount` is editable for session display but intentionally excluded from rule learning — amounts are receipt-specific, not cross-receipt patterns.
+
+**New files:**
+- **`CorrectionStore.swift`** (new, `ReceiptSorterCore`): `@MainActor ObservableObject` persisting `Correction` and `Rule` structs to `~/Library/Application Support/ReceiptSorter/corrections.json`. Public API: `record()`, `buildFewShotSnippet()`, `applyRules(to:)`, `deleteCorrection(id:)`, `deleteRule(id:)`, `clearAll()`. Promotion at count ≥ 3 is automatic; `save()` writes atomically and logs failures.
+- **`EditableDataCard.swift`** (new, `ReceiptSorterApp`): Replaces `DataCard`. Displays field values as `Text` with a pencil icon on hover; taps into an inline `TextField`. Commits on Return or focus loss. Orange dot indicator when a field has been corrected this session. Double-commit on Return prevented via `guard isEditing` in `commit()`.
+
+**Modified files:**
+- **`LocalLLMService.swift`**: Accepts `CorrectionStore` via `nonisolated(unsafe) let` (safe because it's a `let` and all access goes through `await MainActor.run`). `extractData(from:)` prepends the few-shot snippet to the system prompt when corrections exist, and applies rules to the parsed result before returning.
+- **`ReceiptSorterCore.swift`**: `correctionStore: CorrectionStore` added as a required init parameter (no default — prevents accidental divergent instances). Passed through to `LocalLLMService`.
+- **`ReceiptSorterApp.swift`**: `@StateObject private var correctionStore = CorrectionStore()` lifted to app level; injected via `.environmentObject` into both the main window and Settings scene.
+- **`ContentView.swift`**: `ProcessingItem` gains `correctedFields: Set<String>`. `applyCorrection(at:field:original:corrected:)` helper records to store and rebuilds `ReceiptData`; `correctionStore.record()` only fires after the switch matches (unknown field names silently no-op without polluting the store). Bounds guard added to all `items[index]` mutations.
+- **`ModernSettingsView.swift`**: New "Corrections" section (icon: `brain`, color: `.purple`) with two lists — **Rules** (sorted by `applyCount` desc, with "applied N×" badge) and **Examples** (sorted by `updatedAt` desc, with count badge). Individual delete buttons and a "Clear All" button with confirmation dialog.
+
+**Bugs fixed along the way:**
+- `isModelDownloaded` previously returned `true` when only `config.json` existed (gated model without weights). Now requires at least one `.safetensors` file. Post-download check adds the same guard with a user-friendly HF token error message.
+- `checkAndDownloadModel()` in `ReceiptSorterApp` now guards `!hfToken.isEmpty` — without a token, `HubApi.snapshot()` hangs on gated weight files, causing download to stick at 0%.
+
+**Stats:** 8 commits (including fixes), 7 files created or modified.
+
+---
+
 ## Session: April 22, 2026
 
 ### 🤖 Gemma 4 Migration
