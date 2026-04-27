@@ -76,14 +76,22 @@ public class ModelDownloadService: ObservableObject {
 
   /// Check if a model is already downloaded
   public func isModelDownloaded(modelId: String) -> Bool {
-    // Use HubApi to check for the model directory, consistent with download logic
     let repo = Hub.Repo(id: modelId)
     let modelURL = HubApi.shared.localRepoLocation(repo)
 
-    // Check if the directory exists and has content (e.g. config.json)
-    // This is a fast check compared to recursive size calculation
+    // Must have config.json AND at least one .safetensors weight file.
+    // config.json alone can appear without weights when the download was
+    // interrupted or when the model is gated (requires a HF token) and
+    // only the public metadata was fetched.
     let configURL = modelURL.appendingPathComponent("config.json")
-    return FileManager.default.fileExists(atPath: configURL.path)
+    guard FileManager.default.fileExists(atPath: configURL.path) else { return false }
+
+    let enumerator = FileManager.default.enumerator(
+      at: modelURL, includingPropertiesForKeys: nil)
+    while let url = enumerator?.nextObject() as? URL {
+      if url.pathExtension == "safetensors" { return true }
+    }
+    return false
   }
 
   /// Start downloading the model
@@ -105,13 +113,21 @@ public class ModelDownloadService: ObservableObject {
         try await self.performDownload(modelId: modelId)
 
         await MainActor.run {
-          // Mark as completed
-          self.state = .completed
-          self.progress = 1.0
-
-          // Save completion state
-          UserDefaults.standard.set(true, forKey: "hasCompletedModelDownload")
-          UserDefaults.standard.set(false, forKey: "modelDownloadFailed")
+          // Verify that weight files actually landed — a gated model without
+          // a valid HF token will "succeed" but only download metadata.
+          if self.isModelDownloaded(modelId: modelId) {
+            self.state = .completed
+            self.progress = 1.0
+            UserDefaults.standard.set(true, forKey: "hasCompletedModelDownload")
+            UserDefaults.standard.set(false, forKey: "modelDownloadFailed")
+          } else {
+            self.state = .failed(
+              "Download incomplete: model weights missing. "
+                + "This model requires a Hugging Face token — add yours in Settings (⌘,) → General."
+            )
+            UserDefaults.standard.set(true, forKey: "modelDownloadFailed")
+            NSLog("ReceiptSorter: Download appeared to succeed but no .safetensors found for \(modelId)")
+          }
         }
 
       } catch {

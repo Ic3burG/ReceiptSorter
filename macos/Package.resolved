@@ -1,5 +1,5 @@
 {
-  "originHash" : "3c4e0ae552c3fc54d4fe1a0f0b9109f381b1d1bdece41bf8463454d952be4d41",
+  "originHash" : "20c2d437ad03a5da5aa9f4c3a206d87a565dcd37339d16cb52d461600a6e6fb3",
   "pins" : [
     {
       "identity" : "appauth-ios",
@@ -25,7 +25,7 @@
       "location" : "https://github.com/ml-explore/mlx-swift",
       "state" : {
         "branch" : "main",
-        "revision" : "3ed7d22ff39d9862ca337b2665b10cfd5fed7c99"
+        "revision" : "49d73abcbe8f49f44c1e61911997e6b680484216"
       }
     },
     {
@@ -34,7 +34,7 @@
       "location" : "https://github.com/ml-explore/mlx-swift-lm",
       "state" : {
         "branch" : "main",
-        "revision" : "77ebb037ab0937e0337dbfc222024907cabfc93e"
+        "revision" : "7e2b7107be52ffbfe488f3c7987d3f52c1858b4b"
       }
     },
     {
@@ -62,6 +62,15 @@
       "state" : {
         "revision" : "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
         "version" : "1.1.1"
+      }
+    },
+    {
+      "identity" : "swift-syntax",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-syntax.git",
+      "state" : {
+        "revision" : "9de99a78f099e59caf2b2beec65a4c45d54b2081",
+        "version" : "603.0.1"
       }
     },
     {
